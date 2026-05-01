@@ -10,6 +10,27 @@
 - <strong>Data da proposta: </strong>09/04/2026
 - <strong>Versão: </strong>1.2.0
 
+<hr/>
+
+## Sumário
+
+### 1. Visão de Produto
+- [1.1 Contexto e Problema](#11-contexto-e-problema)
+- [1.2 Origem da Demanda](#12-origem-da-demanda-e-evidências)
+- [1.3 Benchmark](#13-análise-de-soluções-existentes-benchmark)
+- [1.4 Público-alvo](#14-público-alvo)
+- [1.5 Objetivos do Projeto](#15-objetivos-do-projeto)
+- [1.6 Métricas de Sucesso](#16-métricas-de-sucesso-kpis)
+
+### 2. Engenharia de Requisitos
+- [2.1 Personas](#21-personas)
+- [2.2 Casos de Uso](#22-casos-de-uso-principais)
+- [2.3 Requisitos Funcionais](#23-requisitos-funcionais-rfs)
+- [2.4 Requisitos Não Funcionais](#24-requisitos-não-funcionais-rnfs)
+- [2.5 Regras de Negócio](#25-regras-de-negócio)
+- [2.6 Fora do Escopo](#26-fora-do-escopo)
+<hr/>
+
 ## 1. Visão de produto e impacto
 ### 1.1 Contexto e problema
 
