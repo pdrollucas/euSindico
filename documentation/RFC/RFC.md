@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>1.2.0
+- <strong>Versão: </strong>1.3.0
 
 <hr/>
 
@@ -29,6 +29,11 @@
 - [2.4 Requisitos Não Funcionais](#24-requisitos-não-funcionais-rnfs)
 - [2.5 Regras de Negócio](#25-regras-de-negócio)
 - [2.6 Fora do Escopo](#26-fora-do-escopo)
+
+### 3. Fluxos e Comportamento do Sistema
+- [3.1 Fluxo Principal do Usuário](#31-fluxo-principal-do-usuário)
+- [3.2 Fluxos Alternativos](#32-fluxos-alternativos)
+
 <hr/>
 
 ## 1. Visão de produto e impacto
@@ -257,3 +262,143 @@ graph TD
 - Integração com sistemas externos
 - Aplicativo mobile nativo
 - Controle de portaria e segurança
+
+## 3. Fluxos e comportamento do sistema
+### 3.1 Fluxo principal do usuário
+
+- <strong>Fluxo "Gerenciamento de compromissos":</strong>
+1. Usuário realiza o login no sistema
+2. Acessa a lista de compromissos
+3. Adiciona compromisso
+4. Visualiza e/ou edita detalhes de um compromisso
+5. Conclui ou remove compromisso
+
+Diagrama de fluxo:
+```mermaid
+flowchart TD
+
+A[Login no sistema] --> B[Acessar lista de compromissos]
+
+B --> C[Adicionar compromisso]
+B --> D[Selecionar compromisso existente]
+
+D --> E[Visualizar detalhes]
+E --> F[Editar compromisso]
+
+F --> G[Salvar alterações]
+C --> G
+
+G --> H[Marcar como concluído]
+G --> I[Remover compromisso]
+```
+
+Diagrama de sequência
+```mermaid
+sequenceDiagram
+
+participant U as Usuário
+participant FE as Front-end
+participant API as Back-end
+participant DB as Banco de Dados
+
+U->>FE: Realiza login
+FE->>API: Envia credenciais
+API->>DB: Valida usuário
+DB-->>API: OK
+API-->>FE: Autenticado
+
+U->>FE: Acessa compromissos
+FE->>API: GET /compromissos
+API->>DB: Buscar compromissos
+DB-->>API: Lista
+API-->>FE: Retorna dados
+
+U->>FE: Cria/edita compromisso
+FE->>API: POST/PUT compromisso
+API->>DB: Salvar/atualizar
+DB-->>API: OK
+API-->>FE: Confirmação
+
+U->>FE: Concluir/remover compromisso
+FE->>API: PATCH/DELETE
+API->>DB: Atualiza/remove
+DB-->>API: OK
+API-->>FE: Confirmação
+```
+
+- <strong>Fluxo "Gerenciamento de prédios":</strong>
+1. Usuário realiza login no sistema
+2. Acessa a lista de prédios
+3. Adiciona um prédio
+4. Visualiza menus referentes a compromissos, documentos e relatórios de atividades
+
+Diagrama de fluxo:
+```mermaid
+flowchart TD
+
+A[Login no sistema] --> B[Acessar lista de prédios]
+
+B --> C[Adicionar prédio]
+B --> D[Selecionar prédio]
+
+D --> E[Visualizar compromissos]
+D --> F[Visualizar documentos]
+D --> G[Visualizar relatórios]
+```
+
+Diagrama de sequência
+```mermaid
+sequenceDiagram
+
+participant U as Usuário
+participant FE as Front-end
+participant API as Back-end
+participant DB as Banco de Dados
+
+U->>FE: Realiza login
+FE->>API: Envia credenciais
+API->>DB: Valida usuário
+DB-->>API: OK
+API-->>FE: Autenticado
+
+U->>FE: Acessa prédios
+FE->>API: GET /predios
+API->>DB: Buscar prédios
+DB-->>API: Lista
+API-->>FE: Retorna dados
+
+U->>FE: Adiciona prédio
+FE->>API: POST /predios
+API->>DB: Salvar prédio
+DB-->>API: OK
+API-->>FE: Confirmação
+
+U->>FE: Seleciona prédio
+FE->>API: GET detalhes do prédio
+API->>DB: Buscar dados relacionados
+DB-->>API: Dados (compromissos, documentos, relatórios)
+API-->>FE: Retorna dados
+```
+
+### 3.2 Fluxos alternativos
+
+Fluxo "Falha no login":
+1. O usuário insere credenciais inválidas
+2. O sistema rejeita a autenticação
+3. Uma mensagem de erro é exibida
+4. O usuário pode tentar novamente
+
+Fluxo "Falha no upload de documento":
+1. O usuário tenta enviar um arquivo inválido ou muito grande
+2. O sistema bloqueia o upload
+3. Uma mensagem de erro é exibida
+4. O usuário deve selecionar outro arquivo
+
+Fluxo "Geração de relatório sem dados":
+1. O usuário solicita relatório sem compromissos concluídos
+2. O sistema informa que não há dados disponíveis
+3. Nenhum relatório é gerado
+
+Fluxo "Acesso sem autenticação":
+1. O usuário tenta acessar o sistema sem login
+2. O sistema redireciona para a tela de autenticação
