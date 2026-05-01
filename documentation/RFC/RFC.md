@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>1.3.0
+- <strong>Versão: </strong>1.4.0
 
 <hr/>
 
@@ -33,6 +33,12 @@
 ### 3. Fluxos e Comportamento do Sistema
 - [3.1 Fluxo Principal do Usuário](#31-fluxo-principal-do-usuário)
 - [3.2 Fluxos Alternativos](#32-fluxos-alternativos)
+
+### 4. Mockups e Experiência do Usuário (UX)
+- [4.1 Fluxo de Navegação](#41-fluxo-de-navegação)
+- [4.2 Wireframes ou Mockups das Telas](#42-wireframes-ou-mockups-das-telas)
+- [4.3 Fluxo de Interação do Usuário](#43-fluxo-de-interação-do-usuário)
+- [4.4 Feedback Inicial de Usuários](#44-feedback-inicial-de-usuários)
 
 <hr/>
 
@@ -402,3 +408,86 @@ Fluxo "Geração de relatório sem dados":
 Fluxo "Acesso sem autenticação":
 1. O usuário tenta acessar o sistema sem login
 2. O sistema redireciona para a tela de autenticação
+
+## 4. Mockups e Experiência do Usuário (UX)
+### 4.1 Fluxo de Navegação
+
+- Vídeo demonstrando o fluxo de navegação:
+
+https://github.com/user-attachments/assets/7d883675-cfd8-4522-a5cf-90c05b4f0ad8
+
+
+- Diagrama de fluxo de navegação:
+```mermaid
+flowchart TD
+
+A[Login] --> B[Home]
+
+B --> C[Gestão de Compromissos]
+B --> D[Gestão de Prédios]
+
+C --> C1[Listagem de Compromissos]
+
+D --> D1[Listagem de Prédios]
+D1 --> E[Detalhes do Prédio]
+
+E --> E1[Compromissos]
+E --> E2[Relatórios]
+E --> E3[Atas]
+E --> E4[Normas]
+E --> E5[Planejamento]
+```
+
+### 4.2 Wireframes ou Mockups das Telas
+
+- Tela inicial:
+
+Nessa tela o usuário pode selecionar a opção de "Compromissos", "Prédios", "Configurações" e "Logout"
+
+<img width="331" height="703" alt="image" src="https://github.com/user-attachments/assets/9065a943-890d-43d4-8361-aab45731c1a8" />
+<br/>
+
+- Tela "Compromissos":
+
+Nessa tela o usuário poderá visualizar os seus compromissos do dia, adicionar novos, concluir ou removê-los, buscá-los e adicionar filtros a busca
+
+<img width="333" height="704" alt="image" src="https://github.com/user-attachments/assets/92e214e3-c961-465f-844b-7dc482db13f2" />
+<br/>
+
+- Tela "Detalhes do compromisso":
+
+Nessa tela o usuário poderá visualizar e editar os detalhes do compromisso, tais como: prédio vinculado, data e horário, prestador de serviços e detalhes
+
+<img width="331" height="706" alt="image" src="https://github.com/user-attachments/assets/c0fbacbd-850a-47a6-a9e7-215f7f209354" />
+<br/>
+
+- Tela "Prédios":
+
+Nessa tela o usuário poderá visualizar os prédios cadastrados e adicionar novos
+
+<img width="263" height="564" alt="image" src="https://github.com/user-attachments/assets/10a2fb1b-ef67-4d56-bdc7-a803431aa383" />
+<br/>
+
+- Tela "Detalhes do prédio":
+
+Nessa tela o usuário poderá visualizar informações gerais sobre o prédio e os menus de "Compromissos", "Relatórios de atividade", "Atas", "Normas" e "Planejamentos futuros"
+
+<img width="261" height="562" alt="image" src="https://github.com/user-attachments/assets/dfb74341-b1ca-42d7-8cea-f9768afbb595" />
+<br/>
+
+- Telas: "Relatórios de atividades", "Atas" e "Normas":
+
+Telas que possuem uma estrutura semelhante, sendo responsáveis por anexação ou geração e armazenamento de documentos
+
+<img width="678" height="701" alt="image" src="https://github.com/user-attachments/assets/1397929c-dd0d-441e-be4d-5f22411fc614" />
+<br/>
+
+### 4.3 Fluxo de Interação do Usuário
+
+Abaixo está um print da prototipação feita para as telas. O resutado pode ser visto no vídeo anexado no tópico [4.1 Fluxo de Navegação](#41-fluxo-de-navegação)
+
+<img width="994" height="680" alt="image" src="https://github.com/user-attachments/assets/3f613e05-3e71-422e-baf8-2d793dcf6cf2" />
+
+### 4.4 Feedback Inicial de Usuários
+
+É possível visualizar os prints dos feedbacks no caminho "./prints/feedbacks"
