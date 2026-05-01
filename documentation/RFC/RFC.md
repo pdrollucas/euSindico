@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>1.0.0
+- <strong>Versão: </strong>1.2.0
 
 ## 1. Visão de produto e impacto
 ### 1.1 Contexto e problema
@@ -129,3 +129,110 @@ Desenvolver uma aplicação web mobile-first para auxiliar síndicos na gestão 
 - Tempo médio de visualização de todo o fluxo inferior a 2 minutos;
 - Tempo médio de consulta dos documentos inferior a 30 segundos;
 - Tempo médio para registrar atividades inferior a 1 minuto;
+
+## 2. Engenharia de requisitos
+### 2.1 Personas
+#### Persona 1: João da Silva (Síndico Profssional)
+<strong>Contexto:</strong>
+João tem 45 anos e atua como síndico profissional, sendo responsável pela administração de 6 condomínios simultaneamente. Sua rotina envolve reuniões, visitas técnicas, resolução de problemas operacionais e comunicação com moradores e prestadores de serviço.
+
+<strong>Objetivos:</strong>
+- Organizar compromissos por condomínio
+- Facilitar a geração de relatórios mensais
+- Centralizar documentos
+- Reduzir retrabalho e perda de informações
+
+<strong>Dificuldades:</strong>
+- Uso de múltiplos sistemas
+- Falta de integração entre atividades e documentos
+- Perda de tempo na criação manual de relatórios
+- Excesso de funcionalidades irrelevantes em sistemas atuais
+
+#### Persona 2: Ana Souza (Assistente Administrativa)
+<strong>Contexto:</strong>
+Ana tem 30 anos e auxilia na organização das demandas do síndico. Ela é responsável por registrar informações, organizar documentos e dar suporte na elaboração de relatórios.
+
+<strong>Objetivos:</strong>
+- Registrar rapidamente atividades realizadas
+- Organizar documentos por condomínio
+- Acessar informações de forma clara e rápida
+
+<strong>Dificuldades:</strong>
+- Falta de padronização no armazenamento de arquivos
+- Dificuldade em localizar informações antigas
+- Dependência de diferentes sistemas para tarefas simples
+
+### 2.2 Casos de uso principais
+Os principais fluxos do sistema incluem:
+- Criar conta e autenticar usuário;
+- Cadastrar e gerenciar prédios;
+- Criar, editar e visualizar compromissos;
+- Associar compromissos a prédios;
+- Registrar conclusão de compromissos;
+- Fazer upload de documentos (atas, normas, relatórios);
+- Consultar documentos por prédio;
+- Gerar relatórios mensais de compromissos.
+
+Diagrama de casos de uso:
+```mermaid
+graph TD
+    A[Usuário / Síndico]
+
+    A --> B[Criar conta]
+    A --> C[Realizar login]
+    A --> D[Gerenciar prédios]
+    A --> E[Gerenciar compromissos]
+    A --> F[Gerenciar documentos]
+    A --> G[Gerar relatórios]
+
+    D --> D1[Cadastrar prédio]
+    D --> D2[Visualizar prédios]
+
+    E --> E1[Criar compromisso]
+    E --> E2[Editar compromisso]
+    E --> E3[Concluir compromisso]
+    E --> E4[Associar a prédio]
+
+    F --> F1[Upload de documentos]
+    F --> F2[Visualizar documentos]
+    F --> F3[Download de documentos]
+
+    G --> G1[Gerar relatório mensal]
+```
+
+### 2.3 Requisitos Funcionais (RFs)
+- RF01 — O sistema deve permitir que o usuário crie uma conta.
+- RF02 — O sistema deve permitir que o usuário realize login.
+- RF03 — O sistema deve permitir que o usuário cadastre prédios.
+- RF04 — O sistema deve permitir que o usuário visualize a lista de prédios cadastrados.
+- RF05 — O sistema deve permitir que o usuário registre compromissos.
+- RF06 — O sistema deve permitir que o usuário associe compromissos a um prédio.
+- RF07 — O sistema deve permitir que o usuário edite e exclua compromissos.
+- RF08 — O sistema deve permitir que o usuário marque compromissos como concluídos.
+- RF09 — O sistema deve permitir que o usuário faça upload de documentos por prédio.
+- RF10 — O sistema deve permitir que o usuário visualize e baixe documentos armazenados.
+- RF11 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos registrados.
+
+### 2.4 Requisitos Não Funcionais (RNFs)
+- RNF01 — O sistema deve ter tempo de resposta inferior a 1500ms para operações comuns.
+- RNF02 — O sistema deve garantir autenticação segura utilizando criptografia de senha.
+- RNF03 — O sistema deve estar disponível 99% do tempo.
+- RNF04 — O sistema deve suportar acesso simultâneo de pelo menos 100 usuários.
+- RNF05 — A interface deve ser responsiva e adaptada para dispositivos móveis (mobile-first).
+- RNF06 — O sistema deve garantir a integridade e segurança dos arquivos enviados.
+- RNF07 — O sistema deve permitir fácil manutenção e evolução.
+
+### 2.5 Regras de negócio
+- RN01 — Apenas usuários autenticados podem acessar o sistema.
+- RN02 — Todo compromisso deve estar vinculado a um prédio.
+- RN03 — Apenas compromissos concluídos podem compor relatórios.
+- RN04 — Todo documento deve estar vinculado a um prédio.
+- RN05 — Não é permitido excluir prédios sem confirmação.
+
+### 2.6 Fora do escopo
+
+- Gestão financeira de condomínios
+- Comunicação com moradores (chat/avisos)
+- Integração com sistemas externos
+- Aplicativo mobile nativo
+- Controle de portaria e segurança
