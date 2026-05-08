@@ -40,6 +40,12 @@
 - [4.3 Fluxo de Interação do Usuário](#43-fluxo-de-interação-do-usuário)
 - [4.4 Feedback Inicial de Usuários](#44-feedback-inicial-de-usuários)
 
+### 5. Arquitetura do Sistema
+- [5.1 Diagrama C4](#51-diagrama-c4)
+    - [5.1.1 Nível 1: Diagrama de Contexto](#511-nível-1-diagrama-de-contexto)
+    - [5.1.2 Nível 2: Diagrama de Containers](#512-nível-2-diagrama-de-containers)
+    - [5.1.3 Nível 3: Diagrama de Componentes](#513-nível-3-diagrama-de-componentes)
+
 <hr/>
 
 ## 1. Visão de produto e impacto
@@ -491,3 +497,23 @@ Abaixo está um print da prototipação feita para as telas. O resutado pode ser
 ### 4.4 Feedback Inicial de Usuários
 
 É possível visualizar os prints dos feedbacks no caminho "./prints/feedbacks"
+
+## 5. Arquitetura do Sistema
+
+Esta seção demonstra como o sistema será construído.
+
+### 5.1 Diagrama C4
+#### 5.1.1 Nível 1: Diagrama de Contexto
+
+<img width="302" height="706" alt="image" src="https://github.com/user-attachments/assets/5b86597a-99a7-4203-8cf2-e73520caccd5" />
+
+#### 5.1.2 Nível 2: Diagrama de Containers
+
+<img width="494" height="869" alt="image" src="https://github.com/user-attachments/assets/25f76f0e-1542-42b7-9e00-333374b74091" />
+
+#### 5.1.3 Nível 3: Diagrama de Componentes
+
+<img width="1471" height="904" alt="image" src="https://github.com/user-attachments/assets/6125ad3d-bc81-43e0-8f38-4c9062336f46" />
+
+
+
