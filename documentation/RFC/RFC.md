@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>1.4.0
+- <strong>Versão: </strong>1.5.2
 
 <hr/>
 
@@ -45,6 +45,9 @@
     - [5.1.1 Nível 1: Diagrama de Contexto](#511-nível-1-diagrama-de-contexto)
     - [5.1.2 Nível 2: Diagrama de Containers](#512-nível-2-diagrama-de-containers)
     - [5.1.3 Nível 3: Diagrama de Componentes](#513-nível-3-diagrama-de-componentes)
+- [5.2 Modelo de Dados](#52-modelo-de-dados)
+    - [5.2.1 DER (Diagrama Entidade Relacionamento)](#521-der-diagrama-entidade-relacionamento)
+    - [5.2.2 Esquema Relacional](#522-esquema-relacional)
 
 <hr/>
 
@@ -515,5 +518,196 @@ Esta seção demonstra como o sistema será construído.
 
 <img width="1471" height="904" alt="image" src="https://github.com/user-attachments/assets/6125ad3d-bc81-43e0-8f38-4c9062336f46" />
 
+### 5.2 Modelo de dados
+
+#### Visão Geral
+
+O modelo de dados do sistema foi estruturado para permitir o gerenciamento de:
+
+* usuários;
+* prédios;
+* compromissos;
+* planejamento futuros;
+* documentos (atas e normas);
+* relatórios mensais.
+
+A modelagem foi desenvolvida considerando:
+
+* separação de responsabilidades;
+* escalabilidade;
+* facilidade de manutenção;
+* rastreabilidade entre entidades.
 
 
+#### 5.2.1 DER (Diagrama Entidade Relacionamento)
+
+```mermaid
+erDiagram
+
+    USUARIO {
+        int id PK
+        string nome
+        string email
+        string senhaHash
+        datetime criadoEm
+    }
+
+    PREDIO {
+        int id PK
+        string nome
+        string endereco
+        int usuarioId FK
+        datetime criadoEm
+    }
+
+    COMPROMISSO {
+        int id PK
+        string titulo
+        date dataCompromisso
+        time horarioCompromisso
+        string nomePrestadorServico
+        string detalhes
+        boolean concluido
+        int predioId FK
+        datetime criadoEm
+    }
+
+    PLANEJAMENTO {
+        int id PK
+        string titulo
+        date dataPlanejamento
+        decimal orcamentoPrevisto
+        string nomePrestadorServico
+        string detalhes
+        int predioId FK
+        datetime criadoEm
+    }
+
+    TIPO_DOCUMENTO {
+        int id PK
+        string nome
+    }
+
+    DOCUMENTO {
+        int id PK
+        string nomeArquivo
+        string urlArquivo
+        int tipoDocumentoId FK
+        int predioId FK
+        datetime criadoEm
+    }
+
+    RELATORIO {
+        int id PK
+        int mesReferencia
+        int anoReferencia
+        string nomeArquivo
+        string urlArquivo
+        int predioId FK
+        datetime geradoEm
+    }
+
+    USUARIO ||--o{ PREDIO : gerencia
+
+    PREDIO ||--o{ COMPROMISSO : possui
+    PREDIO ||--o{ PLANEJAMENTO : possui
+    PREDIO ||--o{ DOCUMENTO : possui
+    PREDIO ||--o{ RELATORIO : possui
+
+    TIPO_DOCUMENTO ||--o{ DOCUMENTO : categoriza
+```
+
+---
+
+#### 5.2.2 Esquema Relacional
+
+##### Tabela: usuarios
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| nome | VARCHAR(150) | NOT NULL |
+| email | VARCHAR(150) | UNIQUE |
+| senha_hash | VARCHAR(255) | NOT NULL |
+| criado_em | DATETIME | NOT NULL |
+
+---
+
+##### Tabela: predios
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| nome | VARCHAR(150) | NOT NULL |
+| endereco | VARCHAR(255) | NOT NULL |
+| usuario_id | INT | FK |
+| criado_em | DATETIME | NOT NULL |
+
+---
+
+##### Tabela: compromissos
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| titulo | VARCHAR(150) | NOT NULL |
+| data_compromisso | DATE | NOT NULL |
+| horario_compromisso | TIME | NOT NULL |
+| nome_prestador_servico | VARCHAR(150) | NULL |
+| detalhes | TEXT | NULL |
+| concluido | BOOLEAN | NOT NULL |
+| predio_id | INT | FK |
+| criado_em | DATETIME | NOT NULL |
+
+---
+
+##### Tabela: planejamentos
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| titulo | VARCHAR(150) | NOT NULL |
+| data_planejamento | DATE | NULL |
+| orcamento_previsto | DECIMAL(10,2) | NULL |
+| nome_prestador_servico | VARCHAR(150) | NULL |
+| detalhes | TEXT | NULL |
+| predio_id | INT | FK |
+| criado_em | DATETIME | NOT NULL |
+
+---
+
+##### Tabela: tipo_documento
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| nome | VARCHAR(50) | NOT NULL |
+
+---
+
+##### Tabela: documentos
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| nome_arquivo | VARCHAR(255) | NOT NULL |
+| url_arquivo | VARCHAR(255) | NOT NULL |
+| tipo_documento_id | INT | FK |
+| predio_id | INT | FK |
+| criado_em | DATETIME | NOT NULL |
+
+---
+
+##### Tabela: relatorios
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| mes_referencia | INT | NOT NULL |
+| ano_referencia | INT | NOT NULL |
+| nome_arquivo | VARCHAR(255) | NOT NULL |
+| url_arquivo | VARCHAR(255) | NOT NULL |
+| predio_id | INT | FK |
+| gerado_em | DATETIME | NOT NULL |
+
+---
