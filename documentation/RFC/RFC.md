@@ -516,7 +516,7 @@ Esta seção demonstra como o sistema será construído.
 
 #### 5.1.3 Nível 3: Diagrama de Componentes
 
-<img width="1471" height="904" alt="image" src="https://github.com/user-attachments/assets/6125ad3d-bc81-43e0-8f38-4c9062336f46" />
+<img width="1733" height="912" alt="image" src="https://github.com/user-attachments/assets/7c5fc183-afc4-43c3-8df0-5df3965f2d03" />
 
 ### 5.2 Modelo de dados
 
