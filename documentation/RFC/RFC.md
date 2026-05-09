@@ -225,6 +225,7 @@ graph TD
     A --> E[Gerenciar compromissos]
     A --> F[Gerenciar documentos]
     A --> G[Gerar relatórios]
+    A --> H[Gerenciar planejamentos]
 
     D --> D1[Cadastrar prédio]
     D --> D2[Visualizar prédios]
@@ -232,13 +233,19 @@ graph TD
     E --> E1[Criar compromisso]
     E --> E2[Editar compromisso]
     E --> E3[Concluir compromisso]
-    E --> E4[Associar a prédio]
+    E --> E4[Remover compromisso]
 
     F --> F1[Upload de documentos]
     F --> F2[Visualizar documentos]
     F --> F3[Download de documentos]
+    F --> F4[Remover documentos]
 
     G --> G1[Gerar relatório mensal]
+    G --> G2[Download de relatório mensal]
+
+    H --> H1[Criar planejamento]
+    H --> H2[Editar planejamento]
+    H --> H3[Remover planejamento]
 ```
 
 ### 2.3 Requisitos Funcionais (RFs)
@@ -253,6 +260,7 @@ graph TD
 - RF09 — O sistema deve permitir que o usuário faça upload de documentos por prédio.
 - RF10 — O sistema deve permitir que o usuário visualize e baixe documentos armazenados.
 - RF11 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos registrados.
+- RF12 — O sistema deve permitir que o usuário crie, edite e exclua planejamentos futuros.
 
 ### 2.4 Requisitos Não Funcionais (RNFs)
 - RNF01 — O sistema deve ter tempo de resposta inferior a 1500ms para operações comuns.
@@ -268,7 +276,8 @@ graph TD
 - RN02 — Todo compromisso deve estar vinculado a um prédio.
 - RN03 — Apenas compromissos concluídos podem compor relatórios.
 - RN04 — Todo documento deve estar vinculado a um prédio.
-- RN05 — Não é permitido excluir prédios sem confirmação.
+- RN05 — Todo planejamento futuro deve estar vinculado a um prédio.
+- RN06 — Não é permitido excluir prédios sem confirmação.
 
 ### 2.6 Fora do escopo
 
@@ -359,6 +368,7 @@ B --> D[Selecionar prédio]
 D --> E[Visualizar compromissos]
 D --> F[Visualizar documentos]
 D --> G[Visualizar relatórios]
+D --> H[Visualizar planejamentos]
 ```
 
 Diagrama de sequência
@@ -391,7 +401,7 @@ API-->>FE: Confirmação
 U->>FE: Seleciona prédio
 FE->>API: GET detalhes do prédio
 API->>DB: Buscar dados relacionados
-DB-->>API: Dados (compromissos, documentos, relatórios)
+DB-->>API: Dados (compromissos, documentos, relatórios, planejamentos)
 API-->>FE: Retorna dados
 ```
 
