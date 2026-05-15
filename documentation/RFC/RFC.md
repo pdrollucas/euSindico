@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>1.5.2
+- <strong>Versão: </strong>1.5.4
 
 <hr/>
 
@@ -48,6 +48,8 @@
 - [5.2 Modelo de Dados](#52-modelo-de-dados)
     - [5.2.1 DER (Diagrama Entidade Relacionamento)](#521-der-diagrama-entidade-relacionamento)
     - [5.2.2 Esquema Relacional](#522-esquema-relacional)
+- [5.3 Principais componentes](#53-principais-componentes)
+- [5.4 Stack tecnológica](#54-stack-tecnológica)
 
 <hr/>
 
@@ -768,3 +770,157 @@ erDiagram
 | gerado_em | DATETIME | NOT NULL |
 
 ---
+
+### 5.3 Principais componentes
+
+O sistema euSíndico é estruturado em torno de seis módulos funcionais, todos expostos por uma API RESTful desenvolvida em ASP.NET Core, seguindo o padrão de separação em camadas Controller → Service → Repository.
+
+- Módulo de Autenticação:<br/>
+Responsável pelo registro de novas contas (RF01) e pelo processo de login (RF02). É composto pelo AuthController, que recebe as requisições, e pelo AuthService, que processa as regras de autenticação e permissões de acesso. A camada de repositório realiza a consulta de usuários no banco de dados MySQL via Entity Framework.
+
+- Módulo de Gerenciamento de Prédios:<br/>
+Atende aos requisitos de cadastro, visualização, edição e remoção de prédios (RF03–RF06). O PredioController delega as operações ao PredioService, que aplica as regras de negócio pertinentes antes de persistir ou consultar dados via repositório.
+
+- Módulo de Compromissos:<br/>
+Cobre o ciclo completo de gerenciamento de compromissos (RF07–RF12), incluindo o registro, associação a um prédio, edição, remoção e marcação como concluído. O CompromissoService centraliza as regras de negócio, servindo também como fonte de dados para o módulo de relatórios.
+
+- Módulo de Planejamentos Futuros:<br/>
+Gerencia o registro, visualização, edição e remoção de planejamentos (RF13–RF16) por meio do PlanejamentoController e PlanejamentoService, com persistência no banco de dados MySQL.
+
+- Módulo de Documentos:<br/>
+Responsável pelo envio, visualização, download e remoção de documentos vinculados a prédios (RF17–RF20). O DocumentoService integra-se diretamente ao AWS S3 via HTTPS para operações de upload e download, registrando apenas os metadados dos arquivos no banco de dados relacional.
+
+- Módulo de Relatórios:<br/>
+Gera, armazena e disponibiliza relatórios mensais com base nos compromissos concluídos (RF21–RF23). O RelatorioService consulta os dados de compromissos via repositório, produz os relatórios em formato PDF e os persiste no AWS S3, deixando-os disponíveis para visualização e download pelo usuário.
+
+- Camada de Persistência:<br/>
+Transversal a todos os módulos, a camada de repositórios (Repositories) abstrai o acesso ao banco de dados MySQL utilizando o Entity Framework como ORM. Centraliza todas as operações de leitura e escrita, garantindo consistência e desacoplamento entre a lógica de negócio e a infraestrutura de dados.
+
+- Armazenamento de Arquivos:<br/>
+O AWS S3 atua como componente de infraestrutura dedicado ao armazenamento de arquivos binários — documentos (atas e normas) e relatórios em PDF —, acessado exclusivamente pelos serviços DocumentoService e RelatorioService via protocolo HTTPS.
+
+### 5.4 Stack tecnológica
+
+A stack tecnológica do projeto foi definida considerando:
+
+- experiência prévia do desenvolvedor;
+- facilidade de manutenção;
+- produtividade no desenvolvimento;
+- escalabilidade;
+- integração entre tecnologias;
+- adequação ao contexto web mobile-first.
+
+---
+
+#### Vue.js
+
+O front-end da aplicação será desenvolvido utilizando Vue.js.
+
+A tecnologia foi escolhida devido:
+
+- facilidade de desenvolvimento de interfaces reativas;
+- componentização da aplicação;
+- alta produtividade no desenvolvimento;
+- boa integração com APIs REST;
+- experiência prévia do desenvolvedor com o framework.
+
+Além disso, Vue.js possui excelente compatibilidade com aplicações mobile-first e permite construção de interfaces dinâmicas e organizadas.
+
+---
+
+#### Vuetify
+
+O framework Vuetify será utilizado na construção da interface gráfica da aplicação.
+
+Sua escolha ocorreu devido:
+
+- disponibilidade de componentes prontos;
+- produtividade no desenvolvimento;
+- facilidade de criação de layouts responsivos;
+- integração nativa com Vue.js;
+- suporte à abordagem mobile-first.
+
+O uso do Vuetify também auxilia na padronização visual do sistema.
+
+---
+
+#### ASP.NET Core (C#)
+
+O backend será desenvolvido utilizando ASP.NET Core com linguagem C#.
+
+A tecnologia foi escolhida devido:
+
+- alta performance;
+- robustez para construção de APIs;
+- organização arquitetural;
+- forte tipagem da linguagem;
+- facilidade de manutenção;
+- integração com Entity Framework Core;
+- experiência prévia do desenvolvedor.
+
+ASP.NET Core também oferece recursos nativos relacionados à segurança, autenticação e escalabilidade.
+
+---
+
+#### Entity Framework Core
+
+O Entity Framework Core será utilizado como ORM (Object Relational Mapper) da aplicação.
+
+Sua escolha ocorreu devido:
+
+- facilidade de integração com ASP.NET Core;
+- produtividade no acesso a dados;
+- redução de código SQL manual;
+- suporte a migrations;
+- facilidade de manutenção do banco de dados.
+
+O ORM permitirá maior organização e abstração da camada de persistência.
+
+---
+
+#### MySQL
+
+O banco de dados relacional utilizado será o MySQL.
+
+A tecnologia foi escolhida devido:
+
+- confiabilidade;
+- ampla utilização no mercado;
+- boa performance;
+- compatibilidade com aplicações web;
+- facilidade de integração com Entity Framework Core.
+
+Além disso, o modelo relacional atende adequadamente às necessidades de organização e relacionamento das entidades do sistema.
+
+---
+
+#### AWS S3
+
+O armazenamento de arquivos será realizado utilizando AWS S3 (Amazon Simple Storage Service).
+
+A tecnologia foi escolhida devido:
+
+- armazenamento escalável de arquivos;
+- alta disponibilidade;
+- segurança;
+- facilidade de integração com aplicações web;
+- suporte a upload e download de arquivos;
+- ampla utilização no mercado.
+
+Além disso, o AWS S3 oferece boa integração com aplicações ASP.NET Core e permite gerenciamento eficiente dos arquivos enviados pelos usuários.
+
+---
+
+#### Figma
+
+O Figma será utilizado para prototipação das interfaces da aplicação.
+
+Sua escolha ocorreu devido:
+
+- facilidade de criação de protótipos;
+- colaboração visual;
+- validação de fluxo de navegação;
+- organização da identidade visual;
+- agilidade na construção de interfaces.
+
+O Figma será utilizado durante a etapa de definição da experiência do usuário e prototipação das telas.
