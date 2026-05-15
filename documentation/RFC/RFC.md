@@ -210,57 +210,104 @@ Os principais fluxos do sistema incluem:
 - Criar, editar e visualizar compromissos;
 - Associar compromissos a prédios;
 - Registrar conclusão de compromissos;
-- Fazer upload de documentos (atas, normas, relatórios);
+- Fazer upload de documentos (atas e normas);
+- Realizar download de documentos (atas, normas e relatórios);
 - Consultar documentos por prédio;
 - Gerar relatórios mensais de compromissos.
 
 Diagrama de casos de uso:
 ```mermaid
-graph TD
-    A[Usuário / Síndico]
+flowchart TB
 
-    A --> B[Criar conta]
-    A --> C[Realizar login]
-    A --> D[Gerenciar prédios]
-    A --> E[Gerenciar compromissos]
-    A --> F[Gerenciar documentos]
-    A --> G[Gerar relatórios]
-    A --> H[Gerenciar planejamentos]
+    usuario[👤 Usuário / Síndico]
 
-    D --> D1[Cadastrar prédio]
-    D --> D2[Visualizar prédios]
+    subgraph autenticacao [Autenticação]
+        UC1((Realizar login))
+    end
 
-    E --> E1[Criar compromisso]
-    E --> E2[Editar compromisso]
-    E --> E3[Concluir compromisso]
-    E --> E4[Remover compromisso]
+    subgraph predios [Prédios]
+        UC2((Criar prédio))
+        UC3((Visualizar prédios))
+        UC4((Editar prédio))
+        UC5((Remover prédio))
+    end
 
-    F --> F1[Upload de documentos]
-    F --> F2[Visualizar documentos]
-    F --> F3[Download de documentos]
-    F --> F4[Remover documentos]
+    subgraph compromissos [Compromissos]
+        UC6((Criar compromisso))
+        UC7((Visualizar compromissos))
+        UC8((Editar compromisso))
+        UC9((Concluir compromisso))
+        UC10((Remover compromisso))
+    end
 
-    G --> G1[Gerar relatório mensal]
-    G --> G2[Download de relatório mensal]
+    subgraph planejamentos [Planejamentos]
+        UC11((Cadastrar planejamento))
+        UC12((Visualizar planejamentos))
+        UC13((Editar planejamento))
+        UC14((Remover planejamento))
+    end
 
-    H --> H1[Criar planejamento]
-    H --> H2[Editar planejamento]
-    H --> H3[Remover planejamento]
+    subgraph documentos [Documentos]
+        UC15((Enviar documento))
+        UC16((Visualizar documentos))
+        UC17((Baixar documento))
+        UC18((Remover documento))
+    end
+
+    subgraph relatorios [Relatórios]
+        UC19((Gerar relatório mensal))
+        UC20((Visualizar relatório mensal))
+        UC21((Baixar relatório mensal))
+    end
+
+    usuario --> UC1
+    usuario --> UC2
+    usuario --> UC3
+    usuario --> UC4
+    usuario --> UC5
+    usuario --> UC6
+    usuario --> UC7
+    usuario --> UC8
+    usuario --> UC9
+    usuario --> UC10
+    usuario --> UC11
+    usuario --> UC12
+    usuario --> UC13
+    usuario --> UC14
+    usuario --> UC15
+    usuario --> UC16
+    usuario --> UC17
+    usuario --> UC18
+    usuario --> UC19
+    usuario --> UC20
+    usuario --> UC21
 ```
 
 ### 2.3 Requisitos Funcionais (RFs)
+
 - RF01 — O sistema deve permitir que o usuário crie uma conta.
 - RF02 — O sistema deve permitir que o usuário realize login.
 - RF03 — O sistema deve permitir que o usuário cadastre prédios.
-- RF04 — O sistema deve permitir que o usuário visualize a lista de prédios cadastrados.
-- RF05 — O sistema deve permitir que o usuário registre compromissos.
-- RF06 — O sistema deve permitir que o usuário associe compromissos a um prédio.
-- RF07 — O sistema deve permitir que o usuário edite e exclua compromissos.
-- RF08 — O sistema deve permitir que o usuário marque compromissos como concluídos.
-- RF09 — O sistema deve permitir que o usuário faça upload de documentos por prédio.
-- RF10 — O sistema deve permitir que o usuário visualize e baixe documentos armazenados.
-- RF11 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos registrados.
-- RF12 — O sistema deve permitir que o usuário crie, edite e exclua planejamentos futuros.
+- RF04 — O sistema deve permitir que o usuário visualize prédios cadastrados.
+- RF05 — O sistema deve permitir que o usuário edite prédios cadastrados.
+- RF06 — O sistema deve permitir que o usuário remova prédios cadastrados.
+- RF07 — O sistema deve permitir que o usuário registre compromissos.
+- RF08 — O sistema deve permitir que o usuário associe compromissos a um prédio.
+- RF09 — O sistema deve permitir que o usuário visualize compromissos cadastrados.
+- RF10 — O sistema deve permitir que o usuário edite compromissos cadastrados.
+- RF11 — O sistema deve permitir que o usuário remova compromissos cadastrados.
+- RF12 — O sistema deve permitir que o usuário marque compromissos como concluídos.
+- RF13 — O sistema deve permitir que o usuário registre planejamentos futuros.
+- RF14 — O sistema deve permitir que o usuário visualize planejamentos futuros.
+- RF15 — O sistema deve permitir que o usuário edite planejamentos futuros.
+- RF16 — O sistema deve permitir que o usuário remova planejamentos futuros.
+- RF17 — O sistema deve permitir que o usuário envie documentos vinculados a um prédio.
+- RF18 — O sistema deve permitir que o usuário visualize documentos armazenados.
+- RF19 — O sistema deve permitir que o usuário baixe documentos armazenados.
+- RF20 — O sistema deve permitir que o usuário remova documentos armazenados.
+- RF21 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos concluídos.
+- RF22 — O sistema deve permitir que o usuário visualize relatórios mensais gerados.
+- RF23 — O sistema deve permitir que o usuário baixe relatórios mensais gerados.
 
 ### 2.4 Requisitos Não Funcionais (RNFs)
 - RNF01 — O sistema deve ter tempo de resposta inferior a 1500ms para operações comuns.
