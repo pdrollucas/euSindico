@@ -58,6 +58,8 @@
 ### 7. Planejamento do projeto
 - [7.1 Marcos de desenvolvimento](#71-marcos-de-desenvolvimento)
 
+### [8. Referências](#8-referencias)
+
 <hr/>
 
 ## 1. Visão de produto e impacto
@@ -932,7 +934,7 @@ Sua escolha ocorreu devido:
 
 O Figma será utilizado durante a etapa de definição da experiência do usuário e prototipação das telas.
 
-## Segurança e Privacidade
+## 6. Segurança e Privacidade
 
 A segurança da informação é um aspecto fundamental do projeto, considerando que o sistema armazenará dados de usuários, informações de condomínios e documentos enviados pelo síndico. Durante o desenvolvimento serão adotadas práticas de desenvolvimento seguro para reduzir riscos de vulnerabilidades e proteger as informações armazenadas.
 
@@ -1000,7 +1002,7 @@ Após a solicitação, serão removidos:
 
 A exclusão será realizada de forma permanente.
 
-## Planejamento do projeto
+## 7. Planejamento do projeto
 
 O desenvolvimento do projeto será realizado de forma incremental, permitindo a validação contínua das funcionalidades implementadas e a evolução gradual da aplicação até sua versão final.
 
@@ -1017,5 +1019,23 @@ O desenvolvimento do projeto será realizado de forma incremental, permitindo a 
 | M7 | Testes funcionais, correções e melhorias de usabilidade | Semana 10 e 11 |
 | M8 | Implantação da aplicação em ambiente de produção e entrega da versão final | Semana 12 |
 
+## 8. Referências
 
+### Documentação técnica
 
+- Vue.js. Vue.js Documentation. Disponível em: https://vuejs.org/. Acesso em: jun. 2026.
+- Vuetify. Vuetify Documentation. Disponível em: https://vuetifyjs.com/. Acesso em: jun. 2026.
+- Microsoft. ASP.NET Core Documentation. Disponível em: https://learn.microsoft.com/aspnet/core. Acesso em: jun. 2026.
+- Microsoft. Entity Framework Core Documentation. Disponível em: https://learn.microsoft.com/ef/core. Acesso em: jun. 2026.
+- Oracle. MySQL Documentation. Disponível em: https://dev.mysql.com/doc/. Acesso em: jun. 2026.
+- Amazon Web Services. Amazon S3 Documentation. Disponível em: https://docs.aws.amazon.com/s3/. Acesso em: jun. 2026.
+- JWT. JSON Web Tokens (JWT). Disponível em: https://jwt.io/. Acesso em: jun. 2026.
+- OWASP Foundation. OWASP Top 10. Disponível em: https://owasp.org/www-project-top-ten/. Acesso em: jun. 2026.
+- Governo Federal. Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Disponível em: https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm. Acesso em: jun. 2026.
+
+### Ferramentas utilizadas
+
+- Visual Studio. Disponível em: https://visualstudio.microsoft.com/ Acesso em: jun. 2026
+- Visual Studio Code. Disponível em: https://code.visualstudio.com/ Acesso em: jun. 2026
+- GitHub. Disponível em: https://github.com/ Acesso em: jun. 2026
+- Figma. Disponível em: https://www.figma.com/ Acesso em: jun. 2026
