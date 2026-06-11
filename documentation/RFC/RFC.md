@@ -51,6 +51,10 @@
 - [5.3 Principais componentes](#53-principais-componentes)
 - [5.4 Stack tecnológica](#54-stack-tecnológica)
 
+### 6. Segurança e Privacidade
+- [6.1 Segurança da aplicação](#61-segurança-da-aplicação)
+- [6.2 Privacidade e LGPD](#62-privacidade-e-lgpd)
+
 <hr/>
 
 ## 1. Visão de produto e impacto
@@ -924,3 +928,75 @@ Sua escolha ocorreu devido:
 - agilidade na construção de interfaces.
 
 O Figma será utilizado durante a etapa de definição da experiência do usuário e prototipação das telas.
+
+## Segurança e Privacidade
+
+A segurança da informação é um aspecto fundamental do projeto, considerando que o sistema armazenará dados de usuários, informações de condomínios e documentos enviados pelo síndico. Durante o desenvolvimento serão adotadas práticas de desenvolvimento seguro para reduzir riscos de vulnerabilidades e proteger as informações armazenadas.
+
+### 6.1 Segurança da Aplicação
+
+#### Autenticação e Autorização
+
+O acesso ao sistema será realizado por meio de autenticação utilizando JWT (JSON Web Token). Após o login, cada requisição protegida deverá apresentar um token válido para acesso aos recursos da aplicação. Além disso, somente usuários autenticados poderão acessar informações relacionadas aos seus próprios condomínios.
+
+#### Armazenamento Seguro de Senhas
+
+Será utilizado algoritmo de hash seguro (BCrypt) para armazenamento das credenciais, impossibilitando a recuperação direta da senha original.
+
+#### Segurança dos Arquivos
+
+Os documentos enviados pelos usuários serão armazenados no AWS S3. O acesso aos arquivos será realizado apenas por usuários autenticados e autorizados, evitando exposição pública dos documentos. Também serão realizadas validações quanto ao tipo e tamanho dos arquivos enviados.
+
+#### Proteção contra OWASP Top 10
+
+Durante o desenvolvimento serão adotadas medidas para reduzir as principais vulnerabilidades descritas pelo OWASP Top 10, incluindo:
+
+- autenticação segura;
+- controle de autorização;
+- validação de entrada de dados;
+- proteção contra SQL Injection através do Entity Framework Core;
+- proteção contra Cross-Site Scripting (XSS) por meio da renderização segura do Vue.js;
+- utilização de HTTPS para comunicação entre cliente e servidor;
+- tratamento adequado de erros sem exposição de informações sensíveis.
+
+### 6.2 Privacidade e LGPD
+
+O sistema será desenvolvido considerando os princípios estabelecidos pela Lei Geral de Proteção de Dados (LGPD), coletando apenas as informações necessárias para o funcionamento da aplicação.
+
+#### Dados coletados
+
+Serão armazenados os seguintes dados:
+
+- nome do usuário;
+- endereço de e-mail;
+- senha (armazenada em formato criptografado por hash);
+- informações dos prédios cadastrados;
+- compromissos;
+- planejamentos;
+- documentos enviados;
+- relatórios gerados.
+
+Não serão coletados dados considerados sensíveis pela LGPD.
+
+#### Armazenamento dos Dados
+
+Os dados estruturados serão armazenados em banco de dados MySQL. Os documentos enviados serão armazenados no AWS S3. Todo o acesso ocorrerá mediante autenticação do usuário.
+
+#### Exclusão de Dados
+
+O usuário poderá solicitar a exclusão de sua conta e dos dados associados.
+
+Após a solicitação, serão removidos:
+
+- dados cadastrais;
+- prédios;
+- compromissos;
+- planejamentos;
+- documentos;
+- relatórios gerados.
+
+A exclusão será realizada de forma permanente.
+
+
+
+
