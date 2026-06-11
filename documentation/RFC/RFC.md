@@ -55,6 +55,9 @@
 - [6.1 Segurança da aplicação](#61-segurança-da-aplicação)
 - [6.2 Privacidade e LGPD](#62-privacidade-e-lgpd)
 
+### 7. Planejamento do projeto
+- [7.1 Marcos de desenvolvimento](#71-marcos-de-desenvolvimento)
+
 <hr/>
 
 ## 1. Visão de produto e impacto
@@ -997,6 +1000,22 @@ Após a solicitação, serão removidos:
 
 A exclusão será realizada de forma permanente.
 
+## Planejamento do projeto
+
+O desenvolvimento do projeto será realizado de forma incremental, permitindo a validação contínua das funcionalidades implementadas e a evolução gradual da aplicação até sua versão final.
+
+### 7.1 Marcos de desenvolvimento
+
+| Marco | Descrição | Prazo |
+| ------ | --------- | ------ |
+| M1 | Configuração do ambiente de desenvolvimento (Vue.js, ASP.NET Core, MySQL e AWS S3) | Semana 1 |
+| M2 | Definição da arquitetura e modelagem de dados | Semana 2 |
+| M3 | Implementação da autenticação e gerenciamento de prédios | Semana 3 e 4 |
+| M4 | Implementação dos módulos de compromissos e planejamentos futuros | Semana 5 e 6 |
+| M5 | Implementação do gerenciamento de documentos | Semana 7 e 8 |
+| M6 | Implementação da geração de relatórios mensais | Semana 9 |
+| M7 | Testes funcionais, correções e melhorias de usabilidade | Semana 10 e 11 |
+| M8 | Implantação da aplicação em ambiente de produção e entrega da versão final | Semana 12 |
 
 
 
