@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>1.5.4
+- <strong>Versão: </strong>1.8.1
 
 <hr/>
 
@@ -58,8 +58,9 @@
 ### 7. Planejamento do projeto
 - [7.1 Marcos de desenvolvimento](#71-marcos-de-desenvolvimento)
 
-### [8. Referências](#8-referencias)
-
+### 8. Referências
+- [8.1 Documentação técnica](#81-documentação-técnica)
+- [8.2 Ferramentas utilizadas](#82-ferramentas-utilizadas)
 <hr/>
 
 ## 1. Visão de produto e impacto
@@ -1021,7 +1022,7 @@ O desenvolvimento do projeto será realizado de forma incremental, permitindo a 
 
 ## 8. Referências
 
-### Documentação técnica
+### 8.1 Documentação técnica
 
 - Vue.js. Vue.js Documentation. Disponível em: https://vuejs.org/. Acesso em: jun. 2026.
 - Vuetify. Vuetify Documentation. Disponível em: https://vuetifyjs.com/. Acesso em: jun. 2026.
@@ -1033,7 +1034,7 @@ O desenvolvimento do projeto será realizado de forma incremental, permitindo a 
 - OWASP Foundation. OWASP Top 10. Disponível em: https://owasp.org/www-project-top-ten/. Acesso em: jun. 2026.
 - Governo Federal. Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Disponível em: https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm. Acesso em: jun. 2026.
 
-### Ferramentas utilizadas
+### 8.2 Ferramentas utilizadas
 
 - Visual Studio. Disponível em: https://visualstudio.microsoft.com/ Acesso em: jun. 2026
 - Visual Studio Code. Disponível em: https://code.visualstudio.com/ Acesso em: jun. 2026
