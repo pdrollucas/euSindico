@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>1.8.1
+- <strong>Versão: </strong>2.0.0
 
 <hr/>
 
@@ -430,6 +430,7 @@ flowchart LR
 - RN10 — Planejamentos futuros poderão ser cadastrados sem data definida e não poderão ser marcados como concluídos.
 - RN11 — O sistema aceitará apenas arquivos nos formatos PDF, DOCX, XLSX, JPG e PNG, com tamanho máximo de 20 MB.
 - RN12 — Os relatórios mensais deverão ser gerados em formato PDF, agrupando os compromissos concluídos do mês e ano selecionados.
+- RN13 — Os compromissos deverão ser apresentados em ordem cronológica crescente, considerando a data e o horário do compromisso.
 
 ### 2.6 Fora do escopo
 
@@ -440,35 +441,54 @@ flowchart LR
 - Controle de portaria e segurança
 
 ## 3. Fluxos e comportamento do sistema
-### 3.1 Fluxo principal do usuário
+### 3.1 Fluxo Principal do Usuário
 
-- <strong>Fluxo "Gerenciamento de compromissos":</strong>
-1. Usuário realiza o login no sistema
-2. Acessa a lista de compromissos
-3. Adiciona compromisso
-4. Visualiza e/ou edita detalhes de um compromisso
-5. Conclui ou remove compromisso
+#### Fluxo "Gerenciamento de Compromissos"
 
-Diagrama de fluxo:
+1. Usuário realiza o login no sistema.
+2. Acessa a tela de compromissos.
+3. Pesquisa compromissos pelo título ou aplica filtros.
+4. Visualiza a lista de compromissos ordenada por data e horário.
+5. Adiciona um novo compromisso.
+6. Visualiza os detalhes de um compromisso.
+7. Edita, conclui ou remove um compromisso.
+
+**Diagrama de fluxo**
+
 ```mermaid
 flowchart TD
 
-A[Login no sistema] --> B[Acessar lista de compromissos]
+A[Login no sistema] --> B[Tela de compromissos]
 
-B --> C[Adicionar compromisso]
-B --> D[Selecionar compromisso existente]
+B --> C[Pesquisar compromisso]
 
-D --> E[Visualizar detalhes]
-E --> F[Editar compromisso]
+B --> D[Abrir filtros]
 
-F --> G[Salvar alterações]
-C --> G
+D --> E[Filtrar por prédio]
+D --> F[Filtrar compromissos atrasados]
+D --> G[Filtrar compromissos de hoje]
 
-G --> H[Marcar como concluído]
-G --> I[Remover compromisso]
+C --> H[Lista de compromissos]
+E --> H
+F --> H
+G --> H
+
+H --> I[Selecionar compromisso]
+
+B --> J[Adicionar compromisso]
+
+J --> K[Salvar compromisso]
+
+I --> L[Editar compromisso]
+L --> M[Salvar alterações]
+
+I --> N[Marcar como concluído]
+
+I --> O[Remover compromisso]
 ```
 
-Diagrama de sequência
+**Diagrama de sequência**
+
 ```mermaid
 sequenceDiagram
 
@@ -478,52 +498,73 @@ participant API as Back-end
 participant DB as Banco de Dados
 
 U->>FE: Realiza login
-FE->>API: Envia credenciais
-API->>DB: Valida usuário
-DB-->>API: OK
-API-->>FE: Autenticado
+FE->>API: POST /auth/login
+API->>DB: Validar credenciais
+DB-->>API: Usuário válido
+API-->>FE: JWT
 
-U->>FE: Acessa compromissos
+U->>FE: Acessa tela de compromissos
 FE->>API: GET /compromissos
 API->>DB: Buscar compromissos
-DB-->>API: Lista
+DB-->>API: Lista ordenada por data e horário
 API-->>FE: Retorna dados
 
-U->>FE: Cria/edita compromisso
-FE->>API: POST/PUT compromisso
-API->>DB: Salvar/atualizar
+U->>FE: Pesquisa por título ou aplica filtros
+FE->>API: GET /compromissos?titulo=&predio=&periodo=
+API->>DB: Consultar compromissos
+DB-->>API: Lista filtrada
+API-->>FE: Atualiza a lista
+
+U->>FE: Cria ou edita compromisso
+FE->>API: POST/PUT /compromissos
+API->>DB: Salvar alterações
 DB-->>API: OK
 API-->>FE: Confirmação
 
-U->>FE: Concluir/remover compromisso
-FE->>API: PATCH/DELETE
-API->>DB: Atualiza/remove
+U->>FE: Conclui ou remove compromisso
+FE->>API: PATCH/DELETE /compromissos/{id}
+API->>DB: Atualizar ou remover
 DB-->>API: OK
 API-->>FE: Confirmação
 ```
 
-- <strong>Fluxo "Gerenciamento de prédios":</strong>
-1. Usuário realiza login no sistema
-2. Acessa a lista de prédios
-3. Adiciona um prédio
-4. Visualiza menus referentes a compromissos, documentos e relatórios de atividades
+---
 
-Diagrama de fluxo:
+#### Fluxo "Gerenciamento de Prédios"
+
+1. Usuário realiza o login no sistema.
+2. Acessa a lista de prédios.
+3. Adiciona um novo prédio ou seleciona um prédio existente.
+4. Acessa a página do prédio.
+5. Seleciona um dos módulos disponíveis:
+   * Compromissos
+   * Planejamentos
+   * Atas
+   * Normas
+   * Relatórios
+6. Visualiza os dados do módulo selecionado.
+
+**Diagrama de fluxo**
+
 ```mermaid
 flowchart TD
 
-A[Login no sistema] --> B[Acessar lista de prédios]
+A[Login no sistema] --> B[Lista de prédios]
 
 B --> C[Adicionar prédio]
 B --> D[Selecionar prédio]
 
-D --> E[Visualizar compromissos]
-D --> F[Visualizar documentos]
-D --> G[Visualizar relatórios]
-D --> H[Visualizar planejamentos]
+D --> E[Página do prédio]
+
+E --> F[Compromissos]
+E --> G[Planejamentos]
+E --> H[Atas]
+E --> I[Normas]
+E --> J[Relatórios]
 ```
 
-Diagrama de sequência
+**Diagrama de sequência**
+
 ```mermaid
 sequenceDiagram
 
@@ -533,15 +574,15 @@ participant API as Back-end
 participant DB as Banco de Dados
 
 U->>FE: Realiza login
-FE->>API: Envia credenciais
-API->>DB: Valida usuário
-DB-->>API: OK
-API-->>FE: Autenticado
+FE->>API: POST /auth/login
+API->>DB: Validar credenciais
+DB-->>API: Usuário válido
+API-->>FE: JWT
 
-U->>FE: Acessa prédios
+U->>FE: Acessa lista de prédios
 FE->>API: GET /predios
-API->>DB: Buscar prédios
-DB-->>API: Lista
+API->>DB: Buscar prédios do usuário
+DB-->>API: Lista de prédios
 API-->>FE: Retorna dados
 
 U->>FE: Adiciona prédio
@@ -550,11 +591,90 @@ API->>DB: Salvar prédio
 DB-->>API: OK
 API-->>FE: Confirmação
 
-U->>FE: Seleciona prédio
-FE->>API: GET detalhes do prédio
-API->>DB: Buscar dados relacionados
-DB-->>API: Dados (compromissos, documentos, relatórios, planejamentos)
-API-->>FE: Retorna dados
+U->>FE: Seleciona um prédio
+FE->>API: GET /predios/{id}
+API->>DB: Buscar informações do prédio
+DB-->>API: Dados do prédio
+API-->>FE: Exibe página do prédio
+
+U->>FE: Seleciona um módulo
+FE->>API: GET /predios/{id}/{modulo}
+API->>DB: Consultar dados do módulo
+DB-->>API: Resultado
+API-->>FE: Exibe informações
+```
+
+---
+
+#### Fluxo "Gerenciamento da Conta"
+
+1. Usuário realiza o login no sistema.
+2. Acessa a tela de configurações.
+3. Visualiza seus dados cadastrais.
+4. Edita nome, e-mail ou senha.
+5. Salva as alterações.
+6. Opcionalmente realiza logout.
+7. Opcionalmente solicita a exclusão definitiva da conta.
+
+**Diagrama de fluxo**
+
+```mermaid
+flowchart TD
+
+A[Login] --> B[Tela de Configurações]
+
+B --> C[Visualizar perfil]
+
+C --> D[Editar perfil]
+
+D --> E[Salvar alterações]
+
+B --> F[Realizar logout]
+
+B --> G[Excluir conta]
+
+G --> H[Confirmar exclusão]
+```
+
+**Diagrama de sequência**
+
+```mermaid
+sequenceDiagram
+
+participant U as Usuário
+participant FE as Front-end
+participant API as Back-end
+participant DB as Banco de Dados
+
+U->>FE: Acessa Configurações
+
+FE->>API: GET /perfil
+API->>DB: Buscar dados do usuário
+DB-->>API: Dados do usuário
+API-->>FE: Exibe perfil
+
+U->>FE: Edita informações
+
+FE->>API: PUT /perfil
+API->>DB: Atualizar cadastro
+DB-->>API: OK
+API-->>FE: Confirmação
+
+alt Logout
+
+U->>FE: Solicita logout
+FE->>API: POST /auth/logout
+API-->>FE: Sessão encerrada
+
+else Exclusão da conta
+
+U->>FE: Solicita exclusão
+FE->>API: DELETE /perfil
+API->>DB: Excluir usuário e dados relacionados
+DB-->>API: OK
+API-->>FE: Conta excluída
+
+end
 ```
 
 ### 3.2 Fluxos alternativos
@@ -596,6 +716,7 @@ A[Login] --> B[Home]
 
 B --> C[Gestão de Compromissos]
 B --> D[Gestão de Prédios]
+B --> F[Configurações]
 
 C --> C1[Listagem de Compromissos]
 
@@ -607,6 +728,8 @@ E --> E2[Relatórios]
 E --> E3[Atas]
 E --> E4[Normas]
 E --> E5[Planejamento]
+
+F --> F1[Detalhes do perfil]
 ```
 
 ### 4.2 Wireframes ou Mockups das Telas
@@ -678,7 +801,7 @@ Esta seção demonstra como o sistema será construído.
 
 #### 5.1.3 Nível 3: Diagrama de Componentes
 
-<img width="1733" height="912" alt="image" src="https://github.com/user-attachments/assets/7c5fc183-afc4-43c3-8df0-5df3965f2d03" />
+<img width="1498" height="633" alt="image" src="https://github.com/user-attachments/assets/e0978e8a-e48b-45ac-ab50-2c36cda1b545" />
 
 ### 5.2 Modelo de dados
 
@@ -845,6 +968,8 @@ erDiagram
 | id | INT | PK |
 | nome | VARCHAR(50) | NOT NULL |
 
+Valores diponíveis são "Atas" e "Normas"
+
 ---
 
 ##### Tabela: documentos
@@ -874,33 +999,34 @@ erDiagram
 
 ---
 
-### 5.3 Principais componentes
+### 5.3 Principais Componentes
 
-O sistema euSíndico é estruturado em torno de seis módulos funcionais, todos expostos por uma API RESTful desenvolvida em ASP.NET Core, seguindo o padrão de separação em camadas Controller → Service → Repository.
+O sistema **euSíndico** é estruturado em torno de sete módulos funcionais, todos expostos por uma API RESTful desenvolvida em ASP.NET Core, seguindo a arquitetura em camadas **Controller → Service → Repository**.
 
-- Módulo de Autenticação:<br/>
-Responsável pelo registro de novas contas (RF01) e pelo processo de login (RF02). É composto pelo AuthController, que recebe as requisições, e pelo AuthService, que processa as regras de autenticação e permissões de acesso. A camada de repositório realiza a consulta de usuários no banco de dados MySQL via Entity Framework.
+* **Módulo de Autenticação e Conta**<br/>
+  Responsável pelo cadastro de novos usuários (RF01), autenticação (RF02), encerramento da sessão (RF03), visualização e edição das informações de perfil (RF04–RF06) e exclusão da conta (RF07). É composto pelo **AuthController** e **PerfilController**, que delegam as regras de negócio aos serviços **AuthService** e **PerfilService**. A autenticação é baseada em tokens JWT, enquanto as senhas são armazenadas utilizando BCrypt.
 
-- Módulo de Gerenciamento de Prédios:<br/>
-Atende aos requisitos de cadastro, visualização, edição e remoção de prédios (RF03–RF06). O PredioController delega as operações ao PredioService, que aplica as regras de negócio pertinentes antes de persistir ou consultar dados via repositório.
+* **Módulo de Gerenciamento de Prédios**<br/>
+  Responsável pelo cadastro, visualização, edição e remoção de prédios (RF08–RF11). O **PredioController** encaminha as requisições ao **PredioService**, responsável por validar as regras de negócio e persistir os dados no banco de dados relacional.
 
-- Módulo de Compromissos:<br/>
-Cobre o ciclo completo de gerenciamento de compromissos (RF07–RF12), incluindo o registro, associação a um prédio, edição, remoção e marcação como concluído. O CompromissoService centraliza as regras de negócio, servindo também como fonte de dados para o módulo de relatórios.
+* **Módulo de Compromissos**<br/>
+  Responsável pelo gerenciamento completo dos compromissos (RF12–RF17), incluindo cadastro, associação a um prédio, consulta, edição, remoção e conclusão. Também oferece pesquisa por título e filtros por prédio e período, retornando os resultados ordenados cronologicamente. O **CompromissoService** fornece ainda os dados utilizados na geração dos relatórios mensais.
 
-- Módulo de Planejamentos Futuros:<br/>
-Gerencia o registro, visualização, edição e remoção de planejamentos (RF13–RF16) por meio do PlanejamentoController e PlanejamentoService, com persistência no banco de dados MySQL.
+* **Módulo de Planejamentos Futuros**<br/>
+  Responsável pelo cadastro, visualização, edição e remoção de planejamentos futuros (RF18–RF21). Diferentemente dos compromissos, planejamentos não possuem obrigatoriedade de data e não podem ser marcados como concluídos. O módulo é composto pelo **PlanejamentoController** e **PlanejamentoService**.
 
-- Módulo de Documentos:<br/>
-Responsável pelo envio, visualização, download e remoção de documentos vinculados a prédios (RF17–RF20). O DocumentoService integra-se diretamente ao AWS S3 via HTTPS para operações de upload e download, registrando apenas os metadados dos arquivos no banco de dados relacional.
+* **Módulo de Documentos**<br/>
+  Responsável pelo gerenciamento de documentos (atas de reunião e normas internas) vinculados aos prédios (RF22–RF25). O **DocumentoService** realiza upload, download, consulta e remoção de arquivos armazenados no AWS S3, mantendo apenas seus metadados no banco de dados MySQL.
 
-- Módulo de Relatórios:<br/>
-Gera, armazena e disponibiliza relatórios mensais com base nos compromissos concluídos (RF21–RF23). O RelatorioService consulta os dados de compromissos via repositório, produz os relatórios em formato PDF e os persiste no AWS S3, deixando-os disponíveis para visualização e download pelo usuário.
+* **Módulo de Relatórios**<br/>
+  Responsável pela geração, armazenamento, visualização e download dos relatórios mensais (RF26–RF28). O **RelatorioService** consulta os compromissos concluídos do mês selecionado, gera um documento em formato PDF e o armazena no AWS S3 para posterior acesso pelo usuário.
 
-- Camada de Persistência:<br/>
-Transversal a todos os módulos, a camada de repositórios (Repositories) abstrai o acesso ao banco de dados MySQL utilizando o Entity Framework como ORM. Centraliza todas as operações de leitura e escrita, garantindo consistência e desacoplamento entre a lógica de negócio e a infraestrutura de dados.
+* **Camada de Persistência**<br/>
+  Compartilhada por todos os módulos, a camada de repositórios (**Repositories**) abstrai o acesso ao banco de dados MySQL utilizando o Entity Framework como ORM. Essa camada centraliza as operações de leitura e escrita, promovendo desacoplamento entre a lógica de negócio e a infraestrutura de persistência.
 
-- Armazenamento de Arquivos:<br/>
-O AWS S3 atua como componente de infraestrutura dedicado ao armazenamento de arquivos binários — documentos (atas e normas) e relatórios em PDF —, acessado exclusivamente pelos serviços DocumentoService e RelatorioService via protocolo HTTPS.
+* **Armazenamento de Arquivos**<br/>
+  O AWS S3 atua como componente de infraestrutura responsável pelo armazenamento dos arquivos binários da aplicação, incluindo atas de reunião, normas internas e relatórios mensais em PDF. O acesso ao serviço é realizado exclusivamente pelos módulos de Documentos e Relatórios por meio de conexões HTTPS.
+
 
 ### 5.4 Stack tecnológica
 
