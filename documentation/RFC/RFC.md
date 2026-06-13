@@ -227,49 +227,58 @@ Os principais fluxos do sistema incluem:
 - Consultar documentos por prédio;
 - Gerar relatórios mensais de compromissos.
 
-Diagrama de casos de uso:
+Diagrama de Caso de Uso — Autenticação:
 ```mermaid
-flowchart TB
+flowchart LR
 
     usuario[👤 Usuário / Síndico]
 
-    subgraph autenticacao [Autenticação]
+    subgraph euSindico [Sistema euSíndico]
+
         UC1((Realizar login))
+        UC2((Realizar logout))
+
     end
 
-    subgraph predios [Prédios]
-        UC2((Criar prédio))
-        UC3((Visualizar prédios))
-        UC4((Editar prédio))
-        UC5((Remover prédio))
+    usuario --> UC1
+    usuario --> UC2
+```
+
+Diagrama de Caso de Uso — Gerenciamento de Perfil
+```mermaid
+flowchart LR
+
+    usuario[👤 Usuário / Síndico]
+
+    subgraph euSindico [Sistema euSíndico]
+
+        UC1((Visualizar perfil))
+        UC2((Editar perfil))
+        UC3((Alterar senha))
+        UC4((Excluir conta))
+
     end
 
-    subgraph compromissos [Compromissos]
-        UC6((Criar compromisso))
-        UC7((Visualizar compromissos))
-        UC8((Editar compromisso))
-        UC9((Concluir compromisso))
-        UC10((Remover compromisso))
-    end
+    usuario --> UC1
+    usuario --> UC2
+    usuario --> UC3
+    usuario --> UC4
+```
 
-    subgraph planejamentos [Planejamentos]
-        UC11((Cadastrar planejamento))
-        UC12((Visualizar planejamentos))
-        UC13((Editar planejamento))
-        UC14((Remover planejamento))
-    end
+Diagrama de Caso de Uso — Gerenciamento de Compromissos
+```mermaid
+flowchart LR
 
-    subgraph documentos [Documentos]
-        UC15((Enviar documento))
-        UC16((Visualizar documentos))
-        UC17((Baixar documento))
-        UC18((Remover documento))
-    end
+    usuario[👤 Usuário / Síndico]
 
-    subgraph relatorios [Relatórios]
-        UC19((Gerar relatório mensal))
-        UC20((Visualizar relatório mensal))
-        UC21((Baixar relatório mensal))
+    subgraph euSindico [Sistema euSíndico]
+
+        UC1((Criar compromisso))
+        UC2((Visualizar compromissos))
+        UC3((Editar compromisso))
+        UC4((Concluir compromisso))
+        UC5((Remover compromisso))
+
     end
 
     usuario --> UC1
@@ -277,66 +286,150 @@ flowchart TB
     usuario --> UC3
     usuario --> UC4
     usuario --> UC5
-    usuario --> UC6
-    usuario --> UC7
-    usuario --> UC8
-    usuario --> UC9
-    usuario --> UC10
-    usuario --> UC11
-    usuario --> UC12
-    usuario --> UC13
-    usuario --> UC14
-    usuario --> UC15
-    usuario --> UC16
-    usuario --> UC17
-    usuario --> UC18
-    usuario --> UC19
-    usuario --> UC20
-    usuario --> UC21
 ```
+
+Diagrama de Caso de Uso — Gerenciamento de Prédios
+```mermaid
+flowchart LR
+
+    usuario[👤 Usuário / Síndico]
+
+    subgraph euSindico [Sistema euSíndico]
+
+        UC1((Criar prédio))
+        UC2((Visualizar prédios))
+        UC3((Editar prédio))
+        UC4((Remover prédio))
+
+    end
+
+    usuario --> UC1
+    usuario --> UC2
+    usuario --> UC3
+    usuario --> UC4
+```
+
+Diagrama de Caso de Uso — Gerenciamento de Planejamentos
+```mermaid
+flowchart LR
+
+    usuario[👤 Usuário / Síndico]
+
+    subgraph euSindico [Sistema euSíndico]
+
+        UC1((Criar planejamento))
+        UC2((Visualizar planejamentos))
+        UC3((Editar planejamento))
+        UC4((Remover planejamento))
+
+    end
+
+    usuario --> UC1
+    usuario --> UC2
+    usuario --> UC3
+    usuario --> UC4
+```
+
+Diagrama de Caso de Uso — Gerenciamento de Documentos (Atas de reunião e Normas internas)
+```mermaid
+flowchart LR
+
+    usuario[👤 Usuário / Síndico]
+
+    subgraph euSindico [Sistema euSíndico]
+
+        UC1((Enviar documento))
+        UC2((Visualizar documentos))
+        UC3((Baixar documento))
+        UC4((Remover documento))
+
+    end
+
+    usuario --> UC1
+    usuario --> UC2
+    usuario --> UC3
+    usuario --> UC4
+```
+
+Diagrama de Caso de Uso — Relatórios Mensais
+```mermaid
+flowchart LR
+
+    usuario[👤 Usuário / Síndico]
+
+    subgraph euSindico [Sistema euSíndico]
+
+        UC1((Gerar relatório mensal))
+        UC2((Visualizar relatório mensal))
+        UC3((Baixar relatório mensal))
+
+    end
+
+    usuario --> UC1
+    usuario --> UC2
+    usuario --> UC3
+```
+
 
 ### 2.3 Requisitos Funcionais (RFs)
 
 - RF01 — O sistema deve permitir que o usuário crie uma conta.
 - RF02 — O sistema deve permitir que o usuário realize login.
-- RF03 — O sistema deve permitir que o usuário cadastre prédios.
-- RF04 — O sistema deve permitir que o usuário visualize prédios cadastrados.
-- RF05 — O sistema deve permitir que o usuário edite prédios cadastrados.
-- RF06 — O sistema deve permitir que o usuário remova prédios cadastrados.
-- RF07 — O sistema deve permitir que o usuário registre compromissos.
-- RF08 — O sistema deve permitir que o usuário associe compromissos a um prédio.
-- RF09 — O sistema deve permitir que o usuário visualize compromissos cadastrados.
-- RF10 — O sistema deve permitir que o usuário edite compromissos cadastrados.
-- RF11 — O sistema deve permitir que o usuário remova compromissos cadastrados.
-- RF12 — O sistema deve permitir que o usuário marque compromissos como concluídos.
-- RF13 — O sistema deve permitir que o usuário registre planejamentos futuros.
-- RF14 — O sistema deve permitir que o usuário visualize planejamentos futuros.
-- RF15 — O sistema deve permitir que o usuário edite planejamentos futuros.
-- RF16 — O sistema deve permitir que o usuário remova planejamentos futuros.
-- RF17 — O sistema deve permitir que o usuário envie documentos vinculados a um prédio.
-- RF18 — O sistema deve permitir que o usuário visualize documentos armazenados.
-- RF19 — O sistema deve permitir que o usuário baixe documentos armazenados.
-- RF20 — O sistema deve permitir que o usuário remova documentos armazenados.
-- RF21 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos concluídos.
-- RF22 — O sistema deve permitir que o usuário visualize relatórios mensais gerados.
-- RF23 — O sistema deve permitir que o usuário baixe relatórios mensais gerados.
+- RF03 — O sistema deve permitir que o usuário realize logout.
+- RF04 — O sistema deve permitir que o usuário visualize suas informações de perfil.
+- RF05 — O sistema deve permitir que o usuário edite suas informações de perfil.
+- RF06 — O sistema deve permitir que o usuário altere sua senha.
+- RF07 — O sistema deve permitir que o usuário exclua sua conta.
+- RF08 — O sistema deve permitir que o usuário cadastre prédios.
+- RF09 — O sistema deve permitir que o usuário visualize prédios cadastrados.
+- RF10 — O sistema deve permitir que o usuário edite prédios cadastrados.
+- RF11 — O sistema deve permitir que o usuário remova prédios cadastrados.
+- RF12 — O sistema deve permitir que o usuário registre compromissos.
+- RF13 — O sistema deve permitir que o usuário associe compromissos a um prédio.
+- RF14 — O sistema deve permitir que o usuário visualize compromissos cadastrados.
+- RF15 — O sistema deve permitir que o usuário edite compromissos cadastrados.
+- RF16 — O sistema deve permitir que o usuário remova compromissos cadastrados.
+- RF17 — O sistema deve permitir que o usuário marque compromissos como concluídos.
+- RF18 — O sistema deve permitir que o usuário registre planejamentos futuros.
+- RF19 — O sistema deve permitir que o usuário visualize planejamentos futuros.
+- RF20 — O sistema deve permitir que o usuário edite planejamentos futuros.
+- RF21 — O sistema deve permitir que o usuário remova planejamentos futuros.
+- RF22 — O sistema deve permitir que o usuário envie documentos (atas de reunião e normas internas) vinculados a um prédio.
+- RF23 — O sistema deve permitir que o usuário visualize documentos (atas de reunião e normas internas) armazenados.
+- RF24 — O sistema deve permitir que o usuário baixe documentos (atas de reunião e normas internas) armazenados.
+- RF25 — O sistema deve permitir que o usuário remova documentos (atas de reunião e normas internas) armazenados.
+- RF26 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos concluídos.
+- RF27 — O sistema deve permitir que o usuário visualize relatórios mensais gerados.
+- RF28 — O sistema deve permitir que o usuário baixe relatórios mensais gerados.
 
 ### 2.4 Requisitos Não Funcionais (RNFs)
-- RNF01 — O sistema deve ter tempo de resposta inferior a 1500ms para operações comuns.
-- RNF02 — O sistema deve garantir autenticação segura utilizando criptografia de senha.
-- RNF03 — O sistema deve estar disponível 99% do tempo.
-- RNF04 — O sistema deve suportar acesso simultâneo de pelo menos 100 usuários.
-- RNF05 — A interface deve ser responsiva e adaptada para dispositivos móveis (mobile-first).
-- RNF06 — O sistema deve garantir a integridade e segurança dos arquivos enviados.
-- RNF07 — O sistema deve permitir fácil manutenção e evolução.
+
+- RNF01 — O sistema deve apresentar tempo de resposta inferior a 1500 ms para operações comuns.
+- RNF02 — O sistema deve utilizar autenticação baseada em JWT com expiração de 8 horas para tokens de acesso.
+- RNF03 — As senhas dos usuários devem ser armazenadas utilizando algoritmo de hash seguro (BCrypt).
+- RNF04 — O sistema deve exigir senhas com no mínimo 8 caracteres, contendo letras maiúsculas, letras minúsculas, números e caracteres especiais.
+- RNF05 — O sistema deve validar o formato do endereço de e-mail durante o cadastro e atualização de perfil.
+- RNF06 — O sistema deve estar disponível pelo menos 99% do tempo.
+- RNF07 — O sistema deve suportar pelo menos 100 usuários simultâneos.
+- RNF08 — A interface deve ser responsiva e seguir a abordagem mobile-first.
+- RNF09 — O sistema deve garantir a integridade e segurança dos arquivos enviados ao armazenamento.
+- RNF10 — As listagens de prédios, compromissos, planejamentos, documentos e relatórios devem possuir paginação para manter o desempenho da aplicação.
+- RNF11 — O sistema deve ser desenvolvido de forma modular, facilitando sua manutenção e evolução.
 
 ### 2.5 Regras de negócio
-- RN01 — Apenas usuários autenticados podem acessar o sistema.
-- RN02 — Todo compromisso deve estar vinculado a um prédio.
-- RN03 — Apenas compromissos concluídos podem compor relatórios.
-- RN04 — Todo documento deve estar vinculado a um prédio.
-- RN05 — Todo planejamento futuro deve estar vinculado a um prédio.
-- RN06 — Não é permitido excluir prédios sem confirmação.
+
+- RN01 — Apenas usuários autenticados podem acessar as funcionalidades protegidas do sistema.
+- RN02 — Cada usuário poderá visualizar e gerenciar apenas os prédios associados à sua própria conta.
+- RN03 — Todo compromisso deve estar obrigatoriamente vinculado a um prédio.
+- RN04 — Todo planejamento futuro deve estar obrigatoriamente vinculado a um prédio.
+- RN05 — Todo documento deve estar obrigatoriamente vinculado a um prédio.
+- RN06 — Apenas compromissos concluídos poderão compor os relatórios mensais de atividades.
+- RN07 — A exclusão de um prédio deverá ser confirmada pelo usuário antes de sua execução.
+- RN08 — Ao excluir um prédio, todos os compromissos, planejamentos, documentos e relatórios associados serão removidos automaticamente.
+- RN09 — Compromissos devem possuir data e horário obrigatórios para cadastro.
+- RN10 — Planejamentos futuros poderão ser cadastrados sem data definida e não poderão ser marcados como concluídos.
+- RN11 — O sistema aceitará apenas arquivos nos formatos PDF, DOCX, XLSX, JPG e PNG, com tamanho máximo de 20 MB.
+- RN12 — Os relatórios mensais deverão ser gerados em formato PDF, agrupando os compromissos concluídos do mês e ano selecionados.
 
 ### 2.6 Fora do escopo
 
