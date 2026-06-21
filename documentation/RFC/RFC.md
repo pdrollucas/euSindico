@@ -425,12 +425,13 @@ flowchart LR
 - RN05 — Todo documento deve estar obrigatoriamente vinculado a um prédio.
 - RN06 — Apenas compromissos concluídos poderão compor os relatórios mensais de atividades.
 - RN07 — A exclusão de um prédio deverá ser confirmada pelo usuário antes de sua execução.
-- RN08 — Ao excluir um prédio, todos os compromissos, planejamentos, documentos e relatórios associados serão removidos automaticamente.
-- RN09 — Compromissos devem possuir data e horário obrigatórios para cadastro.
-- RN10 — Planejamentos futuros poderão ser cadastrados sem data definida e não poderão ser marcados como concluídos.
-- RN11 — O sistema aceitará apenas arquivos nos formatos PDF, DOCX, XLSX, JPG e PNG, com tamanho máximo de 20 MB.
-- RN12 — Os relatórios mensais deverão ser gerados em formato PDF, agrupando os compromissos concluídos do mês e ano selecionados.
-- RN13 — Os compromissos deverão ser apresentados em ordem cronológica crescente, considerando a data e o horário do compromisso.
+- RN08 — A exclusão de um prédio será lógica (soft delete), tornando o prédio e seus registros associados indisponíveis para consulta na interface da aplicação.
+- RN09 — Prédios marcados como excluídos não poderão ser utilizados para cadastro ou edição de compromissos, planejamentos, documentos ou relatórios.
+- RN10 — Compromissos devem possuir data e horário obrigatórios para cadastro.
+- RN11 — Planejamentos futuros poderão ser cadastrados sem data definida e não poderão ser marcados como concluídos.
+- RN12 — O sistema aceitará apenas arquivos nos formatos PDF, DOCX, XLSX, JPG e PNG, com tamanho máximo de 20 MB.
+- RN13 — Os relatórios mensais deverão ser gerados em formato PDF, agrupando os compromissos concluídos do mês e ano selecionados.
+- RN14 — Os compromissos deverão ser apresentados em ordem cronológica crescente, considerando a data e o horário do compromisso.
 
 ### 2.6 Fora do escopo
 
@@ -843,6 +844,8 @@ erDiagram
         string endereco
         int usuarioId FK
         datetime criadoEm
+        boolean excluido
+        datetime excluidoEm
     }
 
     COMPROMISSO {
@@ -927,6 +930,8 @@ erDiagram
 | endereco | VARCHAR(255) | NOT NULL |
 | usuario_id | INT | FK |
 | criado_em | DATETIME | NOT NULL |
+| excluido | BOOLEAN | NOT NULL |
+| excluidoEm | DATETIME | NULL |
 
 ---
 
