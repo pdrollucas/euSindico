@@ -9,6 +9,8 @@
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
 - <strong>Versão: </strong>2.0.0
+- <strong>Disponível em PDF: </strong>[RFC.pdf](https://github.com/user-attachments/files/29358895/RFC.pdf)
+
 
 <hr/>
 
