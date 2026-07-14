@@ -791,7 +791,9 @@ Abaixo está um print da prototipação feita para as telas. O resutado pode ser
 
 ## 5. Arquitetura do Sistema
 
-Esta seção demonstra como o sistema será construído.
+A aplicação será desenvolvida seguindo o padrão de arquitetura em camadas (Layered Architecture), separando as responsabilidades entre Controller, Service e Repository. Essa abordagem favorece a organização do código, reduz o acoplamento entre os componentes e facilita a manutenção, os testes e a evolução do sistema ao longo do tempo.
+
+Além da divisão em camadas, o sistema será composto por módulos independentes, responsáveis pelo gerenciamento de autenticação, perfil do usuário, prédios, compromissos, planejamentos, documentos e relatórios, todos acessados por meio de uma API REST desenvolvida em ASP.NET Core.
 
 ### 5.1 Diagrama C4
 #### 5.1.1 Nível 1: Diagrama de Contexto
