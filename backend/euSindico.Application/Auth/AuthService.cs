@@ -5,8 +5,14 @@ using euSindico.Domain.Entities;
 
 namespace euSindico.Application.Auth;
 
-public class AuthService(IUsuarioRepository usuarioRepository, IPasswordHasher passwordHasher)
+public class AuthService(
+    IUsuarioRepository usuarioRepository,
+    IRefreshTokenRepository refreshTokenRepository,
+    IPasswordHasher passwordHasher,
+    ITokenService tokenService)
 {
+    private static readonly TimeSpan RefreshTokenDuracao = TimeSpan.FromHours(8);
+
     public async Task<UsuarioDto> RegistrarAsync(RegistrarUsuarioDto dto, CancellationToken ct = default)
     {
         if (await usuarioRepository.ExisteEmailAsync(dto.Email, ct))
@@ -20,5 +26,28 @@ public class AuthService(IUsuarioRepository usuarioRepository, IPasswordHasher p
         await usuarioRepository.AdicionarAsync(usuario, ct);
 
         return new UsuarioDto(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm);
+    }
+
+    public async Task<TokenResponseDto> LoginAsync(LoginDto dto, CancellationToken ct = default)
+    {
+        var usuario = await usuarioRepository.BuscarPorEmailAsync(dto.Email, ct);
+
+        if (usuario is null || !passwordHasher.Verificar(dto.Senha, usuario.SenhaHash))
+        {
+            throw new CredenciaisInvalidasException();
+        }
+
+        return await EmitirTokensAsync(usuario, ct);
+    }
+
+    private async Task<TokenResponseDto> EmitirTokensAsync(Usuario usuario, CancellationToken ct)
+    {
+        var accessToken = tokenService.GerarAccessToken(usuario);
+        var refreshTokenGerado = tokenService.GerarRefreshToken();
+
+        var refreshToken = new RefreshToken(usuario.Id, refreshTokenGerado.Hash, DateTime.UtcNow.Add(RefreshTokenDuracao));
+        await refreshTokenRepository.AdicionarAsync(refreshToken, ct);
+
+        return new TokenResponseDto(accessToken, refreshTokenGerado.Token);
     }
 }

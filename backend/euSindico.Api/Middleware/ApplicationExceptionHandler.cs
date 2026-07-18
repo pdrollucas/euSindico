@@ -21,6 +21,7 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
         var statusCode = exception switch
         {
             EmailJaCadastradoException => StatusCodes.Status409Conflict,
+            CredenciaisInvalidasException => StatusCodes.Status401Unauthorized,
             _ => 0,
         };
 

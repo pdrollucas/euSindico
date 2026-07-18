@@ -7,7 +7,10 @@ namespace euSindico.Api.Controllers;
 
 [ApiController]
 [Route("auth")]
-public class AuthController(AuthService authService, IValidator<RegistrarUsuarioDto> registrarValidator) : ControllerBase
+public class AuthController(
+    AuthService authService,
+    IValidator<RegistrarUsuarioDto> registrarValidator,
+    IValidator<LoginDto> loginValidator) : ControllerBase
 {
     [HttpPost("registrar")]
     public async Task<IActionResult> Registrar(RegistrarUsuarioDto dto, CancellationToken ct)
@@ -20,5 +23,18 @@ public class AuthController(AuthService authService, IValidator<RegistrarUsuario
 
         var usuario = await authService.RegistrarAsync(dto, ct);
         return StatusCode(StatusCodes.Status201Created, usuario);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDto dto, CancellationToken ct)
+    {
+        var validationResult = await loginValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        var tokens = await authService.LoginAsync(dto, ct);
+        return Ok(tokens);
     }
 }

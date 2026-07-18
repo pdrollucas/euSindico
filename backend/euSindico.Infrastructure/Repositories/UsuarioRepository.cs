@@ -10,6 +10,9 @@ public class UsuarioRepository(AppDbContext context) : IUsuarioRepository
     public Task<bool> ExisteEmailAsync(string email, CancellationToken ct = default) =>
         context.Usuarios.AnyAsync(u => u.Email == email, ct);
 
+    public Task<Usuario?> BuscarPorEmailAsync(string email, CancellationToken ct = default) =>
+        context.Usuarios.FirstOrDefaultAsync(u => u.Email == email, ct);
+
     public async Task AdicionarAsync(Usuario usuario, CancellationToken ct = default)
     {
         context.Usuarios.Add(usuario);

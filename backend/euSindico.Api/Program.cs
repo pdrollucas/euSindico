@@ -21,7 +21,7 @@ builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty);
+builder.Services.AddInfrastructure(builder.Configuration);
 
 // Observabilidade via OpenTelemetry, exportando para o backend OTLP configurado (ex: Grafana Cloud).
 // Fica desativada quando "Observability:OtlpEndpoint" não é definido (padrão em desenvolvimento local).
