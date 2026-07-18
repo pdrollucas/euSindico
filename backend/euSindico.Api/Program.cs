@@ -1,4 +1,7 @@
+using euSindico.Api.Middleware;
+using euSindico.Application;
 using euSindico.Infrastructure;
+using FluentValidation;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -13,6 +16,11 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
+builder.Services.AddProblemDetails();
+
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty);
 
 // Observabilidade via OpenTelemetry, exportando para o backend OTLP configurado (ex: Grafana Cloud).
@@ -47,6 +55,8 @@ if (!string.IsNullOrWhiteSpace(otlpEndpoint))
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

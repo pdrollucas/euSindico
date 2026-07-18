@@ -1,4 +1,7 @@
+using euSindico.Application.Common.Interfaces;
 using euSindico.Infrastructure.Persistence;
+using euSindico.Infrastructure.Repositories;
+using euSindico.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,6 +16,9 @@ public static class DependencyInjection
         // integração ou no início da aplicação sem banco disponível).
         services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0))));
+
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         return services;
     }

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\euSindico.Domain\euSindico.Domain.csproj" />
+    <ProjectReference Include="..\euSindico.Application\euSindico.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
