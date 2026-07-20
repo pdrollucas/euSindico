@@ -37,15 +37,36 @@ public class AuthService(
             throw new CredenciaisInvalidasException();
         }
 
-        return await EmitirTokensAsync(usuario, ct);
+        return await EmitirTokensAsync(usuario, DateTime.UtcNow.Add(RefreshTokenDuracao), ct);
     }
 
-    private async Task<TokenResponseDto> EmitirTokensAsync(Usuario usuario, CancellationToken ct)
+    public async Task<TokenResponseDto> RenovarTokenAsync(RefreshTokenDto dto, CancellationToken ct = default)
+    {
+        var hash = tokenService.HashRefreshToken(dto.RefreshToken);
+        var refreshTokenAtual = await refreshTokenRepository.BuscarPorHashAsync(hash, ct);
+
+        if (refreshTokenAtual is null || !refreshTokenAtual.EstaAtivo)
+        {
+            throw new RefreshTokenInvalidoException();
+        }
+
+        var usuario = await usuarioRepository.BuscarPorIdAsync(refreshTokenAtual.UsuarioId, ct)
+            ?? throw new RefreshTokenInvalidoException();
+
+        // Rotação: este refresh token não serve mais, independente do resultado a seguir.
+        refreshTokenAtual.Revogar();
+        await refreshTokenRepository.AtualizarAsync(refreshTokenAtual, ct);
+
+        // expiraEm não é estendido — a sessão total continua limitada a 8h desde o login original.
+        return await EmitirTokensAsync(usuario, refreshTokenAtual.ExpiraEm, ct);
+    }
+
+    private async Task<TokenResponseDto> EmitirTokensAsync(Usuario usuario, DateTime expiraEm, CancellationToken ct)
     {
         var accessToken = tokenService.GerarAccessToken(usuario);
         var refreshTokenGerado = tokenService.GerarRefreshToken();
 
-        var refreshToken = new RefreshToken(usuario.Id, refreshTokenGerado.Hash, DateTime.UtcNow.Add(RefreshTokenDuracao));
+        var refreshToken = new RefreshToken(usuario.Id, refreshTokenGerado.Hash, expiraEm);
         await refreshTokenRepository.AdicionarAsync(refreshToken, ct);
 
         return new TokenResponseDto(accessToken, refreshTokenGerado.Token);

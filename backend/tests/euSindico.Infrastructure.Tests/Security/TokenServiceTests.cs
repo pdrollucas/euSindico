@@ -47,4 +47,23 @@ public class TokenServiceTests
         Assert.NotEqual(primeiro.Token, segundo.Token);
         Assert.NotEqual(primeiro.Hash, segundo.Hash);
     }
+
+    [Fact]
+    public void HashRefreshToken_reproduz_o_mesmo_hash_gerado_originalmente_para_o_token()
+    {
+        var gerado = _sut.GerarRefreshToken();
+
+        var hashRecalculado = _sut.HashRefreshToken(gerado.Token);
+
+        Assert.Equal(gerado.Hash, hashRecalculado);
+    }
+
+    [Fact]
+    public void HashRefreshToken_para_tokens_diferentes_produz_hashes_diferentes()
+    {
+        var hash1 = _sut.HashRefreshToken("token-a");
+        var hash2 = _sut.HashRefreshToken("token-b");
+
+        Assert.NotEqual(hash1, hash2);
+    }
 }

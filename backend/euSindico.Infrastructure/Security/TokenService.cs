@@ -43,6 +43,8 @@ public class TokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
         return new RefreshTokenGerado(token, hash);
     }
 
+    public string HashRefreshToken(string refreshToken) => CalcularHash(refreshToken);
+
     private static string CalcularHash(string refreshToken)
     {
         var bytesHash = SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken));

@@ -108,4 +108,74 @@ public class AuthServiceTests
 
         _refreshTokenRepository.Verify(r => r.AdicionarAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task RenovarTokenAsync_com_refresh_token_ativo_revoga_o_antigo_e_emite_par_novo_com_mesma_expiracao()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-armazenado");
+        var refreshTokenAntigo = new RefreshToken(usuario.Id, "hash-antigo", DateTime.UtcNow.AddHours(3));
+        _tokenService.Setup(t => t.HashRefreshToken("refresh-antigo")).Returns("hash-antigo");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-antigo", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshTokenAntigo);
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(usuario.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(usuario);
+        _tokenService.Setup(t => t.GerarAccessToken(usuario)).Returns("novo-access-token");
+        _tokenService.Setup(t => t.GerarRefreshToken())
+            .Returns(new RefreshTokenGerado("novo-refresh-token", "novo-hash"));
+
+        var dto = new RefreshTokenDto("refresh-antigo");
+
+        var resultado = await _sut.RenovarTokenAsync(dto);
+
+        Assert.Equal("novo-access-token", resultado.AccessToken);
+        Assert.Equal("novo-refresh-token", resultado.RefreshToken);
+        Assert.False(refreshTokenAntigo.EstaAtivo);
+        _refreshTokenRepository.Verify(r => r.AtualizarAsync(refreshTokenAntigo, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(
+            r => r.AdicionarAsync(
+                It.Is<RefreshToken>(rt => rt.TokenHash == "novo-hash" && rt.ExpiraEm == refreshTokenAntigo.ExpiraEm),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RenovarTokenAsync_com_hash_inexistente_lanca_refresh_token_invalido()
+    {
+        _tokenService.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash-desconhecido");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-desconhecido", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RefreshToken?)null);
+
+        var dto = new RefreshTokenDto("token-qualquer");
+
+        await Assert.ThrowsAsync<RefreshTokenInvalidoException>(() => _sut.RenovarTokenAsync(dto));
+
+        _refreshTokenRepository.Verify(r => r.AdicionarAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RenovarTokenAsync_com_refresh_token_ja_revogado_lanca_refresh_token_invalido()
+    {
+        var refreshTokenRevogado = new RefreshToken(1, "hash-revogado", DateTime.UtcNow.AddHours(3));
+        refreshTokenRevogado.Revogar();
+        _tokenService.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash-revogado");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-revogado", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshTokenRevogado);
+
+        var dto = new RefreshTokenDto("token-qualquer");
+
+        await Assert.ThrowsAsync<RefreshTokenInvalidoException>(() => _sut.RenovarTokenAsync(dto));
+    }
+
+    [Fact]
+    public async Task RenovarTokenAsync_com_refresh_token_expirado_lanca_refresh_token_invalido()
+    {
+        var refreshTokenExpirado = new RefreshToken(1, "hash-expirado", DateTime.UtcNow.AddSeconds(-1));
+        _tokenService.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash-expirado");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-expirado", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshTokenExpirado);
+
+        var dto = new RefreshTokenDto("token-qualquer");
+
+        await Assert.ThrowsAsync<RefreshTokenInvalidoException>(() => _sut.RenovarTokenAsync(dto));
+    }
 }

@@ -6,6 +6,12 @@ public interface ITokenService
 {
     string GerarAccessToken(Usuario usuario);
     RefreshTokenGerado GerarRefreshToken();
+
+    /// <summary>
+    /// Recalcula o hash de um refresh token recebido do cliente, para buscá-lo por
+    /// <see cref="Domain.Entities.RefreshToken.TokenHash"/> — mesmo algoritmo usado em <see cref="GerarRefreshToken"/>.
+    /// </summary>
+    string HashRefreshToken(string refreshToken);
 }
 
 /// <summary>
