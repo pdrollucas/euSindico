@@ -27,6 +27,18 @@ builder.Services.AddProblemDetails();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Falha já na inicialização se a chave não estiver configurada, em vez de deixar o erro
+// estourar (de forma bem menos óbvia) só na primeira requisição que passar pelo
+// middleware de autenticação — ver SECURITY.md.
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtSecretKey))
+{
+    throw new InvalidOperationException(
+        "Configuração ausente: \"Jwt:SecretKey\". Configure via User Secrets em desenvolvimento " +
+        "(dotnet user-secrets set \"Jwt:SecretKey\" \"...\", ver GETTING_STARTED.md) ou variável de " +
+        "ambiente Jwt__SecretKey em outros ambientes (CI, produção).");
+}
+
 // Validação do access token JWT (stateless, sem consulta ao banco). A geração do token
 // vive na Infrastructure (TokenService) — aqui só configuramos como validar o que chega.
 builder.Services
@@ -42,7 +54,7 @@ builder.Services
             ValidAudience = builder.Configuration["Jwt:Audience"],
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"] ?? string.Empty)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
             ClockSkew = TimeSpan.Zero,
         };
     });

@@ -66,6 +66,10 @@ jobs:
         working-directory: backend
 
       - name: Test
+        env:
+          # Chave só para os testes de CI (WebApplicationFactory sobe a aplicação inteira,
+          # incluindo o middleware de autenticação JWT) — nunca usada para assinar tokens reais.
+          Jwt__SecretKey: ${{ secrets.JWT_SECRET_KEY_TEST_FOR_SONAR }}
         run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
         working-directory: backend
 
