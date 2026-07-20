@@ -12,8 +12,7 @@ public class LoginDtoValidator : AbstractValidator<LoginDto>
     public LoginDtoValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("O e-mail é obrigatório.")
-            .EmailAddress().WithMessage("Informe um e-mail em formato válido.");
+            .SetValidator(new EmailValidator());
 
         RuleFor(x => x.Senha)
             .NotEmpty().WithMessage("A senha é obrigatória.");

@@ -11,13 +11,10 @@ public class RegistrarUsuarioDtoValidator : AbstractValidator<RegistrarUsuarioDt
     public RegistrarUsuarioDtoValidator()
     {
         RuleFor(x => x.Nome)
-            .NotEmpty().WithMessage("O nome é obrigatório.")
-            .MaximumLength(150);
+            .SetValidator(new NomeValidator());
 
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("O e-mail é obrigatório.")
-            .EmailAddress().WithMessage("Informe um e-mail em formato válido.")
-            .MaximumLength(150);
+            .SetValidator(new EmailValidator());
 
         RuleFor(x => x.Senha)
             .SetValidator(new SenhaForteValidator());

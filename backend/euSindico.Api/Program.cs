@@ -1,7 +1,11 @@
+using System.Text;
 using euSindico.Api.Middleware;
+using euSindico.Api.OpenApi;
 using euSindico.Application;
 using euSindico.Infrastructure;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -14,7 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
@@ -22,6 +26,28 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Validação do access token JWT (stateless, sem consulta ao banco). A geração do token
+// vive na Infrastructure (TokenService) — aqui só configuramos como validar o que chega.
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false; // mantém os nomes de claim originais (sub, email), sem remapear para URIs legadas
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"] ?? string.Empty)),
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Observabilidade via OpenTelemetry, exportando para o backend OTLP configurado (ex: Grafana Cloud).
 // Fica desativada quando "Observability:OtlpEndpoint" não é definido (padrão em desenvolvimento local).
@@ -65,6 +91,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

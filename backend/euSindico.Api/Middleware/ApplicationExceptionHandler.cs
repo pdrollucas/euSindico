@@ -22,6 +22,8 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
         {
             EmailJaCadastradoException => StatusCodes.Status409Conflict,
             CredenciaisInvalidasException => StatusCodes.Status401Unauthorized,
+            SenhaAtualIncorretaException => StatusCodes.Status400BadRequest,
+            UsuarioNaoEncontradoException => StatusCodes.Status404NotFound,
             _ => 0,
         };
 
