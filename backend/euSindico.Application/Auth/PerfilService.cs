@@ -44,6 +44,13 @@ public class PerfilService(
         await refreshTokenRepository.RevogarTodosDoUsuarioAsync(usuarioId, ct);
     }
 
+    public async Task ExcluirContaAsync(int usuarioId, CancellationToken ct = default)
+    {
+        await BuscarUsuarioOuFalharAsync(usuarioId, ct);
+
+        await usuarioRepository.ExcluirUsuarioEDadosRelacionadosAsync(usuarioId, ct);
+    }
+
     private async Task<Usuario> BuscarUsuarioOuFalharAsync(int usuarioId, CancellationToken ct) =>
         await usuarioRepository.BuscarPorIdAsync(usuarioId, ct) ?? throw new UsuarioNaoEncontradoException();
 

@@ -52,4 +52,11 @@ public class PerfilController(
         await perfilService.AlterarSenhaAsync(UsuarioId, dto, ct);
         return NoContent();
     }
+
+    [HttpDelete]
+    public async Task<IActionResult> ExcluirConta(CancellationToken ct)
+    {
+        await perfilService.ExcluirContaAsync(UsuarioId, ct);
+        return NoContent();
+    }
 }

@@ -108,4 +108,25 @@ public class PerfilServiceTests
 
         await Assert.ThrowsAsync<UsuarioNaoEncontradoException>(() => _sut.AlterarSenhaAsync(99, dto));
     }
+
+    [Fact]
+    public async Task ExcluirContaAsync_com_usuario_existente_exclui_usuario_e_dados_relacionados()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-fake");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(usuario);
+
+        await _sut.ExcluirContaAsync(1);
+
+        _usuarioRepository.Verify(r => r.ExcluirUsuarioEDadosRelacionadosAsync(1, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExcluirContaAsync_com_usuario_inexistente_lanca_excecao_e_nao_exclui()
+    {
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(99, It.IsAny<CancellationToken>())).ReturnsAsync((Usuario?)null);
+
+        await Assert.ThrowsAsync<UsuarioNaoEncontradoException>(() => _sut.ExcluirContaAsync(99));
+
+        _usuarioRepository.Verify(r => r.ExcluirUsuarioEDadosRelacionadosAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
