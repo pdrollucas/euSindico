@@ -1,6 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using euSindico.Application.Auth;
 using euSindico.Application.Auth.Dtos;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace euSindico.Api.Controllers;
@@ -13,6 +16,9 @@ public class AuthController(
     IValidator<LoginDto> loginValidator,
     IValidator<RefreshTokenDto> refreshValidator) : ControllerBase
 {
+    // O id do usuário vem sempre da claim do token (sub), nunca de um parâmetro de rota/query (RN02).
+    private int UsuarioId => int.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+
     [HttpPost("registrar")]
     public async Task<IActionResult> Registrar(RegistrarUsuarioDto dto, CancellationToken ct)
     {
@@ -50,5 +56,19 @@ public class AuthController(
 
         var tokens = await authService.RenovarTokenAsync(dto, ct);
         return Ok(tokens);
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshTokenDto dto, CancellationToken ct)
+    {
+        var validationResult = await refreshValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        await authService.LogoutAsync(UsuarioId, dto, ct);
+        return NoContent();
     }
 }

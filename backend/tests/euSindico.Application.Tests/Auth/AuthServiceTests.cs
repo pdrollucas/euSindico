@@ -178,4 +178,66 @@ public class AuthServiceTests
 
         await Assert.ThrowsAsync<RefreshTokenInvalidoException>(() => _sut.RenovarTokenAsync(dto));
     }
+
+    [Fact]
+    public async Task LogoutAsync_com_refresh_token_ativo_do_proprio_usuario_revoga()
+    {
+        var refreshToken = new RefreshToken(1, "hash-ativo", DateTime.UtcNow.AddHours(3));
+        _tokenService.Setup(t => t.HashRefreshToken("token-valido")).Returns("hash-ativo");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-ativo", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshToken);
+
+        var dto = new RefreshTokenDto("token-valido");
+
+        await _sut.LogoutAsync(1, dto);
+
+        Assert.False(refreshToken.EstaAtivo);
+        _refreshTokenRepository.Verify(r => r.AtualizarAsync(refreshToken, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_com_hash_inexistente_nao_lanca_e_nao_persiste()
+    {
+        _tokenService.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash-desconhecido");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-desconhecido", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RefreshToken?)null);
+
+        var dto = new RefreshTokenDto("token-qualquer");
+
+        await _sut.LogoutAsync(1, dto);
+
+        _refreshTokenRepository.Verify(r => r.AtualizarAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_com_refresh_token_ja_revogado_nao_persiste_de_novo()
+    {
+        var refreshTokenRevogado = new RefreshToken(1, "hash-revogado", DateTime.UtcNow.AddHours(3));
+        refreshTokenRevogado.Revogar();
+        _tokenService.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash-revogado");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-revogado", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshTokenRevogado);
+
+        var dto = new RefreshTokenDto("token-qualquer");
+
+        await _sut.LogoutAsync(1, dto);
+
+        _refreshTokenRepository.Verify(r => r.AtualizarAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_com_refresh_token_de_outro_usuario_nao_revoga()
+    {
+        var refreshTokenDeOutroUsuario = new RefreshToken(2, "hash-de-outro", DateTime.UtcNow.AddHours(3));
+        _tokenService.Setup(t => t.HashRefreshToken(It.IsAny<string>())).Returns("hash-de-outro");
+        _refreshTokenRepository.Setup(r => r.BuscarPorHashAsync("hash-de-outro", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshTokenDeOutroUsuario);
+
+        var dto = new RefreshTokenDto("token-qualquer");
+
+        await _sut.LogoutAsync(1, dto);
+
+        Assert.True(refreshTokenDeOutroUsuario.EstaAtivo);
+        _refreshTokenRepository.Verify(r => r.AtualizarAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

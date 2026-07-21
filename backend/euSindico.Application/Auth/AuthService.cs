@@ -61,6 +61,22 @@ public class AuthService(
         return await EmitirTokensAsync(usuario, refreshTokenAtual.ExpiraEm, ct);
     }
 
+    public async Task LogoutAsync(int usuarioId, RefreshTokenDto dto, CancellationToken ct = default)
+    {
+        var hash = tokenService.HashRefreshToken(dto.RefreshToken);
+        var refreshToken = await refreshTokenRepository.BuscarPorHashAsync(hash, ct);
+
+        // Idempotente: se o token não existe, já foi revogado/expirou, ou pertence a
+        // outro usuário, o logout "funciona" do mesmo jeito — o estado desejado (essa
+        // sessão não renova mais) já vale, e não damos nenhum sinal ao cliente sobre
+        // qual desses casos aconteceu (mesmo espírito anti-enumeração do RenovarTokenAsync).
+        if (refreshToken is not null && refreshToken.UsuarioId == usuarioId && refreshToken.EstaAtivo)
+        {
+            refreshToken.Revogar();
+            await refreshTokenRepository.AtualizarAsync(refreshToken, ct);
+        }
+    }
+
     private async Task<TokenResponseDto> EmitirTokensAsync(Usuario usuario, DateTime expiraEm, CancellationToken ct)
     {
         var accessToken = tokenService.GerarAccessToken(usuario);
