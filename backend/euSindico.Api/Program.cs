@@ -1,10 +1,13 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using euSindico.Api.Middleware;
 using euSindico.Api.OpenApi;
 using euSindico.Application;
 using euSindico.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
@@ -61,6 +64,33 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Limita tentativas em /auth/login e /auth/registrar (força bruta / cadastro automatizado) —
+// ver SECURITY.md, seção 10. Partição por IP + rota, sem fila: rejeita na hora (429) em vez
+// de enfileirar, que só atrasaria o ataque em vez de bloqueá-lo.
+builder.Services.AddRateLimiter(options =>
+{
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new ProblemDetails
+            {
+                Status = StatusCodes.Status429TooManyRequests,
+                Title = "Muitas tentativas. Tente novamente em instantes.",
+            },
+            ct);
+    };
+
+    options.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Request.Path}",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
+});
+
 // Observabilidade via OpenTelemetry, exportando para o backend OTLP configurado (ex: Grafana Cloud).
 // Fica desativada quando "Observability:OtlpEndpoint" não é definido (padrão em desenvolvimento local).
 var otlpEndpoint = builder.Configuration["Observability:OtlpEndpoint"];
@@ -105,6 +135,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 
