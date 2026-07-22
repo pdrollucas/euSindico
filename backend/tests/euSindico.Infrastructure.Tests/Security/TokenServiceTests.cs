@@ -66,4 +66,58 @@ public class TokenServiceTests
 
         Assert.NotEqual(hash1, hash2);
     }
+
+    [Fact]
+    public void GerarCodigoRedefinicaoSenha_produz_codigo_de_6_caracteres_so_com_letras_maiusculas_e_numeros_sem_ambiguos()
+    {
+        var gerado = _sut.GerarCodigoRedefinicaoSenha();
+
+        Assert.Matches("^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$", gerado.Codigo);
+    }
+
+    [Fact]
+    public void GerarCodigoRedefinicaoSenha_chamado_duas_vezes_gera_codigos_diferentes()
+    {
+        var primeiro = _sut.GerarCodigoRedefinicaoSenha();
+        var segundo = _sut.GerarCodigoRedefinicaoSenha();
+
+        Assert.NotEqual(primeiro.Codigo, segundo.Codigo);
+    }
+
+    [Fact]
+    public void GerarCodigoRedefinicaoSenha_hash_corresponde_ao_codigo_gerado()
+    {
+        var gerado = _sut.GerarCodigoRedefinicaoSenha();
+
+        var hashRecalculado = _sut.HashCodigoRedefinicaoSenha(gerado.Codigo);
+
+        Assert.Equal(gerado.Hash, hashRecalculado);
+    }
+
+    [Fact]
+    public void HashCodigoRedefinicaoSenha_e_case_insensitive()
+    {
+        var hashMinusculo = _sut.HashCodigoRedefinicaoSenha("ab12cd");
+        var hashMaiusculo = _sut.HashCodigoRedefinicaoSenha("AB12CD");
+
+        Assert.Equal(hashMaiusculo, hashMinusculo);
+    }
+
+    [Fact]
+    public void HashCodigoRedefinicaoSenha_ignora_espacos_nas_bordas()
+    {
+        var hashComEspacos = _sut.HashCodigoRedefinicaoSenha("  AB12CD  ");
+        var hashSemEspacos = _sut.HashCodigoRedefinicaoSenha("AB12CD");
+
+        Assert.Equal(hashSemEspacos, hashComEspacos);
+    }
+
+    [Fact]
+    public void HashCodigoRedefinicaoSenha_para_codigos_diferentes_produz_hashes_diferentes()
+    {
+        var hash1 = _sut.HashCodigoRedefinicaoSenha("AB12CD");
+        var hash2 = _sut.HashCodigoRedefinicaoSenha("ZZ99ZZ");
+
+        Assert.NotEqual(hash1, hash2);
+    }
 }

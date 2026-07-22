@@ -1,4 +1,5 @@
 using euSindico.Application.Common.Interfaces;
+using euSindico.Infrastructure.Email;
 using euSindico.Infrastructure.Persistence;
 using euSindico.Infrastructure.Repositories;
 using euSindico.Infrastructure.Security;
@@ -21,11 +22,14 @@ public static class DependencyInjection
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0))));
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
 
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<ICodigoRedefinicaoSenhaRepository, CodigoRedefinicaoSenhaRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
 
         return services;
     }

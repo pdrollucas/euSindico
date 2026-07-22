@@ -8,10 +8,14 @@ namespace euSindico.Application.Auth;
 public class AuthService(
     IUsuarioRepository usuarioRepository,
     IRefreshTokenRepository refreshTokenRepository,
+    ICodigoRedefinicaoSenhaRepository codigoRedefinicaoSenhaRepository,
     IPasswordHasher passwordHasher,
-    ITokenService tokenService)
+    ITokenService tokenService,
+    IEmailSender emailSender)
 {
     private static readonly TimeSpan RefreshTokenDuracao = TimeSpan.FromHours(8);
+    private static readonly TimeSpan CodigoRedefinicaoDuracao = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan CooldownSolicitacaoCodigo = TimeSpan.FromMinutes(5);
 
     public async Task<UsuarioDto> RegistrarAsync(RegistrarUsuarioDto dto, CancellationToken ct = default)
     {
@@ -75,6 +79,79 @@ public class AuthService(
             refreshToken.Revogar();
             await refreshTokenRepository.AtualizarAsync(refreshToken, ct);
         }
+    }
+
+    public async Task SolicitarRedefinicaoSenhaAsync(EsqueciSenhaDto dto, CancellationToken ct = default)
+    {
+        var usuario = await usuarioRepository.BuscarPorEmailAsync(dto.Email, ct);
+
+        // Resposta idêntica exista ou não o e-mail, e também se o cooldown estiver ativo —
+        // só age quando o e-mail existe e passaram 5+ minutos desde o último código
+        // (RN15, anti-enumeração e anti-spam de e-mail, ver SECURITY.md seção 10).
+        if (usuario is null)
+        {
+            return;
+        }
+
+        var ultimoCodigo = await codigoRedefinicaoSenhaRepository.BuscarUltimoDoUsuarioAsync(usuario.Id, ct);
+        if (ultimoCodigo is not null && ultimoCodigo.CriadoEm > DateTime.UtcNow.Subtract(CooldownSolicitacaoCodigo))
+        {
+            return;
+        }
+
+        await codigoRedefinicaoSenhaRepository.InvalidarTodosDoUsuarioAsync(usuario.Id, ct);
+
+        var codigoGerado = tokenService.GerarCodigoRedefinicaoSenha();
+        var codigo = new CodigoRedefinicaoSenha(usuario.Id, codigoGerado.Hash, DateTime.UtcNow.Add(CodigoRedefinicaoDuracao));
+        await codigoRedefinicaoSenhaRepository.AdicionarAsync(codigo, ct);
+
+        await emailSender.EnviarAsync(
+            usuario.Email,
+            "Redefinição de senha - euSíndico",
+            $"Seu código de redefinição de senha é: {codigoGerado.Codigo}\n\n" +
+            $"Ele expira em {(int)CodigoRedefinicaoDuracao.TotalMinutes} minutos. Se você não solicitou isso, ignore este e-mail.",
+            ct);
+    }
+
+    public async Task VerificarCodigoRedefinicaoAsync(VerificarCodigoDto dto, CancellationToken ct = default)
+    {
+        await ObterCodigoValidoOuFalharAsync(dto.Email, dto.Codigo, ct);
+    }
+
+    public async Task RedefinirSenhaAsync(RedefinirSenhaDto dto, CancellationToken ct = default)
+    {
+        var (usuario, codigo) = await ObterCodigoValidoOuFalharAsync(dto.Email, dto.Codigo, ct);
+
+        codigo.MarcarComoUsado();
+        await codigoRedefinicaoSenhaRepository.AtualizarAsync(codigo, ct);
+
+        var novoHash = passwordHasher.Hash(dto.NovaSenha);
+        usuario.AlterarSenha(novoHash);
+        await usuarioRepository.AtualizarAsync(usuario, ct);
+
+        // Mesma regra da troca de senha autenticada: derruba todas as sessões ativas.
+        await refreshTokenRepository.RevogarTodosDoUsuarioAsync(usuario.Id, ct);
+    }
+
+    // Reaplicado tanto na verificação (passo de UX) quanto na redefinição de fato (passo de
+    // segurança, que nunca confia só na verificação anterior) — mesma mensagem genérica pra
+    // "e-mail não existe", "código errado", "expirado" ou "já usado" (anti-enumeração).
+    private async Task<(Usuario Usuario, CodigoRedefinicaoSenha Codigo)> ObterCodigoValidoOuFalharAsync(
+        string email, string codigoDigitado, CancellationToken ct)
+    {
+        var usuario = await usuarioRepository.BuscarPorEmailAsync(email, ct);
+        var hash = tokenService.HashCodigoRedefinicaoSenha(codigoDigitado);
+
+        var codigo = usuario is null
+            ? null
+            : await codigoRedefinicaoSenhaRepository.BuscarPorUsuarioIdEHashAsync(usuario.Id, hash, ct);
+
+        if (usuario is null || codigo is null || !codigo.EstaValido)
+        {
+            throw new CodigoRedefinicaoInvalidoException();
+        }
+
+        return (usuario, codigo);
     }
 
     private async Task<TokenResponseDto> EmitirTokensAsync(Usuario usuario, DateTime expiraEm, CancellationToken ct)

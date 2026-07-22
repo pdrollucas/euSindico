@@ -12,7 +12,8 @@ public interface IUsuarioRepository
 
     /// <summary>
     /// Exclui definitivamente o usuário e todos os dados vinculados (prédios, compromissos,
-    /// planejamentos, documentos, relatórios e refresh tokens) — ver AUTHENTICATION.md, Fluxo 7.
+    /// planejamentos, documentos, relatórios, refresh tokens e códigos de redefinição de
+    /// senha) — ver AUTHENTICATION.md, Fluxo 7.
     /// </summary>
     Task ExcluirUsuarioEDadosRelacionadosAsync(int usuarioId, CancellationToken ct = default);
 }

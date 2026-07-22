@@ -11,6 +11,10 @@ namespace euSindico.Infrastructure.Security;
 
 public class TokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
 {
+    // Sem 0/O/1/I/L — caracteres visualmente ambíguos, ver SECURITY.md seção 10.
+    private const string CaracteresCodigoRedefinicao = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    private const int TamanhoCodigoRedefinicao = 6;
+
     private readonly JwtOptions _options = jwtOptions.Value;
 
     public string GerarAccessToken(Usuario usuario)
@@ -45,9 +49,25 @@ public class TokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
 
     public string HashRefreshToken(string refreshToken) => CalcularHash(refreshToken);
 
-    private static string CalcularHash(string refreshToken)
+    public CodigoRedefinicaoSenhaGerado GerarCodigoRedefinicaoSenha()
     {
-        var bytesHash = SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken));
+        var caracteres = new char[TamanhoCodigoRedefinicao];
+        for (var i = 0; i < caracteres.Length; i++)
+        {
+            caracteres[i] = CaracteresCodigoRedefinicao[RandomNumberGenerator.GetInt32(CaracteresCodigoRedefinicao.Length)];
+        }
+
+        var codigo = new string(caracteres);
+        return new CodigoRedefinicaoSenhaGerado(codigo, HashCodigoRedefinicaoSenha(codigo));
+    }
+
+    // Normaliza (maiúsculas, sem espaços) antes de hashear — validação case-insensitive,
+    // já que o código gerado só usa A-Z/0-9 (ver GerarCodigoRedefinicaoSenha).
+    public string HashCodigoRedefinicaoSenha(string codigo) => CalcularHash(codigo.Trim().ToUpperInvariant());
+
+    private static string CalcularHash(string valor)
+    {
+        var bytesHash = SHA256.HashData(Encoding.UTF8.GetBytes(valor));
         return Convert.ToHexString(bytesHash);
     }
 }

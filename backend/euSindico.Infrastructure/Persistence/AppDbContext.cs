@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Documento> Documentos => Set<Documento>();
     public DbSet<Relatorio> Relatorios => Set<Relatorio>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<CodigoRedefinicaoSenha> CodigosRedefinicaoSenha => Set<CodigoRedefinicaoSenha>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

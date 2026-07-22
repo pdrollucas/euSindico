@@ -24,6 +24,7 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
             CredenciaisInvalidasException => StatusCodes.Status401Unauthorized,
             RefreshTokenInvalidoException => StatusCodes.Status401Unauthorized,
             SenhaAtualIncorretaException => StatusCodes.Status400BadRequest,
+            CodigoRedefinicaoInvalidoException => StatusCodes.Status400BadRequest,
             UsuarioNaoEncontradoException => StatusCodes.Status404NotFound,
             _ => 0,
         };

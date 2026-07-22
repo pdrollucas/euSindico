@@ -15,7 +15,10 @@ public class AuthController(
     AuthService authService,
     IValidator<RegistrarUsuarioDto> registrarValidator,
     IValidator<LoginDto> loginValidator,
-    IValidator<RefreshTokenDto> refreshValidator) : ControllerBase
+    IValidator<RefreshTokenDto> refreshValidator,
+    IValidator<EsqueciSenhaDto> esqueciSenhaValidator,
+    IValidator<VerificarCodigoDto> verificarCodigoValidator,
+    IValidator<RedefinirSenhaDto> redefinirSenhaValidator) : ControllerBase
 {
     // O id do usuário vem sempre da claim do token (sub), nunca de um parâmetro de rota/query (RN02).
     private int UsuarioId => int.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -72,6 +75,48 @@ public class AuthController(
         }
 
         await authService.LogoutAsync(UsuarioId, dto, ct);
+        return NoContent();
+    }
+
+    [HttpPost("esqueci-senha")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> EsqueciSenha(EsqueciSenhaDto dto, CancellationToken ct)
+    {
+        var validationResult = await esqueciSenhaValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        await authService.SolicitarRedefinicaoSenhaAsync(dto, ct);
+        return NoContent();
+    }
+
+    [HttpPost("verificar-codigo")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> VerificarCodigo(VerificarCodigoDto dto, CancellationToken ct)
+    {
+        var validationResult = await verificarCodigoValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        await authService.VerificarCodigoRedefinicaoAsync(dto, ct);
+        return NoContent();
+    }
+
+    [HttpPost("redefinir-senha")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> RedefinirSenha(RedefinirSenhaDto dto, CancellationToken ct)
+    {
+        var validationResult = await redefinirSenhaValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        await authService.RedefinirSenhaAsync(dto, ct);
         return NoContent();
     }
 }
