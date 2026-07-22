@@ -72,12 +72,16 @@ public class AuthServiceTests
         _tokenService.Setup(t => t.GerarRefreshToken())
             .Returns(new RefreshTokenGerado("refresh-token-fake", "hash-do-refresh"));
 
+        var antes = DateTime.UtcNow;
         var dto = new LoginDto("joao@eusindico.com", "Senha@123");
 
         var resultado = await _sut.LoginAsync(dto);
 
         Assert.Equal("access-token-fake", resultado.AccessToken);
         Assert.Equal("refresh-token-fake", resultado.RefreshToken);
+        // ExpiraEm é usado pelo AuthController pra alinhar o "Expires" do cookie HttpOnly
+        // (ver SECURITY.md, seção 1) — precisa bater com as ~8h da sessão, não zero/default.
+        Assert.InRange(resultado.ExpiraEm, antes.AddHours(8).AddSeconds(-5), antes.AddHours(8).AddSeconds(5));
         _refreshTokenRepository.Verify(
             r => r.AdicionarAsync(
                 It.Is<RefreshToken>(rt => rt.TokenHash == "hash-do-refresh" && rt.EstaAtivo),
@@ -133,6 +137,9 @@ public class AuthServiceTests
 
         Assert.Equal("novo-access-token", resultado.AccessToken);
         Assert.Equal("novo-refresh-token", resultado.RefreshToken);
+        // expiraEm NÃO é recalculado na rotação — herda do token substituído (sessão total
+        // continua limitada a 8h fixas desde o login original, ver AUTHENTICATION.md).
+        Assert.Equal(refreshTokenAntigo.ExpiraEm, resultado.ExpiraEm);
         Assert.False(refreshTokenAntigo.EstaAtivo);
         _refreshTokenRepository.Verify(r => r.AtualizarAsync(refreshTokenAntigo, It.IsAny<CancellationToken>()), Times.Once);
         _refreshTokenRepository.Verify(

@@ -23,6 +23,7 @@ Este documento descreve o fluxo completo de autenticação e gerenciamento de co
 ## Visão geral
 
 - **Mecanismo:** access token (JWT, curto) + refresh token (opaco, revogável, guardado no banco).
+- **Transporte:** o access token vai no corpo da resposta JSON (o cliente decide onde guardá-lo — hoje, em memória). O refresh token vai em **cookie `HttpOnly`** (`Set-Cookie`, nunca no corpo) — inacessível a JavaScript no cliente, enviado automaticamente pelo navegador só nas requisições para `/auth/*` (`Path=/auth`). Ver [SECURITY.md](SECURITY.md), seção 1, para o raciocínio de segurança por trás dessa escolha.
 - **Expiração do access token:** curta (ex: 30 minutos) — é o token *stateless* enviado em cada requisição.
 - **Expiração do refresh token:** 8 horas a partir do login (mantém o espírito do RNF02, mas aplicado à sessão como um todo, não ao token de cada requisição).
 - **Hash de senha:** BCrypt (RNF03) — a senha em texto puro nunca é persistida nem logada.
@@ -54,6 +55,7 @@ Pontos importantes desse desenho:
 - **Nunca guardamos o refresh token em texto puro** — só um hash dele (mesmo princípio da senha: se o banco vazar, os tokens não são diretamente utilizáveis).
 - **`expira_em` é fixo desde o login**, não é estendido a cada renovação — isso limita a sessão total a 8h mesmo que o usuário fique renovando o access token o tempo todo, evitando sessões "eternas" via refresh contínuo.
 - **`revogado_em` nulo = token ainda ativo.** Preenchido quando: (a) o usuário faz logout, (b) o token é usado uma vez para renovar (rotação, ver abaixo), ou (c) o usuário altera a senha/exclui a conta.
+- **O valor em texto puro do refresh token nunca é retornado no corpo JSON** — só via cookie `HttpOnly` (`Set-Cookie`, `AuthController`). O `expira_em` persistido é o mesmo valor usado no atributo `Expires` do cookie, para o navegador descartá-lo sozinho quando a sessão total (8h) acabar, sem depender só do banco pra isso.
 
 ## Nova entidade: CodigoRedefinicaoSenha
 
@@ -131,12 +133,15 @@ sequenceDiagram
         S->>RT: Salvar(usuarioId, hash, expiraEm: agora + 8h)
         RT->>DB: INSERT INTO refresh_tokens
         DB-->>RT: OK
-        S-->>A: { accessToken, refreshToken }
-        A-->>C: 200 OK { accessToken, refreshToken }
+        S-->>A: { accessToken, refreshToken, expiraEm }
+        A->>A: Set-Cookie: refreshToken=... (HttpOnly; Secure; SameSite=None; Path=/auth; Expires=expiraEm)
+        A-->>C: 200 OK { accessToken } + Set-Cookie
     end
 ```
 
 Por segurança, a resposta de erro é idêntica tanto para "e-mail não existe" quanto para "senha incorreta" — evita que a API revele quais e-mails estão cadastrados (*user enumeration*).
+
+**O refresh token nunca aparece no corpo da resposta** — só o `accessToken` vai no JSON; o refresh token vai exclusivamente no header `Set-Cookie`, com os atributos que impedem acesso via JavaScript (`HttpOnly`) e restringem onde o navegador o reenvia (`Path=/auth`). Ver [SECURITY.md](SECURITY.md), seção 1, para o porquê de cada atributo.
 
 ## Fluxo 3 — Requisição autenticada a um recurso protegido (RN01, RN02) ✅ implementado
 
@@ -179,35 +184,44 @@ sequenceDiagram
     participant DB as MySQL (refresh_tokens)
 
     C->>C: Requisição original recebe 401 (access token expirado)
-    C->>A: POST /auth/refresh { refreshToken }
-    A->>S: RenovarToken(refreshToken)
-    S->>RT: BuscarPorHash(hash(refreshToken))
-    RT->>DB: SELECT ... WHERE token_hash = ? AND revogado_em IS NULL
-    DB-->>RT: registro ou nulo
-    alt Refresh token inválido, expirado ou já revogado
-        RT-->>S: null
-        S-->>A: erro (401 Unauthorized)
-        A-->>C: 401 Unauthorized
-        C->>C: Descarta tokens, redireciona para login
-    else Refresh token válido
-        RT-->>S: registro
-        S->>RT: Revogar(registro) — rotação: este token não serve mais
-        RT->>DB: UPDATE refresh_tokens SET revogado_em = agora()
-        S->>T: GerarAccessToken(usuario)
-        T-->>S: novo JWT (exp: 30min)
-        S->>T: GerarRefreshToken()
-        T-->>S: novo refreshToken + hash
-        S->>RT: Salvar(usuarioId, novoHash, expiraEm: igual ao registro original)
-        RT->>DB: INSERT INTO refresh_tokens
-        S-->>A: { accessToken, refreshToken }
-        A-->>C: 200 OK { accessToken, refreshToken }
-        C->>C: Repete a requisição original com o novo access token
+    C->>A: POST /auth/refresh (cookie: refreshToken=..., enviado automaticamente pelo navegador)
+    alt Cookie refreshToken ausente
+        A-->>C: 401 Unauthorized (RefreshTokenInvalidoException, sem chamar o Service)
+        C->>C: Descarta o access token em memória, redireciona para login
+    else Cookie presente
+        A->>A: Lê refreshToken do cookie da requisição
+        A->>S: RenovarToken(refreshToken)
+        S->>RT: BuscarPorHash(hash(refreshToken))
+        RT->>DB: SELECT ... WHERE token_hash = ? AND revogado_em IS NULL
+        DB-->>RT: registro ou nulo
+        alt Refresh token inválido, expirado ou já revogado
+            RT-->>S: null
+            S-->>A: erro (401 Unauthorized)
+            A-->>C: 401 Unauthorized
+            C->>C: Descarta o access token em memória, redireciona para login
+        else Refresh token válido
+            RT-->>S: registro
+            S->>RT: Revogar(registro) — rotação: este token não serve mais
+            RT->>DB: UPDATE refresh_tokens SET revogado_em = agora()
+            S->>T: GerarAccessToken(usuario)
+            T-->>S: novo JWT (exp: 30min)
+            S->>T: GerarRefreshToken()
+            T-->>S: novo refreshToken + hash
+            S->>RT: Salvar(usuarioId, novoHash, expiraEm: igual ao registro original)
+            RT->>DB: INSERT INTO refresh_tokens
+            S-->>A: { accessToken, refreshToken, expiraEm }
+            A->>A: Set-Cookie: refreshToken=... (rotação — substitui o cookie anterior)
+            A-->>C: 200 OK { accessToken } + Set-Cookie
+            C->>C: Repete a requisição original com o novo access token
+        end
     end
 ```
 
 Esse processo é **automático e invisível** para o síndico — ele não vê tela de login nem percebe a renovação; a experiência continua sendo "fico logado por 8h", igual ao design anterior. Só quando o refresh token expira de fato (8h desde o login) ou é revogado é que ele volta para a tela de login.
 
-**Rotação:** a cada renovação, o refresh token usado é revogado e um novo é emitido. Isso limita o dano se um refresh token vazar — ele só serve uma vez; se um atacante e o usuário legítimo tentarem usar o mesmo refresh token, o segundo a chegar recebe 401 (sinal de possível roubo).
+**Rotação:** a cada renovação, o refresh token usado é revogado e um novo é emitido, substituindo o cookie via um novo `Set-Cookie` na resposta — o navegador troca o valor sozinho, o frontend não manipula esse cookie diretamente em nenhum momento (é `HttpOnly`). Isso limita o dano se um refresh token vazar — ele só serve uma vez; se um atacante e o usuário legítimo tentarem usar o mesmo refresh token, o segundo a chegar recebe 401 (sinal de possível roubo).
+
+**Cookie ausente vs. cookie inválido:** o controller trata os dois casos com o mesmo resultado para o cliente (401, mesma exceção `RefreshTokenInvalidoException`) — mas quando o cookie já nem está presente na requisição, o `AuthController` responde 401 sem sequer chamar o `AuthService`/consultar o banco, já que não há nada para buscar.
 
 ## Fluxo 5 — Logout (RF03) ✅ implementado
 
@@ -221,32 +235,36 @@ sequenceDiagram
     participant RT as IRefreshTokenRepository
     participant DB as MySQL (refresh_tokens)
 
-    C->>A: POST /auth/logout { refreshToken } (Authorization: Bearer <accessToken>)
-    A->>S: Logout(usuarioId do token, refreshToken)
-    S->>RT: BuscarPorHash(hash(refreshToken))
-    RT->>DB: SELECT ...
-    DB-->>RT: registro ou nulo
-    alt Token existe, pertence ao usuarioId do token e ainda está ativo
-        S->>RT: Revogar(registro)
-        RT->>DB: UPDATE refresh_tokens SET revogado_em = agora()
-    else Token não existe, já revogado/expirado, ou pertence a outro usuário
-        S->>S: Nada a fazer — estado desejado já vale
+    C->>A: POST /auth/logout (cookie: refreshToken=...; Authorization: Bearer <accessToken>)
+    alt Cookie refreshToken presente
+        A->>S: Logout(usuarioId do token, refreshToken)
+        S->>RT: BuscarPorHash(hash(refreshToken))
+        RT->>DB: SELECT ...
+        DB-->>RT: registro ou nulo
+        alt Token existe, pertence ao usuarioId do token e ainda está ativo
+            S->>RT: Revogar(registro)
+            RT->>DB: UPDATE refresh_tokens SET revogado_em = agora()
+        else Token não existe, já revogado/expirado, ou pertence a outro usuário
+            S->>S: Nada a fazer — estado desejado já vale
+        end
+    else Cookie ausente
+        A->>A: Nada a revogar — não há sessão pra encerrar no banco
     end
-    S-->>A: OK
-    A-->>C: 204 No Content
-    C->>C: Descarta accessToken e refreshToken armazenados localmente
+    A->>A: Response.Cookies.Delete("refreshToken", Path=/auth) — sempre, independente do caminho acima
+    A-->>C: 204 No Content + Set-Cookie (expirado, instrui o navegador a apagar)
+    C->>C: Descarta o accessToken da memória
 ```
 
 O endpoint exige um access token válido (`[Authorize]`) — o `usuarioId` usado para conferir a posse do refresh token vem das claims do token, nunca do corpo da requisição (RN02). Só é revogado o refresh token **daquela sessão/dispositivo** — se o síndico estiver logado em outro aparelho, essa outra sessão continua ativa. O access token em uso ainda funciona até expirar sozinho (no máximo ~30 min, já que é stateless), mas depois disso ele não consegue mais ser renovado — a sessão está, na prática, encerrada bem mais rápido do que os antigas 8h do design anterior.
 
-**Idempotente e sem mensagens de erro:** se o refresh token informado não existir, já estiver revogado/expirado, ou pertencer a outro usuário, o endpoint devolve o mesmo `204 No Content` — nunca um erro. O objetivo do logout ("essa sessão não deve mais renovar") já vale nesses casos, e não faz sentido dar ao cliente um sinal que distinga essas situações (mesmo espírito anti-enumeração do `RenovarTokenAsync` no Fluxo 4).
+**Idempotente e sem mensagens de erro:** se o cookie não existir, se o refresh token nele já estiver revogado/expirado, ou pertencer a outro usuário, o endpoint devolve o mesmo `204 No Content` — nunca um erro. O objetivo do logout ("essa sessão não deve mais renovar") já vale nesses casos, e não faz sentido dar ao cliente um sinal que distinga essas situações (mesmo espírito anti-enumeração do `RenovarTokenAsync` no Fluxo 4). O cookie é sempre limpo na resposta, mesmo quando não havia nada a revogar no banco.
 
 ### Responsabilidade do frontend no logout
 
-O backend só cuida de metade do logout (revogar o refresh token no servidor). A outra metade é responsabilidade do frontend, e é assim que a maioria dos sistemas com access token curto + refresh token faz (Auth0, Keycloak, Cognito, etc.) — não é peculiaridade do euSíndico:
+O backend cuida da maior parte do logout agora — revoga o refresh token no servidor **e** instrui o navegador a apagar o cookie, já que o `Set-Cookie` expirado vem na própria resposta de `204`. O que sobra pro frontend:
 
-1. Chamar `POST /auth/logout` com o `refreshToken` no corpo e o `accessToken` no header `Authorization`.
-2. **Apagar os tokens armazenados localmente** (`localStorage`/`sessionStorage`/cookie/store) **incondicionalmente** — mesmo se o passo 1 falhar por rede/timeout. O usuário espera sair da conta *naquele dispositivo* independente do backend responder; a chamada ao endpoint é reforço de segurança (impede renovação futura), não pré-requisito para a limpeza local.
+1. Chamar `POST /auth/logout` com o `accessToken` no header `Authorization` e a requisição configurada para enviar credenciais (o navegador anexa o cookie `refreshToken` sozinho — o frontend nunca lê nem escreve esse cookie diretamente, já que é `HttpOnly`).
+2. **Apagar o `accessToken` da memória incondicionalmente** — mesmo se o passo 1 falhar por rede/timeout. O usuário espera sair da conta *naquele dispositivo* independente do backend responder; a chamada ao endpoint é reforço de segurança (revoga no servidor, impede renovação futura), não pré-requisito pra limpeza local do access token.
 3. Redirecionar para a tela de login.
 
 Se o passo 2 não acontecer, num dispositivo compartilhado o próximo usuário continuaria com o access token funcionando pelos minutos restantes (risco residual, mas agora medido em minutos, não em horas, graças à revogação do refresh token no passo 1).
@@ -436,4 +454,4 @@ Aplicadas na Api via FluentValidation, antes de qualquer chamada ao Service:
 
 Implementados até agora: `POST /auth/registrar`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /perfil`, `PUT /perfil`, `PUT /perfil/senha`, `DELETE /perfil`, `POST /auth/esqueci-senha`, `POST /auth/verificar-codigo` e `POST /auth/redefinir-senha` (Fluxos 1 a 8), com `AuthService`, `PerfilService`, `IUsuarioRepository`, `IRefreshTokenRepository`, `ICodigoRedefinicaoSenhaRepository`, `IPasswordHasher`, `ITokenService`, `IEmailSender`/`SmtpEmailSender` (MailKit), as entidades/migrations de `RefreshToken` e `CodigoRedefinicaoSenha`, e o middleware `UseAuthentication()`/`AddJwtBearer()` já registrados no `Program.cs`.
 
-Todo o fluxo de autenticação e gerenciamento de conta descrito neste documento está implementado.
+Todo o fluxo de autenticação e gerenciamento de conta descrito neste documento está implementado, incluindo a migração do refresh token de corpo JSON para cookie `HttpOnly` (`AuthController`, ver [SECURITY.md](SECURITY.md), seção 1).

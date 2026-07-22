@@ -82,6 +82,7 @@ Camada de **apresentação/entrada** da aplicação. É a porta de entrada HTTP 
 - `Program.cs`: registro de injeção de dependência (conectando as interfaces da Application às implementações da Infrastructure), configuração de autenticação JWT, middlewares, documentação OpenAPI.
 - Validação de entrada (FluentValidation) e mapeamento de request/response.
 - Tratamento global de erros e códigos de status HTTP.
+- Leitura/escrita de cookies HTTP (ex: o cookie `HttpOnly` do refresh token, em `AuthController` — ver [AUTHENTICATION.md](AUTHENTICATION.md) e [SECURITY.md](SECURITY.md)). A Application nunca conhece cookies — recebe e devolve só o valor do token como `string`, através do `TokenResponseDto`.
 
 **Não é responsabilidade desta camada:**
 - Lógica de negócio (validações de regra, cálculos, orquestração) — Controllers apenas recebem a requisição, chamam o Service correspondente da Application e devolvem a resposta.

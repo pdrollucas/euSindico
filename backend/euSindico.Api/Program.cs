@@ -30,6 +30,25 @@ builder.Services.AddProblemDetails();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Origem(ns) do frontend autorizadas a chamar a API vindas de "Cors:AllowedOrigins" — sem
+// nenhuma origem configurada, a policy não libera nenhuma (fail-closed), em vez de usar
+// AllowAnyOrigin. Ver SECURITY.md, seção 8/12, e o SECURITY.md do frontend, seção 9.
+var corsAllowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy.WithOrigins(corsAllowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            // Necessário para o cookie HttpOnly do refresh token (ver SECURITY.md, seção 1)
+            // trafegar entre origens diferentes — exige origens explícitas, incompatível
+            // com AllowAnyOrigin (já não usado, ver comentário acima).
+            .AllowCredentials();
+    });
+});
+
 // Falha já na inicialização se a chave não estiver configurada, em vez de deixar o erro
 // estourar (de forma bem menos óbvia) só na primeira requisição que passar pelo
 // middleware de autenticação — ver SECURITY.md.
@@ -132,6 +151,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

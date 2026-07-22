@@ -26,10 +26,24 @@ O sistema usa dois tokens com propósitos e níveis de confiança diferentes, em
 | | Access token | Refresh token |
 |---|---|---|
 | Formato | JWT (auto-contido, assinado com HMAC-SHA256) | String aleatória opaca (256 bits), sem conteúdo interpretável |
-| Onde vive | Só no cliente — nunca é persistido no servidor | No cliente **e** no servidor (tabela `refresh_tokens`, guardado como hash SHA-256) |
+| Onde vive | Só no cliente (corpo da resposta, o cliente decide onde guardar) — nunca é persistido no servidor | No servidor (tabela `refresh_tokens`, guardado como hash SHA-256) **e** no cliente, mas só como cookie `HttpOnly` — nunca acessível a JavaScript, nunca no corpo JSON |
 | Duração | Curta: ~30 minutos (`Jwt:AccessTokenMinutes`) | Longa: 8 horas a partir do login, fixas desde a emissão original |
-| Uso | Enviado em todo endpoint protegido, header `Authorization: Bearer <token>` | Usado só para trocar por um access token novo (`POST /auth/refresh`) ou encerrar uma sessão (`POST /auth/logout`) — nunca em requisições normais |
+| Uso | Enviado em todo endpoint protegido, header `Authorization: Bearer <token>` | Reenviado automaticamente pelo navegador (cookie) só em `/auth/refresh` e `/auth/logout` — nunca em requisições normais, nunca manipulado por código JavaScript do frontend |
 | Pode ser revogado? | Não — validação *stateless*, sem consulta ao banco | Sim — é justamente para isso que existe a tabela `refresh_tokens` |
+
+### Transporte do refresh token: cookie `HttpOnly`
+
+O refresh token é emitido via `Set-Cookie` (`AuthController`, em `POST /auth/login` e `POST /auth/refresh`) e nunca aparece no corpo da resposta JSON — só o access token vai lá. Atributos do cookie e o porquê de cada um:
+
+| Atributo | Valor | Por quê |
+|---|---|---|
+| `HttpOnly` | `true` | Torna o cookie inacessível a `document.cookie`/JavaScript — um XSS bem-sucedido no frontend não consegue mais ler o refresh token, diferente de quando ele vivia em `localStorage`. Essa é a motivação principal da migração. |
+| `Secure` | `true` | O cookie só é enviado pelo navegador em conexões HTTPS — consistente com `UseHttpsRedirection()` (seção 8), que já força HTTPS em toda a API. |
+| `SameSite` | `None` | Frontend (AWS Amplify) e backend (AWS App Runner) ficam em domínios diferentes por padrão — sem domínio próprio compartilhado, `SameSite=Strict`/`Lax` bloquearia o cookie em toda chamada cross-site do frontend, quebrando a autenticação. `SameSite=None` exige `Secure=true` (já garantido acima). |
+| `Path` | `/auth` | O cookie só é enviado pelo navegador em requisições para `/auth/*` — não vai em toda chamada à API (`/predios`, `/compromissos` etc.), já que só `/auth/refresh` e `/auth/logout` precisam dele. Reduz a superfície de exposição do cookie a endpoints que realmente o usam. |
+| `Expires` | Igual ao `expira_em` persistido (8h fixas desde o login original) | O navegador descarta o cookie sozinho quando a sessão total expira, sem depender só da checagem contra o banco — mesma janela de 8h em ambos os lados. |
+
+**CSRF, com `SameSite=None`:** como `SameSite=None` permite o cookie trafegar em requisições cross-site, a proteção contra CSRF nesse desenho vem de outro lugar — o CORS (seção 8) já restringe as origens aceitas (nunca `AllowAnyOrigin`), e como a API só aceita `Content-Type: application/json`, toda requisição de escrita para `/auth/refresh`/`/auth/logout` é uma requisição *não-simples* que exige *preflight* (`OPTIONS`) aprovado pelo CORS antes do navegador sequer enviar a requisição real. Um site de origem não cadastrada não passa do preflight — o cookie nunca chega a ser enviado numa tentativa de CSRF vinda de fora das origens liberadas.
 
 ### Por que não um único token de 8h
 
@@ -153,7 +167,7 @@ Campos de texto livre que ainda vão ser criados em módulos futuros (`titulo` e
 ## 8. Comunicação
 
 - `UseHttpsRedirection()` — força HTTPS entre cliente e servidor (RFC 6.1).
-- CORS ainda não configurado — só será necessário quando o front-end (origem diferente) existir; fica registrado aqui como pendência a não esquecer nessa hora.
+- **CORS** (`Program.cs`, policy `"Frontend"`): origens liberadas vêm de `Cors:AllowedOrigins` (lista, nunca `AllowAnyOrigin`) — sem nenhuma origem configurada, a policy não libera nada (fail-closed). Em desenvolvimento, `appsettings.Development.json` já libera `http://localhost:5173` (dev server do Vite, ver [ARCHITECTURE.md do frontend](../../frontend/documentation/ARCHITECTURE.md)); em produção, a origem real do Amplify Hosting precisa ser adicionada a `Cors:AllowedOrigins` (via `appsettings.Production.json` ou variável de ambiente `Cors__AllowedOrigins__0`) antes do primeiro deploy. **Com `AllowCredentials()`** — necessário porque o refresh token agora trafega em cookie (seção 1); `AllowCredentials()` exige origens explícitas (incompatível com `AllowAnyOrigin`, que já não era usado por outro motivo). Coberto por testes de integração em `CorsTests.cs`.
 
 ## 9. Rate limiting (proteção contra força bruta)
 
@@ -222,7 +236,4 @@ Fluxo em 3 endpoints (RF06-A), sem exigir autenticação — detalhamento comple
 **Bloqueantes antes de produção** (afetam usuários legítimos desde o primeiro dia, não são "nice to have"):
 
 - `ForwardedHeadersMiddleware` configurado para o App Runner, para o rate limiting (seção 9) identificar o IP real do cliente em vez do IP do proxy.
-
-**Podem esperar o gatilho correspondente:**
-
-- CORS, quando o front-end existir (domínio da origem ainda não é conhecido).
+- Adicionar a origem real de produção do frontend (AWS Amplify Hosting) a `Cors:AllowedOrigins` (seção 8) — hoje só `http://localhost:5173` está liberado (desenvolvimento). Sem isso, o frontend em produção não consegue chamar a API.

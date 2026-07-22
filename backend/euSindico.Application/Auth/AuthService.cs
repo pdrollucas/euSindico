@@ -162,6 +162,6 @@ public class AuthService(
         var refreshToken = new RefreshToken(usuario.Id, refreshTokenGerado.Hash, expiraEm);
         await refreshTokenRepository.AdicionarAsync(refreshToken, ct);
 
-        return new TokenResponseDto(accessToken, refreshTokenGerado.Token);
+        return new TokenResponseDto(accessToken, refreshTokenGerado.Token, expiraEm);
     }
 }

@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using euSindico.Application.Auth;
 using euSindico.Application.Auth.Dtos;
+using euSindico.Application.Common.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,14 @@ public class AuthController(
     AuthService authService,
     IValidator<RegistrarUsuarioDto> registrarValidator,
     IValidator<LoginDto> loginValidator,
-    IValidator<RefreshTokenDto> refreshValidator,
     IValidator<EsqueciSenhaDto> esqueciSenhaValidator,
     IValidator<VerificarCodigoDto> verificarCodigoValidator,
     IValidator<RedefinirSenhaDto> redefinirSenhaValidator) : ControllerBase
 {
+    // Nome do cookie HttpOnly que carrega o refresh token — nunca aparece no corpo JSON
+    // (ver SECURITY.md, seção 1, e AUTHENTICATION.md). Restrito a /auth/* via Path abaixo.
+    private const string RefreshTokenCookieName = "refreshToken";
+
     // O id do usuário vem sempre da claim do token (sub), nunca de um parâmetro de rota/query (RN02).
     private int UsuarioId => int.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
@@ -48,33 +52,35 @@ public class AuthController(
         }
 
         var tokens = await authService.LoginAsync(dto, ct);
-        return Ok(tokens);
+        DefinirCookieRefreshToken(tokens.RefreshToken, tokens.ExpiraEm);
+        return Ok(new AccessTokenResponseDto(tokens.AccessToken));
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh(RefreshTokenDto dto, CancellationToken ct)
+    public async Task<IActionResult> Refresh(CancellationToken ct)
     {
-        var validationResult = await refreshValidator.ValidateAsync(dto, ct);
-        if (!validationResult.IsValid)
+        if (!Request.Cookies.TryGetValue(RefreshTokenCookieName, out var refreshToken) || string.IsNullOrEmpty(refreshToken))
         {
-            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+            throw new RefreshTokenInvalidoException();
         }
 
-        var tokens = await authService.RenovarTokenAsync(dto, ct);
-        return Ok(tokens);
+        var tokens = await authService.RenovarTokenAsync(new RefreshTokenDto(refreshToken), ct);
+        DefinirCookieRefreshToken(tokens.RefreshToken, tokens.ExpiraEm);
+        return Ok(new AccessTokenResponseDto(tokens.AccessToken));
     }
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout(RefreshTokenDto dto, CancellationToken ct)
+    public async Task<IActionResult> Logout(CancellationToken ct)
     {
-        var validationResult = await refreshValidator.ValidateAsync(dto, ct);
-        if (!validationResult.IsValid)
+        // Idempotente: se o cookie não existir, não há sessão pra encerrar no banco — mas o
+        // cookie ainda é limpo abaixo, incondicionalmente (ver AUTHENTICATION.md, Fluxo 5).
+        if (Request.Cookies.TryGetValue(RefreshTokenCookieName, out var refreshToken) && !string.IsNullOrEmpty(refreshToken))
         {
-            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+            await authService.LogoutAsync(UsuarioId, new RefreshTokenDto(refreshToken), ct);
         }
 
-        await authService.LogoutAsync(UsuarioId, dto, ct);
+        LimparCookieRefreshToken();
         return NoContent();
     }
 
@@ -118,5 +124,27 @@ public class AuthController(
 
         await authService.RedefinirSenhaAsync(dto, ct);
         return NoContent();
+    }
+
+    private void DefinirCookieRefreshToken(string refreshToken, DateTime expiraEm)
+    {
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = "/auth",
+            Expires = new DateTimeOffset(DateTime.SpecifyKind(expiraEm, DateTimeKind.Utc)),
+        });
+    }
+
+    private void LimparCookieRefreshToken()
+    {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            Path = "/auth",
+            Secure = true,
+            SameSite = SameSiteMode.None,
+        });
     }
 }
