@@ -5,7 +5,9 @@ API REST desenvolvida em **ASP.NET Core (.NET 10)**, com **Entity Framework Core
 ## Documentação
 
 - **[Getting Started](documentation/GETTING_STARTED.md)** — pré-requisitos, como rodar o projeto localmente, configuração de User Secrets, migrations e diferenças entre ambientes.
-- **[Architecture](documentation/ARCHITECTURE.md)** — responsabilidades de cada camada (Api, Application, Domain, Infrastructure), suas dependências e o fluxo de uma requisição.
+- **[Architecture](documentation/ARCHITECTURE.md)** — responsabilidades de cada camada (Api, Application, Domain, Infrastructure), suas dependências, o fluxo de uma requisição e a hospedagem planejada.
+- **[Authentication](documentation/AUTHENTICATION.md)** — fluxo completo de autenticação (cadastro, login, logout, perfil, exclusão de conta, recuperação de senha), estrutura do JWT e onde cada peça mora na arquitetura.
+- **[Security](documentation/SECURITY.md)** — medidas de segurança implementadas: modelo de tokens, proteção contra XSS, tratamento de erros, autorização, rate limiting, recuperação de senha e mapeamento com a seção 6.1 do RFC.
 
 ## Resumo rápido
 

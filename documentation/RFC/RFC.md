@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>2.0.0
+- <strong>Versão: </strong>2.1.0 — adiciona RF06-A (recuperação de senha esquecida), não previsto na proposta original
 - <strong>Disponível em PDF: </strong>[RFC.pdf](https://github.com/user-attachments/files/29358895/RFC.pdf)
 
 
@@ -239,11 +239,13 @@ flowchart LR
 
         UC1((Realizar login))
         UC2((Realizar logout))
+        UC3((Recuperar senha esquecida))
 
     end
 
     usuario --> UC1
     usuario --> UC2
+    usuario --> UC3
 ```
 
 Diagrama de Caso de Uso — Gerenciamento de Perfil
@@ -381,6 +383,7 @@ flowchart LR
 - RF04 — O sistema deve permitir que o usuário visualize suas informações de perfil.
 - RF05 — O sistema deve permitir que o usuário edite suas informações de perfil.
 - RF06 — O sistema deve permitir que o usuário altere sua senha.
+- RF06-A — O sistema deve permitir que o usuário redefina sua senha caso a tenha esquecido, mediante verificação de um código de 6 caracteres enviado por e-mail. *(Requisito adicionado na v2.1.0, após a proposta original — não previsto em RF01–RF28 nem nos marcos da seção 7.1.)*
 - RF07 — O sistema deve permitir que o usuário exclua sua conta.
 - RF08 — O sistema deve permitir que o usuário cadastre prédios.
 - RF09 — O sistema deve permitir que o usuário visualize prédios cadastrados.
@@ -407,7 +410,7 @@ flowchart LR
 ### 2.4 Requisitos Não Funcionais (RNFs)
 
 - RNF01 — O sistema deve apresentar tempo de resposta inferior a 1500 ms para operações comuns.
-- RNF02 — O sistema deve utilizar autenticação baseada em JWT com expiração de 8 horas para tokens de acesso.
+- RNF02 — O sistema deve utilizar autenticação baseada em JWT, com access token de curta duração (~30 minutos) e refresh token revogável com validade de 8 horas.
 - RNF03 — As senhas dos usuários devem ser armazenadas utilizando algoritmo de hash seguro (BCrypt).
 - RNF04 — O sistema deve exigir senhas com no mínimo 8 caracteres, contendo letras maiúsculas, letras minúsculas, números e caracteres especiais.
 - RNF05 — O sistema deve validar o formato do endereço de e-mail durante o cadastro e atualização de perfil.
@@ -434,6 +437,7 @@ flowchart LR
 - RN12 — O sistema aceitará apenas arquivos nos formatos PDF, DOCX, XLSX, JPG e PNG, com tamanho máximo de 20 MB.
 - RN13 — Os relatórios mensais deverão ser gerados em formato PDF, agrupando os compromissos concluídos do mês e ano selecionados.
 - RN14 — Os compromissos deverão ser apresentados em ordem cronológica crescente, considerando a data e o horário do compromisso.
+- RN15 — O código de verificação para redefinição de senha (RF06-A) expira em 15 minutos, só pode ser usado uma vez, a solicitação de um novo código invalida qualquer código anterior ainda válido do mesmo usuário, e uma nova solicitação só é atendida se tiverem se passado pelo menos 5 minutos desde a última (mesmo usuário).
 
 ### 2.6 Fora do escopo
 
@@ -842,6 +846,24 @@ erDiagram
         datetime criadoEm
     }
 
+    REFRESH_TOKEN {
+        int id PK
+        int usuarioId FK
+        string tokenHash
+        datetime criadoEm
+        datetime expiraEm
+        datetime revogadoEm
+    }
+
+    CODIGO_REDEFINICAO_SENHA {
+        int id PK
+        int usuarioId FK
+        string codigoHash
+        datetime criadoEm
+        datetime expiraEm
+        datetime usadoEm
+    }
+
     PREDIO {
         int id PK
         string nome
@@ -900,6 +922,8 @@ erDiagram
     }
 
     USUARIO ||--o{ PREDIO : gerencia
+    USUARIO ||--o{ REFRESH_TOKEN : possui
+    USUARIO ||--o{ CODIGO_REDEFINICAO_SENHA : solicita
 
     PREDIO ||--o{ COMPROMISSO : possui
     PREDIO ||--o{ PLANEJAMENTO : possui
@@ -925,6 +949,36 @@ erDiagram
 
 ---
 
+##### Tabela: refresh_tokens
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| usuario_id | INT | FK |
+| token_hash | VARCHAR(255) | NOT NULL |
+| criado_em | DATETIME | NOT NULL |
+| expira_em | DATETIME | NOT NULL |
+| revogado_em | DATETIME | NULL |
+
+O token em texto puro nunca é armazenado — apenas seu hash. `revogado_em` nulo indica token ainda ativo; é preenchido no logout, na renovação (rotação) ou na troca de senha (RNF02 — ver detalhamento do fluxo em [AUTHENTICATION.md](../../backend/documentation/AUTHENTICATION.md)).
+
+---
+
+##### Tabela: codigos_redefinicao_senha
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| usuario_id | INT | FK |
+| codigo_hash | VARCHAR(255) | NOT NULL |
+| criado_em | DATETIME | NOT NULL |
+| expira_em | DATETIME | NOT NULL |
+| usado_em | DATETIME | NULL |
+
+Suporta o RF06-A (recuperação de senha esquecida). O código em texto puro nunca é armazenado — apenas seu hash, mesmo princípio do `refresh_tokens`. `usado_em` nulo indica código ainda válido (RN15); é preenchido ao ser consumido numa redefinição bem-sucedida ou invalidado por uma nova solicitação. Detalhamento do fluxo em [AUTHENTICATION.md](../../backend/documentation/AUTHENTICATION.md).
+
+---
+
 ##### Tabela: predios
 
 | Campo | Tipo | Restrição |
@@ -935,7 +989,9 @@ erDiagram
 | usuario_id | INT | FK |
 | criado_em | DATETIME | NOT NULL |
 | excluido | BOOLEAN | NOT NULL |
-| excluidoEm | DATETIME | NULL |
+| excluido_em | DATETIME | NULL |
+
+Índice composto: `(usuario_id, excluido)` — otimiza a listagem de prédios de um usuário que não estão excluídos (RN02, RN08).
 
 ---
 
@@ -952,6 +1008,8 @@ erDiagram
 | concluido | BOOLEAN | NOT NULL |
 | predio_id | INT | FK |
 | criado_em | DATETIME | NOT NULL |
+
+Índice composto: `(predio_id, data_compromisso, horario_compromisso)` — otimiza a listagem de compromissos de um prédio já ordenada cronologicamente (RN14).
 
 ---
 
@@ -992,6 +1050,8 @@ Valores diponíveis são "Atas" e "Normas"
 | predio_id | INT | FK |
 | criado_em | DATETIME | NOT NULL |
 
+Índice composto: `(predio_id, tipo_documento_id)` — otimiza a navegação por tipo de documento (Atas/Normas) dentro de um prédio.
+
 ---
 
 ##### Tabela: relatorios
@@ -1006,6 +1066,8 @@ Valores diponíveis são "Atas" e "Normas"
 | predio_id | INT | FK |
 | gerado_em | DATETIME | NOT NULL |
 
+Índice composto: `(predio_id, ano_referencia, mes_referencia)` — otimiza a busca/geração de relatório por prédio e período (RF26–28).
+
 ---
 
 ### 5.3 Principais Componentes
@@ -1013,7 +1075,7 @@ Valores diponíveis são "Atas" e "Normas"
 O sistema **euSíndico** é estruturado em torno de sete módulos funcionais, todos expostos por uma API RESTful desenvolvida em ASP.NET Core, seguindo a arquitetura em camadas **Controller → Service → Repository**.
 
 * **Módulo de Autenticação e Conta**<br/>
-  Responsável pelo cadastro de novos usuários (RF01), autenticação (RF02), encerramento da sessão (RF03), visualização e edição das informações de perfil (RF04–RF06) e exclusão da conta (RF07). É composto pelo **AuthController** e **PerfilController**, que delegam as regras de negócio aos serviços **AuthService** e **PerfilService**. A autenticação é baseada em tokens JWT, enquanto as senhas são armazenadas utilizando BCrypt.
+  Responsável pelo cadastro de novos usuários (RF01), autenticação (RF02), encerramento da sessão (RF03), visualização e edição das informações de perfil (RF04–RF06), recuperação de senha esquecida via código enviado por e-mail (RF06-A) e exclusão da conta (RF07). É composto pelo **AuthController** e **PerfilController**, que delegam as regras de negócio aos serviços **AuthService** e **PerfilService**. A autenticação é baseada em tokens JWT, as senhas são armazenadas utilizando BCrypt, e o envio de e-mails (código de recuperação) é feito via SMTP.
 
 * **Módulo de Gerenciamento de Prédios**<br/>
   Responsável pelo cadastro, visualização, edição e remoção de prédios (RF08–RF11). O **PredioController** encaminha as requisições ao **PredioService**, responsável por validar as regras de negócio e persistir os dados no banco de dados relacional.
@@ -1191,7 +1253,8 @@ Durante o desenvolvimento serão adotadas medidas para reduzir as principais vul
 - proteção contra SQL Injection através do Entity Framework Core;
 - proteção contra Cross-Site Scripting (XSS) por meio da renderização segura do Vue.js;
 - utilização de HTTPS para comunicação entre cliente e servidor;
-- tratamento adequado de erros sem exposição de informações sensíveis.
+- tratamento adequado de erros sem exposição de informações sensíveis;
+- recuperação de senha (RF06-A) por código temporário de uso único enviado por e-mail, sem revelar ao solicitante se o e-mail informado está ou não cadastrado no sistema.
 
 ### 6.2 Privacidade e LGPD
 
@@ -1204,6 +1267,7 @@ Serão armazenados os seguintes dados:
 - nome do usuário;
 - endereço de e-mail;
 - senha (armazenada em formato criptografado por hash);
+- código temporário de verificação para redefinição de senha (RF06-A), armazenado apenas como hash, com validade de 15 minutos e uso único;
 - informações dos prédios cadastrados;
 - compromissos;
 - planejamentos;

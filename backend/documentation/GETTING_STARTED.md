@@ -37,7 +37,25 @@ dotnet user-secrets init
 
 # defina a sua connection string local
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Port=3306;Database=eusindico;User=root;Password=SUA_SENHA;"
+
+# necessário para os endpoints de autenticação (login) funcionarem — gere uma chave aleatória própria,
+# não reaproveite a de outro ambiente
+dotnet user-secrets set "Jwt:SecretKey" "SUA_CHAVE_ALEATORIA_COM_PELO_MENOS_32_CARACTERES"
+
+# necessário só para o POST /auth/esqueci-senha conseguir enviar o código por e-mail
+# sem isso configurado, só esse endpoint falha (erro 500 ao tentar conectar no SMTP);
+# os demais endpoints (login, cadastro, etc.) não são afetados
+dotnet user-secrets set "Smtp:Host" "smtp.gmail.com"
+dotnet user-secrets set "Smtp:Port" "587"
+dotnet user-secrets set "Smtp:Usuario" "seu-email@gmail.com"
+dotnet user-secrets set "Smtp:Senha" "SUA_SENHA_DE_APP"
+dotnet user-secrets set "Smtp:RemetenteEmail" "seu-email@gmail.com"
+dotnet user-secrets set "Smtp:RemetenteNome" "euSíndico"
 ```
+
+> Para testar localmente sem usar seu e-mail pessoal: [Mailtrap](https://mailtrap.io) (sandbox gratuito, captura os e-mails sem enviar de verdade) ou uma [senha de app do Gmail](https://myaccount.google.com/apppasswords) (não a senha normal da conta — o Gmail bloqueia login SMTP direto com a senha da conta).
+
+> Dica: pra gerar uma chave aleatória segura, rode `openssl rand -base64 48` (Git Bash/Linux/Mac) ou `[Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))` no PowerShell.
 
 Comandos úteis do dia a dia:
 
@@ -133,5 +151,7 @@ A API expõe o documento OpenAPI nativo em `/openapi/v1.json` e uma interface in
 
 ## Ver também
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — responsabilidades de cada camada (Api, Application, Domain, Infrastructure) e o fluxo de uma requisição.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — responsabilidades de cada camada (Api, Application, Domain, Infrastructure), o fluxo de uma requisição e a hospedagem planejada.
+- [AUTHENTICATION.md](AUTHENTICATION.md) — fluxo completo de autenticação e gerenciamento de conta.
+- [SECURITY.md](SECURITY.md) — medidas de segurança implementadas (tokens, XSS, tratamento de erros, autorização).
 - [RFC](../../documentation/RFC/RFC.md) — visão de produto, requisitos e modelo de dados completo.
