@@ -31,4 +31,16 @@ describe('RegistrarForm', () => {
     cy.get('[data-cy=btn-registrar]').click()
     cy.contains('A senha deve ter no mínimo 8 caracteres').should('be.visible')
   })
+
+  it('alterna a visibilidade da senha ao clicar no ícone de olho', () => {
+    cy.mount(RegistrarForm)
+    // Por padrão a senha fica oculta (type="password").
+    cy.get('[data-cy=senha] input').should('have.attr', 'type', 'password')
+    // O ícone de olho (append-inner) revela a senha...
+    cy.get('[data-cy=senha] .v-field__append-inner').click()
+    cy.get('[data-cy=senha] input').should('have.attr', 'type', 'text')
+    // ...e um segundo clique volta a ocultá-la.
+    cy.get('[data-cy=senha] .v-field__append-inner').click()
+    cy.get('[data-cy=senha] input').should('have.attr', 'type', 'password')
+  })
 })

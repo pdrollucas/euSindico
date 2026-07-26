@@ -34,12 +34,19 @@ async function onSubmit(payload: RegistrarRequest) {
 </script>
 
 <template>
-  <v-card :loading="carregando">
-    <v-card-title>Criar conta</v-card-title>
+  <v-card :loading="carregando" rounded="lg" elevation="2" class="pa-2">
+    <v-card-item>
+      <v-card-title class="text-h5 font-weight-bold">Criar conta</v-card-title>
+      <v-card-subtitle style="white-space: normal">
+        Comece a organizar os compromissos e documentos dos seus condomínios.
+      </v-card-subtitle>
+    </v-card-item>
+
     <v-card-text>
       <v-alert
         v-if="erroRegistrar"
         type="error"
+        variant="tonal"
         density="compact"
         class="mb-4"
         data-cy="erro-registrar"
@@ -49,8 +56,11 @@ async function onSubmit(payload: RegistrarRequest) {
 
       <RegistrarForm @submit="onSubmit" />
 
-      <div class="d-flex justify-center mt-4">
-        <router-link to="/login" data-cy="link-login">Já tenho conta</router-link>
+      <div class="text-center mt-6 text-body-2">
+        <span class="text-medium-emphasis">Já tem uma conta?</span>
+        <router-link to="/login" class="ml-1 font-weight-medium text-primary" data-cy="link-login">
+          Entrar
+        </router-link>
       </div>
     </v-card-text>
   </v-card>
