@@ -7,6 +7,14 @@ describe('Landing e guarda de rotas', () => {
     cy.url().should('include', '/login')
   })
 
+  it('navega para o cadastro pelo botão "Criar conta"', () => {
+    // O CTA de cadastro é a ação principal da landing — uma regressão no roteamento dele
+    // quebraria a conversão silenciosamente. "/" é pública, sem bootstrap de sessão.
+    cy.visit('/')
+    cy.get('[data-cy=btn-registrar]').click()
+    cy.url().should('include', '/registrar')
+  })
+
   it('redireciona para /login ao tentar acessar uma rota protegida sem sessão (RFC 3.2)', () => {
     // /home é protegida: a guarda de rota dispara o bootstrap na primeira visita — intercepta
     // para o teste não depender de um backend real.
