@@ -39,7 +39,7 @@ Regras adicionais adotadas neste projeto:
 - O ESLint do projeto (ver [QUALITY.md](QUALITY.md)) inclui a regra `vue/no-v-html` para pegar isso em code review automaticamente, não só por convenção.
 - A camada de validação de entrada do backend (`NomeValidator`/`EmailValidator`, [SECURITY.md](../../backend/documentation/SECURITY.md#3-validação-de-entrada-e-proteção-contra-scripts-maliciosos-xss) seção 3) já rejeita payloads como `<script>...</script>` antes de chegarem a ser persistidos — o frontend não precisa (e não deve) tentar reimplementar essa sanitização, só evitar reabrir o problema ao renderizar dado bruto como HTML.
 
-Essa proteção é o que sustenta a análise de risco da seção 1: mesmo com o refresh token acessível via JavaScript (`localStorage`), ele só é lido de fato se um XSS passar por essa defesa.
+Essa proteção conversa com a análise de risco da seção 1: como o refresh token agora vive em cookie `HttpOnly` (inacessível a JavaScript), um XSS não o alcança de forma alguma. O escape padrão do Vue segue essencial — protege o access token em memória e a integridade da interface — e vale como defesa em profundidade.
 
 ## 3. CSRF — mitigado via CORS + preflight, não via SameSite
 
@@ -60,6 +60,10 @@ Regras de validação (formato de e-mail, força de senha, caracteres aceitos no
 | Senha | Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial (RNF04) |
 
 **Isso é UX, não segurança.** A validação client-side (seja o schema Zod ou a checagem de tipo do TypeScript) existe só para dar feedback imediato (sem esperar um round-trip à API) — ela **nunca** é a barreira real. O backend revalida tudo de forma independente e é a única fonte de verdade; um cliente que contorne a validação do frontend (ex: chamando a API diretamente) esbarra exatamente nas mesmas regras do lado do servidor.
+
+**Mesma lógica no cooldown de reenvio de código (RF06-A):** a tela de recuperação de senha desabilita o botão de enviar/reenviar código por 5 minutos localmente (contagem regressiva no rótulo do botão), espelhando o cooldown por conta que o backend aplica em `POST /auth/esqueci-senha` (RN15 / [SECURITY.md do backend](../../backend/documentation/SECURITY.md), seção 10). É UX — desestimula cliques repetidos e deixa claro o tempo de espera — **não** a barreira: o backend garante o cooldown mesmo que o front seja contornado (responde `204 No Content` sem gerar nem enviar nada durante a janela, de forma indistinguível de um e-mail não cadastrado — anti-enumeração). O valor (5 min) vive em `COOLDOWN_REENVIO_MS` ([`stores/recuperacaoSenhaStore.ts`](../src/stores/recuperacaoSenhaStore.ts)); o estado do fluxo entre as três telas fica nessa mesma store, nunca na URL, para não expor e-mail/código (ver [ARCHITECTURE.md](ARCHITECTURE.md), seção 4). O e-mail e o timestamp do cooldown são espelhados em `sessionStorage` para o timer sobreviver a um F5 (sem isso, recarregar zeraria a contagem e permitiria um reenvio que o backend aceitaria sem enviar) — mas o **código de redefinição nunca é persistido**: é um segredo de uso único, e guardá-lo em storage acessível a JavaScript teria o mesmo risco que motivou pôr o refresh token em cookie `HttpOnly` (seção 1).
+
+**Cópia condicional (anti-enumeração na própria UI):** as telas de recuperação **nunca** afirmam que o e-mail existe — a cópia é sempre condicional ("se houver uma conta com esse e-mail, enviaremos/enviamos um código"). Como o front avança para a tela de código mesmo quando o e-mail não está cadastrado (o backend responde `204` idêntico nos dois casos), uma mensagem como "enviamos um código para X" revelaria, na prática, que X está cadastrado. Manter a cópia condicional estende o anti-enumeração do backend até a interface.
 
 ## 5. Upload de arquivos (RN12)
 

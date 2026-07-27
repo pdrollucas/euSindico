@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
-// Mapa de rotas conforme frontend/documentation/ARCHITECTURE.md, seção 5. Só as views já
-// implementadas (Landing, Login, Registrar, Home) estão wireadas com componente real — os demais
-// módulos (Prédios, Compromissos, Planejamentos, Documentos, Relatórios, restante de
-// Autenticação/Conta) entram nos próximos marcos do RFC (seção 7.1, M3 em diante).
+// Mapa de rotas conforme frontend/documentation/ARCHITECTURE.md, seção 5. Views de autenticação
+// já implementadas: Landing, Login, Registrar, o fluxo de recuperação de senha (EsqueciSenha ->
+// VerificarCodigo -> RedefinirSenha, RF06-A) e Home. Os demais módulos (Prédios, Compromissos,
+// Planejamentos, Documentos, Relatórios, restante de Perfil) entram nos próximos marcos do RFC.
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -22,6 +22,21 @@ const router = createRouter({
           path: 'registrar',
           name: 'registrar',
           component: () => import('@/views/auth/RegistrarView.vue'),
+        },
+        {
+          path: 'esqueci-senha',
+          name: 'esqueci-senha',
+          component: () => import('@/views/auth/EsqueciSenhaView.vue'),
+        },
+        {
+          path: 'verificar-codigo',
+          name: 'verificar-codigo',
+          component: () => import('@/views/auth/VerificarCodigoView.vue'),
+        },
+        {
+          path: 'redefinir-senha',
+          name: 'redefinir-senha',
+          component: () => import('@/views/auth/RedefinirSenhaView.vue'),
         },
       ],
     },

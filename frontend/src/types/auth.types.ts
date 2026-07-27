@@ -5,7 +5,9 @@ import type {
   registrarRequestSchema,
   esqueciSenhaRequestSchema,
   verificarCodigoRequestSchema,
+  verificarCodigoFormSchema,
   redefinirSenhaRequestSchema,
+  redefinirSenhaFormSchema,
 } from '@/schemas/auth.schema'
 
 // Tipos inferidos dos schemas Zod — nunca escritos à mão em paralelo (ver
@@ -15,4 +17,6 @@ export type AccessTokenResponse = z.infer<typeof accessTokenResponseSchema>
 export type RegistrarRequest = z.infer<typeof registrarRequestSchema>
 export type EsqueciSenhaRequest = z.infer<typeof esqueciSenhaRequestSchema>
 export type VerificarCodigoRequest = z.infer<typeof verificarCodigoRequestSchema>
+export type VerificarCodigoFormValues = z.infer<typeof verificarCodigoFormSchema>
 export type RedefinirSenhaRequest = z.infer<typeof redefinirSenhaRequestSchema>
+export type RedefinirSenhaFormValues = z.infer<typeof redefinirSenhaFormSchema>

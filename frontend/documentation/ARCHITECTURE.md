@@ -98,12 +98,14 @@ Espelhando os módulos do backend ([ARCHITECTURE.md](../../backend/documentation
 | Módulo | Views | Store | Service | Endpoints consumidos |
 |---|---|---|---|---|
 | **Landing** *(novo, ver nota no topo)* | `LandingView` | — (página estática/institucional) | — | nenhum |
-| **Autenticação e Conta** | `LoginView`, `RegistrarView`, `EsqueciSenhaView`, `VerificarCodigoView`, `RedefinirSenhaView`, `PerfilView` | `authStore`, `perfilStore` | `authService`, `perfilService` | `/auth/*`, `/perfil` |
+| **Autenticação e Conta** | `LoginView`, `RegistrarView`, `EsqueciSenhaView`, `VerificarCodigoView`, `RedefinirSenhaView`, `PerfilView` | `authStore`, `recuperacaoSenhaStore`, `perfilStore` | `authService`, `perfilService` | `/auth/*`, `/perfil` |
 | **Prédios** | `PrediosListView`, `PredioDetalheView` | `predioStore` | `predioService` | `/predios/*` |
 | **Compromissos** | `CompromissosListView`, `CompromissoDetalheView` | `compromissoStore` | `compromissoService` | `/predios/{id}/compromissos` |
 | **Planejamentos** | `PlanejamentosListView`, `PlanejamentoDetalheView` | `planejamentoStore` | `planejamentoService` | `/predios/{id}/planejamentos` |
 | **Documentos** (atas e normas) | `DocumentosListView`, `DocumentoDetalheView` | `documentoStore` | `documentoService` | `/predios/{id}/documentos` |
 | **Relatórios** | `RelatoriosListView`, `RelatorioDetalheView` | `relatorioStore` | `relatorioService` | `/predios/{id}/relatorios` |
+
+O **`recuperacaoSenhaStore`** é atípico entre as stores: em vez de cachear uma lista já carregada, ele guarda o *estado do fluxo* de recuperação de senha (RF06-A) entre as três telas — e-mail informado, código verificado e o instante em que o cooldown de reenvio expira (ver [SECURITY.md](SECURITY.md), seção 4). O e-mail e o cooldown são espelhados em `sessionStorage` para o **timer sobreviver a um F5** — sem isso, recarregar zeraria a contagem e permitiria um reenvio que o backend aceitaria (204) sem enviar nada, uma UX enganosa. O **código verificado nunca é persistido** (é um segredo). Por isso, após um reload: `/verificar-codigo` sem e-mail volta para `/esqueci-senha`, e `/redefinir-senha` sem código volta para `/verificar-codigo`. Esses dados vivem na store (não em `query`/`params` de rota) para não expor e-mail/código na URL.
 
 `DocumentoDetalheView` e `RelatorioDetalheView` incluem uma **pré-visualização do arquivo** antes do download (ex: visualizador de PDF embutido para PDFs, miniatura para JPG/PNG) — evita um download às cegas só para conferir se é o arquivo certo. Para tipos sem preview viável no navegador (DOCX, XLSX), a tela mostra os metadados (nome, tipo, data de envio) e o botão de download direto, sem tentar renderizar o conteúdo.
 

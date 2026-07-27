@@ -4,7 +4,9 @@ import {
   loginRequestSchema,
   registrarRequestSchema,
   redefinirSenhaRequestSchema,
+  redefinirSenhaFormSchema,
   verificarCodigoRequestSchema,
+  verificarCodigoFormSchema,
 } from './auth.schema'
 
 describe('loginRequestSchema', () => {
@@ -67,6 +69,16 @@ describe('verificarCodigoRequestSchema', () => {
   })
 })
 
+describe('verificarCodigoFormSchema', () => {
+  it('aceita um código de 6 caracteres', () => {
+    expect(() => verificarCodigoFormSchema.parse({ codigo: 'AB12CD' })).not.toThrow()
+  })
+
+  it('rejeita código com tamanho diferente de 6', () => {
+    expect(() => verificarCodigoFormSchema.parse({ codigo: '123' })).toThrow(z.ZodError)
+  })
+})
+
 describe('redefinirSenhaRequestSchema', () => {
   it('rejeita quando novaSenha e confirmarSenha divergem', () => {
     expect(() =>
@@ -76,6 +88,33 @@ describe('redefinirSenhaRequestSchema', () => {
         novaSenha: 'SenhaForte1!',
         confirmarSenha: 'Outra1!',
       }),
+    ).toThrow(z.ZodError)
+  })
+})
+
+describe('redefinirSenhaFormSchema', () => {
+  it('aceita senhas fortes e coincidentes', () => {
+    expect(() =>
+      redefinirSenhaFormSchema.parse({
+        novaSenha: 'SenhaForte1!',
+        confirmarSenha: 'SenhaForte1!',
+      }),
+    ).not.toThrow()
+  })
+
+  it('rejeita quando as senhas não coincidem, apontando o erro em confirmarSenha', () => {
+    const resultado = redefinirSenhaFormSchema.safeParse({
+      novaSenha: 'SenhaForte1!',
+      confirmarSenha: 'Outra1!',
+    })
+    expect(resultado.success).toBe(false)
+    expect(resultado.error?.issues[0]?.path).toEqual(['confirmarSenha'])
+    expect(resultado.error?.issues[0]?.message).toBe('As senhas não coincidem')
+  })
+
+  it('rejeita nova senha fraca (RNF04)', () => {
+    expect(() =>
+      redefinirSenhaFormSchema.parse({ novaSenha: 'fraca', confirmarSenha: 'fraca' }),
     ).toThrow(z.ZodError)
   })
 })

@@ -42,23 +42,47 @@ export const esqueciSenhaRequestSchema = z.object({
   email: emailSchema,
 })
 
+const codigoSchema = z
+  .string({ required_error: 'Código obrigatório' })
+  .length(6, 'O código tem 6 caracteres')
+
+// Campos de nova senha + confirmação, compartilhados entre o schema de formulário
+// (`redefinirSenhaFormSchema`, só os dois campos) e o de requisição (`redefinirSenhaRequestSchema`,
+// que ainda leva email + codigo vindos do fluxo). A regra de "coincidem" é a mesma nos dois.
+const novaSenhaFields = {
+  novaSenha: senhaForteSchema,
+  confirmarSenha: z
+    .string({ required_error: 'Confirmação obrigatória' })
+    .min(1, 'Confirmação obrigatória'),
+}
+const senhasCoincidem = (dto: { novaSenha: string; confirmarSenha: string }) =>
+  dto.novaSenha === dto.confirmarSenha
+const erroSenhasNaoCoincidem = {
+  message: 'As senhas não coincidem',
+  path: ['confirmarSenha'] as ['confirmarSenha'],
+}
+
 export const verificarCodigoRequestSchema = z.object({
   email: emailSchema,
-  codigo: z.string({ required_error: 'Código obrigatório' }).length(6, 'O código tem 6 caracteres'),
+  codigo: codigoSchema,
+})
+
+// Schema do formulário de "inserir código" — só o campo que o usuário digita; o e-mail vem
+// da store do fluxo de recuperação (ver stores/recuperacaoSenhaStore.ts).
+export const verificarCodigoFormSchema = z.object({
+  codigo: codigoSchema,
 })
 
 export const redefinirSenhaRequestSchema = z
   .object({
     email: emailSchema,
-    codigo: z
-      .string({ required_error: 'Código obrigatório' })
-      .length(6, 'O código tem 6 caracteres'),
-    novaSenha: senhaForteSchema,
-    confirmarSenha: z
-      .string({ required_error: 'Confirmação obrigatória' })
-      .min(1, 'Confirmação obrigatória'),
+    codigo: codigoSchema,
+    ...novaSenhaFields,
   })
-  .refine((dto) => dto.novaSenha === dto.confirmarSenha, {
-    message: 'As senhas não coincidem',
-    path: ['confirmarSenha'],
-  })
+  .refine(senhasCoincidem, erroSenhasNaoCoincidem)
+
+// Schema do formulário de "atualizar senha" — só os dois campos de senha; email + codigo vêm
+// da store do fluxo (adicionados na chamada ao service).
+export const redefinirSenhaFormSchema = z
+  .object(novaSenhaFields)
+  .refine(senhasCoincidem, erroSenhasNaoCoincidem)
