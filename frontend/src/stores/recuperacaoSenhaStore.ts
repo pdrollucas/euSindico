@@ -2,11 +2,11 @@ import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { authService } from '@/services/authService'
 
-// Duração do cooldown de reenvio do código, espelhando o cooldown de 5 minutos por conta que o
+// Duração do cooldown de reenvio do código, espelhando o cooldown de 2 minutos por conta que o
 // backend aplica em POST /auth/esqueci-senha (RN15 / backend SECURITY.md, seção 10). O backend é
 // a barreira real (vale mesmo que o front seja contornado); este valor só governa a UX de
 // desabilitar o botão localmente — ver frontend/documentation/SECURITY.md.
-export const COOLDOWN_REENVIO_MS = 5 * 60 * 1000
+export const COOLDOWN_REENVIO_MS = 2 * 60 * 1000
 
 // Persistência do fluxo de recuperação (RF06-A) em sessionStorage, para o timer de cooldown
 // sobreviver a um F5 — sem isso, recarregar zeraria a contagem e permitiria pedir um novo envio
@@ -63,7 +63,7 @@ export const useRecuperacaoSenhaStore = defineStore('recuperacaoSenha', () => {
   // Espelha email + cooldown para o sessionStorage a cada mudança (o código fica de fora).
   watch([email, cooldownExpiraEm], ([e, c]) => persistir({ email: e, cooldownExpiraEm: c }))
 
-  // Reinicia os 5 minutos — chamado a cada envio/reenvio de código bem-sucedido.
+  // Reinicia os 2 minutos — chamado a cada envio/reenvio de código bem-sucedido.
   function iniciarCooldown() {
     cooldownExpiraEm.value = Date.now() + COOLDOWN_REENVIO_MS
   }

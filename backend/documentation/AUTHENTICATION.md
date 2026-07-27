@@ -379,7 +379,7 @@ sequenceDiagram
     else E-mail cadastrado
         S->>CR: BuscarUltimoDoUsuario(usuarioId)
         CR->>DB: SELECT ... ORDER BY criado_em DESC LIMIT 1
-        alt Último código criado há menos de 5 minutos (cooldown ativo)
+        alt Último código criado há menos de 2 minutos (cooldown ativo)
             S->>S: Nada a fazer — resposta idêntica ao caso de sucesso
         else Sem cooldown ativo
             S->>CR: InvalidarTodosDoUsuario(usuarioId) — mata qualquer código anterior ainda válido
@@ -429,7 +429,7 @@ sequenceDiagram
     A-->>C: 204 No Content ou erro
 ```
 
-As decisões de segurança por trás desse fluxo (anti-enumeração, formato/validade do código, cooldown de 5 minutos, reaproveitamento do rate limiting, revogação de sessões) estão detalhadas em [SECURITY.md](SECURITY.md), seção 10 — aqui fica só o que é específico da sequência entre os 3 endpoints: `verificar-codigo` existe só para a experiência do usuário, evitando que ele preencha a tela de nova senha só pra descobrir depois que o código estava errado. A validação de verdade acontece de novo em `redefinir-senha`, que nunca confia que o front só chega até ali depois de uma verificação bem-sucedida no passo anterior.
+As decisões de segurança por trás desse fluxo (anti-enumeração, formato/validade do código, cooldown de 2 minutos, reaproveitamento do rate limiting, revogação de sessões) estão detalhadas em [SECURITY.md](SECURITY.md), seção 10 — aqui fica só o que é específico da sequência entre os 3 endpoints: `verificar-codigo` existe só para a experiência do usuário, evitando que ele preencha a tela de nova senha só pra descobrir depois que o código estava errado. A validação de verdade acontece de novo em `redefinir-senha`, que nunca confia que o front só chega até ali depois de uma verificação bem-sucedida no passo anterior.
 
 ## Estrutura do access token (JWT)
 

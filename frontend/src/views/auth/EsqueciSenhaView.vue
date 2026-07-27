@@ -14,7 +14,7 @@ const erro = ref<string | null>(null)
 const carregando = ref(false)
 
 // Cooldown compartilhado com a tela de "inserir código": se o usuário voltar para cá durante os
-// 5 minutos, o botão continua desabilitado com a contagem (ver recuperacaoSenhaStore).
+// 2 minutos, o botão continua desabilitado com a contagem (ver recuperacaoSenhaStore).
 const cooldownExpiraEm = computed(() => store.cooldownExpiraEm)
 const { segundos: cooldownSegundos } = useContagemRegressiva(cooldownExpiraEm)
 

@@ -437,7 +437,7 @@ flowchart LR
 - RN12 — O sistema aceitará apenas arquivos nos formatos PDF, DOCX, XLSX, JPG e PNG, com tamanho máximo de 20 MB.
 - RN13 — Os relatórios mensais deverão ser gerados em formato PDF, agrupando os compromissos concluídos do mês e ano selecionados.
 - RN14 — Os compromissos deverão ser apresentados em ordem cronológica crescente, considerando a data e o horário do compromisso.
-- RN15 — O código de verificação para redefinição de senha (RF06-A) expira em 15 minutos, só pode ser usado uma vez, a solicitação de um novo código invalida qualquer código anterior ainda válido do mesmo usuário, e uma nova solicitação só é atendida se tiverem se passado pelo menos 5 minutos desde a última (mesmo usuário).
+- RN15 — O código de verificação para redefinição de senha (RF06-A) expira em 15 minutos, só pode ser usado uma vez, a solicitação de um novo código invalida qualquer código anterior ainda válido do mesmo usuário, e uma nova solicitação só é atendida se tiverem se passado pelo menos 2 minutos desde a última (mesmo usuário).
 
 ### 2.6 Fora do escopo
 

@@ -82,7 +82,7 @@ async function reenviar() {
 
       <VerificarCodigoForm :carregando="carregando" @submit="onSubmit" />
 
-      <!-- Reenvio governado pelo mesmo cooldown de 5 min do envio inicial: desabilitado com a
+      <!-- Reenvio governado pelo mesmo cooldown de 2 min do envio inicial: desabilitado com a
            contagem enquanto não zera (ver recuperacaoSenhaStore / SECURITY.md). -->
       <div class="text-center mt-4">
         <v-btn

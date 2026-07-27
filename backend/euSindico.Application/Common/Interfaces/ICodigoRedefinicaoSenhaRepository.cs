@@ -6,7 +6,7 @@ public interface ICodigoRedefinicaoSenhaRepository
 {
     /// <summary>
     /// Último código gerado para o usuário, independente de já usado, expirado ou ainda
-    /// válido — usado para aplicar o cooldown de 5 minutos entre solicitações (RN15).
+    /// válido — usado para aplicar o cooldown de 2 minutos entre solicitações (RN15).
     /// </summary>
     Task<CodigoRedefinicaoSenha?> BuscarUltimoDoUsuarioAsync(int usuarioId, CancellationToken ct = default);
 

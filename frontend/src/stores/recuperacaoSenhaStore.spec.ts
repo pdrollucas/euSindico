@@ -24,7 +24,7 @@ describe('useRecuperacaoSenhaStore', () => {
     vi.useRealTimers()
   })
 
-  it('solicitarCodigo guarda o e-mail e inicia o cooldown de 5 minutos', async () => {
+  it('solicitarCodigo guarda o e-mail e inicia o cooldown de 2 minutos', async () => {
     vi.setSystemTime(new Date('2026-07-27T12:00:00Z'))
     vi.mocked(authService.esqueciSenha).mockResolvedValue(undefined)
     const store = useRecuperacaoSenhaStore()

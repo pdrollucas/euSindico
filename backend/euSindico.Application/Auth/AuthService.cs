@@ -15,7 +15,7 @@ public class AuthService(
 {
     private static readonly TimeSpan RefreshTokenDuracao = TimeSpan.FromHours(8);
     private static readonly TimeSpan CodigoRedefinicaoDuracao = TimeSpan.FromMinutes(15);
-    private static readonly TimeSpan CooldownSolicitacaoCodigo = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan CooldownSolicitacaoCodigo = TimeSpan.FromMinutes(2);
 
     public async Task<UsuarioDto> RegistrarAsync(RegistrarUsuarioDto dto, CancellationToken ct = default)
     {
@@ -86,7 +86,7 @@ public class AuthService(
         var usuario = await usuarioRepository.BuscarPorEmailAsync(dto.Email, ct);
 
         // Resposta idêntica exista ou não o e-mail, e também se o cooldown estiver ativo —
-        // só age quando o e-mail existe e passaram 5+ minutos desde o último código
+        // só age quando o e-mail existe e passaram 2+ minutos desde o último código
         // (RN15, anti-enumeração e anti-spam de e-mail, ver SECURITY.md seção 10).
         if (usuario is null)
         {

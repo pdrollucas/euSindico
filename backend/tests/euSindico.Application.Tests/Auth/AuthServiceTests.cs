@@ -319,7 +319,7 @@ public class AuthServiceTests
     public async Task SolicitarRedefinicaoSenhaAsync_com_ultimo_codigo_fora_do_cooldown_gera_novo_codigo()
     {
         var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-armazenado");
-        var codigoAntigo = CriarCodigoComCriadoEm(usuario.Id, "hash-antigo", DateTime.UtcNow.AddMinutes(15), DateTime.UtcNow.AddMinutes(-6));
+        var codigoAntigo = CriarCodigoComCriadoEm(usuario.Id, "hash-antigo", DateTime.UtcNow.AddMinutes(15), DateTime.UtcNow.AddMinutes(-3));
         _usuarioRepository.Setup(r => r.BuscarPorEmailAsync("joao@eusindico.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(usuario);
         _codigoRedefinicaoSenhaRepository.Setup(r => r.BuscarUltimoDoUsuarioAsync(usuario.Id, It.IsAny<CancellationToken>()))

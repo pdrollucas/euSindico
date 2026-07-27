@@ -77,7 +77,7 @@ describe('Recuperação de senha (RF06-A)', () => {
     cy.get('[data-cy=btn-reenviar]').should('be.disabled')
   })
 
-  it('reabilita o botão de reenviar quando o cooldown de 5 minutos zera', () => {
+  it('reabilita o botão de reenviar quando o cooldown de 2 minutos zera', () => {
     cy.intercept('POST', '**/auth/esqueci-senha', { statusCode: 204 }).as('esqueci')
     // Relógio controlado só para o que a contagem usa (Date + setInterval) — deixar setTimeout e
     // requestAnimationFrame reais, senão o scheduler do Vue/Vuetify congela e o clique nunca
@@ -91,7 +91,7 @@ describe('Recuperação de senha (RF06-A)', () => {
     cy.url().should('include', '/verificar-codigo')
 
     cy.get('[data-cy=btn-reenviar]').should('be.disabled')
-    cy.tick(5 * 60 * 1000 + 1000)
+    cy.tick(2 * 60 * 1000 + 1000)
     cy.get('[data-cy=btn-reenviar]').should('not.be.disabled')
   })
 })
