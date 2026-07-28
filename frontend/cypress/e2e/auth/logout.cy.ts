@@ -1,6 +1,8 @@
 describe('Logout', () => {
   it('desloga e redireciona para /login', () => {
     cy.intercept('POST', '**/auth/login', { statusCode: 200, fixture: 'usuario.json' }).as('login')
+    // A Home busca o perfil no mount (nome do usuário) — stub para o fluxo ficar determinístico.
+    cy.intercept('GET', '**/perfil', { statusCode: 200, fixture: 'perfil.json' }).as('perfil')
     cy.intercept('POST', '**/auth/logout', { statusCode: 204 }).as('logout')
 
     cy.visit('/login')
@@ -17,6 +19,7 @@ describe('Logout', () => {
 
   it('desloga mesmo se a chamada ao backend falhar (AUTHENTICATION.md, seção 6)', () => {
     cy.intercept('POST', '**/auth/login', { statusCode: 200, fixture: 'usuario.json' }).as('login')
+    cy.intercept('GET', '**/perfil', { statusCode: 200, fixture: 'perfil.json' }).as('perfil')
     cy.intercept('POST', '**/auth/logout', { forceNetworkError: true }).as('logoutFalho')
 
     cy.visit('/login')

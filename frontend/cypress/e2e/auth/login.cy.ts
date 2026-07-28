@@ -4,6 +4,8 @@ describe('Login', () => {
 
   it('redireciona para /home após login válido', () => {
     cy.intercept('POST', '**/auth/login', { statusCode: 200, fixture: 'usuario.json' }).as('login')
+    // A Home busca o perfil no mount — stub para não deixar uma requisição real pendente.
+    cy.intercept('GET', '**/perfil', { statusCode: 200, fixture: 'perfil.json' }).as('perfil')
     cy.visit('/login')
     cy.get('[data-cy=email]').type('sindico@exemplo.com')
     cy.get('[data-cy=senha]').type('SenhaForte1!')
