@@ -11,6 +11,8 @@ public class ApplicationExceptionHandlerTests
 {
     private readonly ApplicationExceptionHandler _sut = new(NullLogger<ApplicationExceptionHandler>.Instance);
 
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     [Fact]
     public async Task Excecao_conhecida_retorna_status_e_mensagem_correspondentes()
     {
@@ -56,7 +58,7 @@ public class ApplicationExceptionHandlerTests
         httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
         var problemDetails = await JsonSerializer.DeserializeAsync<ProblemDetails>(
             httpContext.Response.Body,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            JsonOptions);
 
         return problemDetails ?? throw new InvalidOperationException("Corpo da resposta vazio.");
     }
