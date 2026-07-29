@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/euSindico.Api.Tests/euSindico.Api.Tests.csproj" />
+    <Project Path="tests/euSindico.Application.Tests/euSindico.Application.Tests.csproj" />
+    <Project Path="tests/euSindico.Domain.Tests/euSindico.Domain.Tests.csproj" />
+    <Project Path="tests/euSindico.Infrastructure.Tests/euSindico.Infrastructure.Tests.csproj" />
+  </Folder>
+  <Project Path="euSindico.Api/euSindico.Api.csproj" />
+  <Project Path="euSindico.Application/euSindico.Application.csproj" />
+  <Project Path="euSindico.Domain/euSindico.Domain.csproj" />
+  <Project Path="euSindico.Infrastructure/euSindico.Infrastructure.csproj" />
+</Solution>
