@@ -59,6 +59,8 @@ jobs:
           /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
           /d:sonar.host.url="https://sonarcloud.io"
           /d:sonar.cs.cobertura.reportsPaths="**/TestResults/**/coverage.cobertura.xml"
+          /d:sonar.exclusions="**/Migrations/**"
+          /d:sonar.coverage.exclusions="**/Program.cs,**/DependencyInjection.cs,**/SmtpEmailSender.cs,**/Persistence/Configurations/**"
         working-directory: backend
 
       - name: Build
