@@ -29,4 +29,10 @@
     <ProjectReference Include="..\euSindico.Infrastructure\euSindico.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!-- Expõe a classe Program (internal, gerada pelos top-level statements) ao projeto de testes
+       de integração, em vez de torná-la pública — recomendado a partir do .NET 10 (ASP0027). -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="euSindico.Api.Tests" />
+  </ItemGroup>
+
 </Project>

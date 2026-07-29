@@ -353,7 +353,9 @@ public class AuthServiceTests
 
         var dto = new VerificarCodigoDto("joao@eusindico.com", "ABC123");
 
-        await _sut.VerificarCodigoRedefinicaoAsync(dto);
+        var excecao = await Record.ExceptionAsync(() => _sut.VerificarCodigoRedefinicaoAsync(dto));
+
+        Assert.Null(excecao);
     }
 
     [Fact]

@@ -142,6 +142,7 @@ public class AuthController(
     {
         Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
         {
+            HttpOnly = true,
             Path = "/auth",
             Secure = true,
             SameSite = SameSiteMode.None,

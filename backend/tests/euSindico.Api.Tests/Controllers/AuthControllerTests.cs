@@ -69,7 +69,7 @@ public class AuthControllerTests
         var corpo = Assert.IsType<AccessTokenResponseDto>(ok.Value);
         Assert.Equal("access-token-fake", corpo.AccessToken);
 
-        var setCookie = Assert.Single(_sut.Response.Headers["Set-Cookie"]);
+        var setCookie = Assert.Single(_sut.Response.Headers.SetCookie);
         Assert.Contains("refreshToken=refresh-token-fake", setCookie);
         Assert.Contains("httponly", setCookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("secure", setCookie, StringComparison.OrdinalIgnoreCase);
@@ -106,7 +106,7 @@ public class AuthControllerTests
         var corpo = Assert.IsType<AccessTokenResponseDto>(ok.Value);
         Assert.Equal("novo-access-token", corpo.AccessToken);
 
-        var setCookie = Assert.Single(_sut.Response.Headers["Set-Cookie"]);
+        var setCookie = Assert.Single(_sut.Response.Headers.SetCookie);
         Assert.Contains("refreshToken=novo-refresh-token", setCookie);
         Assert.False(refreshTokenAtual.EstaAtivo);
     }
@@ -120,7 +120,7 @@ public class AuthControllerTests
 
         Assert.IsType<NoContentResult>(resultado);
         _refreshTokenRepository.Verify(r => r.BuscarPorHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        var setCookie = Assert.Single(_sut.Response.Headers["Set-Cookie"]);
+        var setCookie = Assert.Single(_sut.Response.Headers.SetCookie);
         Assert.StartsWith("refreshToken=", setCookie);
     }
 
@@ -139,7 +139,113 @@ public class AuthControllerTests
         Assert.IsType<NoContentResult>(resultado);
         Assert.False(refreshToken.EstaAtivo);
         _refreshTokenRepository.Verify(r => r.AtualizarAsync(refreshToken, It.IsAny<CancellationToken>()), Times.Once);
-        Assert.Single(_sut.Response.Headers["Set-Cookie"]);
+        Assert.Single(_sut.Response.Headers.SetCookie);
+    }
+
+    [Fact]
+    public async Task Registrar_com_dados_validos_retorna_201_com_o_usuario()
+    {
+        _usuarioRepository.Setup(r => r.ExisteEmailAsync("joao@eusindico.com", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _passwordHasher.Setup(h => h.Hash("Senha@123")).Returns("hash-armazenado");
+
+        var resultado = await _sut.Registrar(
+            new RegistrarUsuarioDto("João Silva", "joao@eusindico.com", "Senha@123"), CancellationToken.None);
+
+        var objeto = Assert.IsType<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status201Created, objeto.StatusCode);
+        Assert.IsType<UsuarioDto>(objeto.Value);
+    }
+
+    [Fact]
+    public async Task Registrar_com_email_invalido_retorna_400_sem_chamar_o_service()
+    {
+        var resultado = await _sut.Registrar(
+            new RegistrarUsuarioDto("João Silva", "email-invalido", "Senha@123"), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
+        _usuarioRepository.Verify(
+            r => r.ExisteEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task EsqueciSenha_com_email_valido_retorna_204()
+    {
+        _usuarioRepository.Setup(r => r.BuscarPorEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Usuario?)null);
+
+        var resultado = await _sut.EsqueciSenha(
+            new EsqueciSenhaDto("joao@eusindico.com"), CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(resultado);
+    }
+
+    [Fact]
+    public async Task EsqueciSenha_com_email_invalido_retorna_400()
+    {
+        var resultado = await _sut.EsqueciSenha(new EsqueciSenhaDto("invalido"), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
+    }
+
+    [Fact]
+    public async Task VerificarCodigo_com_codigo_valido_retorna_204()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash");
+        var codigoValido = new CodigoRedefinicaoSenha(usuario.Id, "hash-do-codigo", DateTime.UtcNow.AddMinutes(15));
+        _usuarioRepository.Setup(r => r.BuscarPorEmailAsync("joao@eusindico.com", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(usuario);
+        _tokenService.Setup(t => t.HashCodigoRedefinicaoSenha("ABC123")).Returns("hash-do-codigo");
+        _codigoRedefinicaoSenhaRepository
+            .Setup(r => r.BuscarPorUsuarioIdEHashAsync(usuario.Id, "hash-do-codigo", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(codigoValido);
+
+        var resultado = await _sut.VerificarCodigo(
+            new VerificarCodigoDto("joao@eusindico.com", "ABC123"), CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(resultado);
+    }
+
+    [Fact]
+    public async Task VerificarCodigo_com_codigo_de_tamanho_invalido_retorna_400()
+    {
+        var resultado = await _sut.VerificarCodigo(
+            new VerificarCodigoDto("joao@eusindico.com", "123"), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
+    }
+
+    [Fact]
+    public async Task RedefinirSenha_com_codigo_valido_retorna_204()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-antigo");
+        var codigoValido = new CodigoRedefinicaoSenha(usuario.Id, "hash-do-codigo", DateTime.UtcNow.AddMinutes(15));
+        _usuarioRepository.Setup(r => r.BuscarPorEmailAsync("joao@eusindico.com", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(usuario);
+        _tokenService.Setup(t => t.HashCodigoRedefinicaoSenha("ABC123")).Returns("hash-do-codigo");
+        _codigoRedefinicaoSenhaRepository
+            .Setup(r => r.BuscarPorUsuarioIdEHashAsync(usuario.Id, "hash-do-codigo", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(codigoValido);
+        _passwordHasher.Setup(h => h.Hash("NovaSenha@1")).Returns("hash-novo");
+
+        var resultado = await _sut.RedefinirSenha(
+            new RedefinirSenhaDto("joao@eusindico.com", "ABC123", "NovaSenha@1", "NovaSenha@1"),
+            CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(resultado);
+    }
+
+    [Fact]
+    public async Task RedefinirSenha_com_nova_senha_fraca_retorna_400()
+    {
+        var resultado = await _sut.RedefinirSenha(
+            new RedefinirSenhaDto("joao@eusindico.com", "ABC123", "fraca", "fraca"), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
     }
 
     private void DefinirCookieNaRequisicao(string nome, string valor)

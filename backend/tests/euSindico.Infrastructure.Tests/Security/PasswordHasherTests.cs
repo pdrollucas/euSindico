@@ -23,4 +23,13 @@ public class PasswordHasherTests
 
         Assert.NotEqual(hash1, hash2);
     }
+
+    [Fact]
+    public void Verificar_retorna_true_para_a_senha_correta_e_false_para_a_errada()
+    {
+        var hash = _sut.Hash("Senha@123");
+
+        Assert.True(_sut.Verificar("Senha@123", hash));
+        Assert.False(_sut.Verificar("SenhaErrada@1", hash));
+    }
 }
