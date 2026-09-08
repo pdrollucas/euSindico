@@ -7,6 +7,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Predio> Predios => Set<Predio>();
+    public DbSet<PredioUsuario> PredioUsuarios => Set<PredioUsuario>();
+    public DbSet<ConviteFuncionario> ConvitesFuncionario => Set<ConviteFuncionario>();
     public DbSet<Compromisso> Compromissos => Set<Compromisso>();
     public DbSet<Planejamento> Planejamentos => Set<Planejamento>();
     public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();

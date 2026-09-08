@@ -26,6 +26,13 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
             SenhaAtualIncorretaException => StatusCodes.Status400BadRequest,
             CodigoRedefinicaoInvalidoException => StatusCodes.Status400BadRequest,
             UsuarioNaoEncontradoException => StatusCodes.Status404NotFound,
+            PredioNaoEncontradoException => StatusCodes.Status404NotFound,
+            MembroNaoEncontradoException => StatusCodes.Status404NotFound,
+            AcaoNaoPermitidaException => StatusCodes.Status403Forbidden,
+            EmailJaVinculadoException => StatusCodes.Status409Conflict,
+            ConviteInvalidoException => StatusCodes.Status400BadRequest,
+            DadosCadastroObrigatoriosException => StatusCodes.Status400BadRequest,
+            RemoverDonoDoPredioException => StatusCodes.Status400BadRequest,
             _ => 0,
         };
 

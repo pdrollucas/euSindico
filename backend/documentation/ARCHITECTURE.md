@@ -20,7 +20,7 @@ Isso é o padrão usual de Clean Architecture: quem **declara** a necessidade de
 Núcleo da aplicação. Contém apenas o que representa o **negócio em si**, sem depender de nenhuma tecnologia externa.
 
 **Responsabilidades:**
-- Entidades: `Usuario`, `Predio`, `Compromisso`, `Planejamento`, `TipoDocumento`, `Documento`, `Relatorio`.
+- Entidades: `Usuario`, `Predio`, `PredioUsuario`, `ConviteFuncionario`, `Compromisso`, `Planejamento`, `TipoDocumento`, `Documento`, `Relatorio`.
 - Enums e value objects do domínio.
 - Invariantes e regras que pertencem à própria entidade (ex: um `Predio` excluído não pode ser reativado sem uma ação explícita).
 
@@ -39,7 +39,8 @@ Núcleo da aplicação. Contém apenas o que representa o **negócio em si**, se
 Camada de **casos de uso** (Services, na nomenclatura do RFC). Orquestra as regras de negócio (RN01–RN14) usando as entidades do Domain, sem saber *como* os dados são persistidos ou armazenados.
 
 **Responsabilidades:**
-- Services: `AuthService`, `PerfilService`, `PredioService`, `CompromissoService`, `PlanejamentoService`, `DocumentoService`, `RelatorioService`.
+- Services: `AuthService`, `PerfilService`, `PredioService`, `EquipeService`, `CompromissoService`, `PlanejamentoService`, `DocumentoService`, `RelatorioService`.
+- `AutorizacaoPredioService` — serviço de autorização por perfil (Síndico/Gestor/Colaborador), compartilhado por todos os módulos que operam sobre um prédio. Ver [EQUIPE.md](EQUIPE.md).
 - DTOs de entrada/saída dos casos de uso.
 - Interfaces (contratos) que a Infrastructure deverá implementar — ex: `IUsuarioRepository`, `IPredioRepository`, `IFileStorageService`, `IPasswordHasher`, `IEmailSender`. Isso é o que permite trocar o MySQL, o S3 ou o provedor de e-mail sem alterar essa camada (Inversão de Dependência).
 - Geração dos relatórios em PDF (uso do QuestPDF), a partir dos dados já consultados.
@@ -78,7 +79,7 @@ Camada de **implementação concreta** dos detalhes técnicos — é aqui que o 
 Camada de **apresentação/entrada** da aplicação. É a porta de entrada HTTP e o *composition root* — onde a aplicação é montada.
 
 **Responsabilidades:**
-- Controllers REST (`AuthController`, `PerfilController`, `PredioController`, `CompromissoController`, `PlanejamentoController`, `DocumentoController`, `RelatorioController`).
+- Controllers REST (`AuthController`, `PerfilController`, `PredioController`, `EquipeController`, `ConviteController`, `CompromissoController`, `PlanejamentoController`, `DocumentoController`, `RelatorioController`).
 - `Program.cs`: registro de injeção de dependência (conectando as interfaces da Application às implementações da Infrastructure), configuração de autenticação JWT, middlewares, documentação OpenAPI.
 - Validação de entrada (FluentValidation) e mapeamento de request/response.
 - Tratamento global de erros e códigos de status HTTP.

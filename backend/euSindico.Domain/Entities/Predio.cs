@@ -15,6 +15,8 @@ public class Predio
     public ICollection<Planejamento> Planejamentos { get; private set; } = new List<Planejamento>();
     public ICollection<Documento> Documentos { get; private set; } = new List<Documento>();
     public ICollection<Relatorio> Relatorios { get; private set; } = new List<Relatorio>();
+    public ICollection<PredioUsuario> Membros { get; private set; } = new List<PredioUsuario>();
+    public ICollection<ConviteFuncionario> Convites { get; private set; } = new List<ConviteFuncionario>();
 
     protected Predio() { }
 

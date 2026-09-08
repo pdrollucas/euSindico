@@ -51,6 +51,10 @@ dotnet user-secrets set "Smtp:Usuario" "seu-email@gmail.com"
 dotnet user-secrets set "Smtp:Senha" "SUA_SENHA_DE_APP"
 dotnet user-secrets set "Smtp:RemetenteEmail" "seu-email@gmail.com"
 dotnet user-secrets set "Smtp:RemetenteNome" "euSíndico"
+
+# necessário só para o link de convite de funcionário (RF29) apontar para o frontend certo
+# (POST /predios/{id}/convites monta o link como "{Frontend:BaseUrl}/convite/{token}")
+dotnet user-secrets set "Frontend:BaseUrl" "http://localhost:5173"
 ```
 
 > Para testar localmente sem usar seu e-mail pessoal: [Mailtrap](https://mailtrap.io) (sandbox gratuito, captura os e-mails sem enviar de verdade) ou uma [senha de app do Gmail](https://myaccount.google.com/apppasswords) (não a senha normal da conta — o Gmail bloqueia login SMTP direto com a senha da conta).

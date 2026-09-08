@@ -10,13 +10,23 @@ public class SmtpEmailSender(IOptions<SmtpOptions> smtpOptions) : IEmailSender
 {
     private readonly SmtpOptions _options = smtpOptions.Value;
 
-    public async Task EnviarAsync(string destinatario, string assunto, string corpo, CancellationToken ct = default)
+    public async Task EnviarAsync(string destinatario, string assunto, string corpoTexto, CancellationToken ct = default, string? corpoHtml = null)
     {
         var mensagem = new MimeMessage();
         mensagem.From.Add(new MailboxAddress(_options.RemetenteNome, _options.RemetenteEmail));
         mensagem.To.Add(MailboxAddress.Parse(destinatario));
         mensagem.Subject = assunto;
-        mensagem.Body = new TextPart("plain") { Text = corpo };
+
+        // BodyBuilder monta multipart/alternative automaticamente quando os dois corpos são
+        // informados (cliente de e-mail escolhe HTML se suportar, cai para texto senão) —
+        // sem HtmlBody, vira só TextPart("plain"), igual ao comportamento anterior (RF06-A).
+        var builder = new BodyBuilder { TextBody = corpoTexto };
+        if (corpoHtml is not null)
+        {
+            builder.HtmlBody = corpoHtml;
+        }
+
+        mensagem.Body = builder.ToMessageBody();
 
         using var client = new SmtpClient();
         await client.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.StartTls, ct);

@@ -65,6 +65,25 @@ public class TokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
     // já que o código gerado só usa A-Z/0-9 (ver GerarCodigoRedefinicaoSenha).
     public string HashCodigoRedefinicaoSenha(string codigo) => CalcularHash(codigo.Trim().ToUpperInvariant());
 
+    public ConviteTokenGerado GerarTokenConvite()
+    {
+        var bytesAleatorios = RandomNumberGenerator.GetBytes(32);
+
+        // Base64Url (sem +, / nem = de padding), diferente do refresh token: este token vai
+        // dentro de um path de URL (GET /convites/{token}), não de um cookie — "+"/"/" seriam
+        // interpretados como espaço/separador de rota, corrompendo o token no meio do caminho
+        // (copiar/colar, navegador, etc.) e fazendo o hash recalculado nunca bater com o salvo.
+        var token = Convert.ToBase64String(bytesAleatorios)
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=');
+        var hash = CalcularHash(token);
+
+        return new ConviteTokenGerado(token, hash);
+    }
+
+    public string HashTokenConvite(string token) => CalcularHash(token);
+
     private static string CalcularHash(string valor)
     {
         var bytesHash = SHA256.HashData(Encoding.UTF8.GetBytes(valor));

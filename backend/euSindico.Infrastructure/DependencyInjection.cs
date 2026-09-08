@@ -3,6 +3,7 @@ using euSindico.Infrastructure.Email;
 using euSindico.Infrastructure.Persistence;
 using euSindico.Infrastructure.Repositories;
 using euSindico.Infrastructure.Security;
+using euSindico.Infrastructure.Web;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,13 +24,17 @@ public static class DependencyInjection
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+        services.Configure<FrontendOptions>(configuration.GetSection(FrontendOptions.SectionName));
 
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ICodigoRedefinicaoSenhaRepository, CodigoRedefinicaoSenhaRepository>();
+        services.AddScoped<IPredioUsuarioRepository, PredioUsuarioRepository>();
+        services.AddScoped<IConviteFuncionarioRepository, ConviteFuncionarioRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        services.AddSingleton<IConviteLinkBuilder, ConviteLinkBuilder>();
 
         return services;
     }
