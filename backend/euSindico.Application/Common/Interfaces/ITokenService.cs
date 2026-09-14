@@ -24,6 +24,20 @@ public interface ITokenService
     /// (maiúsculas, sem espaços) antes de hashear — validação case-insensitive.
     /// </summary>
     string HashCodigoRedefinicaoSenha(string codigo);
+
+    /// <summary>
+    /// Gera o token de convite de funcionário (RF29): string aleatória de alta entropia,
+    /// mesma construção do refresh token — não precisa do alfabeto restrito do código de
+    /// redefinição (RF06-A), já que ninguém digita este token manualmente, só clica num link.
+    /// </summary>
+    ConviteTokenGerado GerarTokenConvite();
+
+    /// <summary>
+    /// Recalcula o hash de um token de convite recebido do cliente (via URL), para buscá-lo
+    /// por <see cref="Domain.Entities.ConviteFuncionario.TokenHash"/> — mesmo algoritmo usado
+    /// em <see cref="GerarTokenConvite"/>.
+    /// </summary>
+    string HashTokenConvite(string token);
 }
 
 /// <summary>
@@ -37,3 +51,9 @@ public record RefreshTokenGerado(string Token, string Hash);
 /// o e-mail do usuário, <paramref name="Hash"/> é o que fica persistido em <see cref="euSindico.Domain.Entities.CodigoRedefinicaoSenha"/>.
 /// </summary>
 public record CodigoRedefinicaoSenhaGerado(string Codigo, string Hash);
+
+/// <summary>
+/// Par gerado num convite de funcionário: <paramref name="Token"/> vai no link do e-mail,
+/// <paramref name="Hash"/> é o que fica persistido em <see cref="euSindico.Domain.Entities.ConviteFuncionario"/>.
+/// </summary>
+public record ConviteTokenGerado(string Token, string Hash);

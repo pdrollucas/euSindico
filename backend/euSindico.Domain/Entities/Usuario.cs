@@ -9,6 +9,7 @@ public class Usuario
     public DateTime CriadoEm { get; private set; }
 
     public ICollection<Predio> Predios { get; private set; } = new List<Predio>();
+    public ICollection<PredioUsuario> PrediosVinculados { get; private set; } = new List<PredioUsuario>();
 
     protected Usuario() { }
 

@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>2.1.0 — adiciona RF06-A (recuperação de senha esquecida), não previsto na proposta original
+- <strong>Versão: </strong>2.2.0 — adiciona RF06-A (recuperação de senha esquecida) e RF29–RF34 (gestão de equipe/funcionários, com perfis de acesso), não previstos na proposta original
 - <strong>Disponível em PDF: </strong>[RFC.pdf](https://github.com/user-attachments/files/29358895/RFC.pdf)
 
 
@@ -203,9 +203,9 @@ João tem 45 anos e atua como síndico profissional, sendo responsável pela adm
 - Perda de tempo na criação manual de relatórios
 - Excesso de funcionalidades irrelevantes em sistemas atuais
 
-#### Persona 2: Ana Souza (Assistente Administrativa)
+#### Persona 2: Ana Souza (Assistente Administrativa — papel Gestor)
 <strong>Contexto:</strong>
-Ana tem 30 anos e auxilia na organização das demandas do síndico. Ela é responsável por registrar informações, organizar documentos e dar suporte na elaboração de relatórios.
+Ana tem 30 anos e auxilia na organização das demandas do síndico. Ela é responsável por registrar informações, organizar documentos e dar suporte na elaboração de relatórios. *(Desde a v2.2.0, Ana é a persona de referência para o papel de acesso "Gestor" descrito em RF29–RF34. O nome do papel é genérico de propósito — é um nível de permissão, não um cargo — então o mesmo papel serve pra qualquer funcionário administrativo que o síndico convide, não só uma secretária. Ana é convidada pelo síndico para os prédios que administra e tem acesso operacional equivalente ao dele, exceto gestão de equipe.)*
 
 <strong>Objetivos:</strong>
 - Registrar rapidamente atividades realizadas
@@ -217,6 +217,19 @@ Ana tem 30 anos e auxilia na organização das demandas do síndico. Ela é resp
 - Dificuldade em localizar informações antigas
 - Dependência de diferentes sistemas para tarefas simples
 
+#### Persona 3: Carlos Mendes (Ajudante de Manutenção — papel Colaborador) *(nova na v2.2.0)*
+<strong>Contexto:</strong>
+Carlos tem 38 anos e apoia o síndico em visitas técnicas e pequenos reparos nos prédios administrados por ele. Não participa da parte administrativa — só executa e confirma o que está sob sua responsabilidade.
+
+<strong>Objetivos:</strong>
+- Ver rapidamente quais compromissos são dele e em qual prédio
+- Registrar e concluir esses compromissos pelo celular, sem depender de ligar para a secretária
+- Consultar normas internas do prédio quando precisar, sem acesso ao restante da administração
+
+<strong>Dificuldades:</strong>
+- Hoje descobre os compromissos por mensagem/telefone, sem um lugar único para conferir
+- Sem visibilidade do que já foi concluído ou combinado por outra pessoa da equipe
+
 ### 2.2 Casos de uso principais
 Os principais fluxos do sistema incluem:
 - Criar conta e autenticar usuário;
@@ -227,7 +240,9 @@ Os principais fluxos do sistema incluem:
 - Fazer upload de documentos (atas e normas);
 - Realizar download de documentos (atas, normas e relatórios);
 - Consultar documentos por prédio;
-- Gerar relatórios mensais de compromissos.
+- Gerar relatórios mensais de compromissos;
+- Convidar, visualizar e remover funcionários vinculados a um prédio *(novo na v2.2.0)*;
+- Aceitar um convite e criar conta de funcionário vinculada a um prédio *(novo na v2.2.0)*.
 
 Diagrama de Caso de Uso — Autenticação:
 ```mermaid
@@ -311,6 +326,28 @@ flowchart LR
     usuario --> UC2
     usuario --> UC3
     usuario --> UC4
+```
+
+Diagrama de Caso de Uso — Gerenciamento de Equipe *(novo na v2.2.0, ver RF29–RF34)*
+```mermaid
+flowchart LR
+
+    sindico[👤 Síndico]
+    funcionario[👤 Funcionário convidado]
+
+    subgraph euSindico [Sistema euSíndico]
+
+        UC1((Convidar funcionário para um prédio))
+        UC2((Visualizar equipe de um prédio))
+        UC3((Remover acesso de um funcionário))
+        UC4((Aceitar convite e criar conta))
+
+    end
+
+    sindico --> UC1
+    sindico --> UC2
+    sindico --> UC3
+    funcionario --> UC4
 ```
 
 Diagrama de Caso de Uso — Gerenciamento de Planejamentos
@@ -406,6 +443,12 @@ flowchart LR
 - RF26 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos concluídos.
 - RF27 — O sistema deve permitir que o usuário visualize relatórios mensais gerados.
 - RF28 — O sistema deve permitir que o usuário baixe relatórios mensais gerados.
+- RF29 — O sistema deve permitir que o síndico convide um funcionário (por e-mail) para um prédio, definindo seu perfil de acesso (Gestor ou Colaborador). *(Requisito adicionado na v2.2.0, após a proposta original — não previsto em RF01–RF28.)*
+- RF30 — O sistema deve permitir que o convidado crie sua conta a partir do link de convite recebido, ficando automaticamente vinculado ao prédio e ao perfil definidos no convite. *(v2.2.0)*
+- RF31 — O sistema deve permitir que o síndico visualize os funcionários vinculados a um prédio e seus respectivos perfis. *(v2.2.0)*
+- RF32 — O sistema deve permitir que o síndico remova o acesso de um funcionário a um prédio. *(v2.2.0)*
+- RF33 — O sistema deve restringir as ações disponíveis a cada usuário conforme o seu perfil de acesso (Síndico, Gestor ou Colaborador) no prédio em questão. *(v2.2.0)*
+- RF34 — O sistema deve permitir que o usuário alterne, na tela de compromissos, entre visualizar apenas os compromissos sob sua própria responsabilidade e todos os compromissos do prédio, respeitando as restrições de perfil (RN20). *(v2.2.0)*
 
 ### 2.4 Requisitos Não Funcionais (RNFs)
 
@@ -438,6 +481,13 @@ flowchart LR
 - RN13 — Os relatórios mensais deverão ser gerados em formato PDF, agrupando os compromissos concluídos do mês e ano selecionados.
 - RN14 — Os compromissos deverão ser apresentados em ordem cronológica crescente, considerando a data e o horário do compromisso.
 - RN15 — O código de verificação para redefinição de senha (RF06-A) expira em 15 minutos, só pode ser usado uma vez, a solicitação de um novo código invalida qualquer código anterior ainda válido do mesmo usuário, e uma nova solicitação só é atendida se tiverem se passado pelo menos 2 minutos desde a última (mesmo usuário).
+- RN16 — Um usuário só acessa (visualiza ou gerencia) um prédio ao qual possui vínculo explícito — como dono (perfil Síndico) ou como funcionário convidado e com convite aceito (perfil Gestor ou Colaborador). Estende RN02 para o modelo de múltiplos usuários por prédio. *(v2.2.0)*
+- RN17 — Um convite de funcionário (RF29) expira em um prazo definido pela aplicação e só pode ser aceito (RF30) uma única vez; um convite expirado ou já aceito não pode ser reutilizado. *(v2.2.0)*
+- RN18 — O perfil de acesso (Síndico, Gestor ou Colaborador) é definido por vínculo usuário–prédio, não por usuário isoladamente — o mesmo usuário pode ter perfis diferentes em prédios diferentes. *(v2.2.0)*
+- RN19 — Apenas o perfil Síndico pode convidar (RF29), visualizar (RF31) ou remover (RF32) funcionários de um prédio. *(v2.2.0)*
+- RN20 — Um compromisso criado por um usuário com perfil Colaborador tem obrigatoriamente esse usuário como responsável, sem possibilidade de reatribuição; usuários com perfil Síndico ou Gestor podem escolher o responsável entre os usuários vinculados ao prédio no momento da criação, com o próprio autor como padrão. *(v2.2.0)*
+- RN21 — Um usuário com perfil Colaborador só visualiza, edita e remove os compromissos dos quais é responsável, mesmo que outros compromissos existam no mesmo prédio (RF34). Usuários com perfil Síndico ou Gestor podem alternar entre ver apenas os próprios ou todos os compromissos do prédio. *(v2.2.0)*
+- RN22 — A remoção do acesso de um funcionário a um prédio (RF32) não exclui os compromissos ou demais registros já criados por ele; esses registros permanecem associados ao prédio. *(v2.2.0)*
 
 ### 2.6 Fora do escopo
 
@@ -874,6 +924,27 @@ erDiagram
         datetime excluidoEm
     }
 
+    PREDIO_USUARIO {
+        int id PK
+        int predioId FK
+        int usuarioId FK
+        int papel
+        int convidadoPorUsuarioId FK
+        datetime criadoEm
+    }
+
+    CONVITE_FUNCIONARIO {
+        int id PK
+        int predioId FK
+        string email
+        int papel
+        string tokenHash
+        int criadoPorUsuarioId FK
+        datetime criadoEm
+        datetime expiraEm
+        datetime usadoEm
+    }
+
     COMPROMISSO {
         int id PK
         string titulo
@@ -883,6 +954,7 @@ erDiagram
         string detalhes
         boolean concluido
         int predioId FK
+        int responsavelUsuarioId FK
         datetime criadoEm
     }
 
@@ -924,11 +996,15 @@ erDiagram
     USUARIO ||--o{ PREDIO : gerencia
     USUARIO ||--o{ REFRESH_TOKEN : possui
     USUARIO ||--o{ CODIGO_REDEFINICAO_SENHA : solicita
+    USUARIO ||--o{ PREDIO_USUARIO : "está vinculado a"
+    USUARIO ||--o{ COMPROMISSO : "é responsável por"
 
     PREDIO ||--o{ COMPROMISSO : possui
     PREDIO ||--o{ PLANEJAMENTO : possui
     PREDIO ||--o{ DOCUMENTO : possui
     PREDIO ||--o{ RELATORIO : possui
+    PREDIO ||--o{ PREDIO_USUARIO : possui
+    PREDIO ||--o{ CONVITE_FUNCIONARIO : possui
 
     TIPO_DOCUMENTO ||--o{ DOCUMENTO : categoriza
 ```
@@ -995,6 +1071,41 @@ Suporta o RF06-A (recuperação de senha esquecida). O código em texto puro nun
 
 ---
 
+##### Tabela: predio_usuarios *(nova na v2.2.0 — RF29–RF34)*
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| predio_id | INT | FK, NOT NULL |
+| usuario_id | INT | FK, NOT NULL |
+| papel | INT | NOT NULL — `1` = Síndico, `2` = Gestor, `3` = Colaborador |
+| convidado_por_usuario_id | INT | FK, NULL |
+| criado_em | DATETIME | NOT NULL |
+
+Representa o vínculo entre um usuário e um prédio (RN16, RN18). Ao criar um prédio, o próprio dono já ganha uma linha aqui com `papel = 1` (Síndico) — assim toda checagem de acesso a um prédio consulta só esta tabela, sem tratar `predios.usuario_id` como um caso especial. `convidado_por_usuario_id` é nulo para essa linha inicial do dono; para funcionários, aponta para quem enviou o convite (RF29). Índice único em `(predio_id, usuario_id)` — um usuário tem no máximo um papel por prédio.
+
+**Papel como inteiro, não texto:** os valores são fixos e nunca renumerados (adicionar um papel novo só acrescenta um número, nunca reaproveita ou desloca um existente) — mais compacto que `VARCHAR` e sem o risco de um enum reordenado silenciosamente mudar o significado de um valor já gravado, já que os números são atribuídos explicitamente no código (`PapelPredio`), não inferidos pela ordem de declaração. **Nomes genéricos de propósito** (Gestor/Colaborador, não "Secretária"/"Ajudante"): o papel representa um nível de permissão, não o cargo real da pessoa — um síndico pode convidar qualquer tipo de funcionário (secretária, zelador, contador...) com o nível de acesso adequado, sem o sistema forçar um rótulo de cargo específico. Detalhamento completo em [EQUIPE.md](../../backend/documentation/EQUIPE.md).
+
+---
+
+##### Tabela: convites_funcionario *(nova na v2.2.0 — RF29, RF30)*
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| predio_id | INT | FK, NOT NULL |
+| email | VARCHAR(150) | NOT NULL |
+| papel | INT | NOT NULL — `2` = Gestor ou `3` = Colaborador (nunca `1`/Síndico — ver validação abaixo) |
+| token_hash | VARCHAR(255) | NOT NULL |
+| criado_por_usuario_id | INT | FK, NOT NULL |
+| criado_em | DATETIME | NOT NULL |
+| expira_em | DATETIME | NOT NULL |
+| usado_em | DATETIME | NULL |
+
+Mesmo princípio de `codigos_redefinicao_senha`: o token em texto puro nunca é armazenado, só seu hash; `usado_em` nulo indica convite ainda pendente (RN17). Ao ser aceito (RF30), o convite é marcado como usado e uma linha correspondente é criada em `predio_usuarios`. Detalhamento completo em [EQUIPE.md](../../backend/documentation/EQUIPE.md).
+
+---
+
 ##### Tabela: compromissos
 
 | Campo | Tipo | Restrição |
@@ -1007,9 +1118,12 @@ Suporta o RF06-A (recuperação de senha esquecida). O código em texto puro nun
 | detalhes | TEXT | NULL |
 | concluido | BOOLEAN | NOT NULL |
 | predio_id | INT | FK |
+| responsavel_usuario_id | INT | FK, NOT NULL |
 | criado_em | DATETIME | NOT NULL |
 
-Índice composto: `(predio_id, data_compromisso, horario_compromisso)` — otimiza a listagem de compromissos de um prédio já ordenada cronologicamente (RN14).
+`responsavel_usuario_id` — campo novo na v2.2.0 (RF34, RN20, RN21), define de quem é a responsabilidade do compromisso dentro do prédio: um usuário com perfil Colaborador só enxerga/gerencia compromissos onde é o responsável; Síndico e Gestor podem alternar entre ver só os próprios ou todos. Detalhamento em [EQUIPE.md](../../backend/documentation/EQUIPE.md).
+
+Índices compostos: `(predio_id, data_compromisso, horario_compromisso)` — otimiza a listagem de compromissos de um prédio já ordenada cronologicamente (RN14). `(predio_id, responsavel_usuario_id)` — otimiza o filtro "meus compromissos" (RF34).
 
 ---
 
@@ -1079,6 +1193,9 @@ O sistema **euSíndico** é estruturado em torno de sete módulos funcionais, to
 
 * **Módulo de Gerenciamento de Prédios**<br/>
   Responsável pelo cadastro, visualização, edição e remoção de prédios (RF08–RF11). O **PredioController** encaminha as requisições ao **PredioService**, responsável por validar as regras de negócio e persistir os dados no banco de dados relacional.
+
+* **Módulo de Equipe e Acesso** *(novo na v2.2.0)*<br/>
+  Responsável pelo convite, aceite e remoção de funcionários vinculados a um prédio, e pela autorização de ações conforme o perfil (Síndico, Gestor ou Colaborador) de cada usuário naquele prédio (RF29–RF34). Composto pelo **EquipeController** (convites e gestão de membros) e um serviço de autorização compartilhado pelos demais módulos, que resolve o perfil do usuário para um prédio antes de permitir cada ação. Detalhamento completo em [EQUIPE.md](../../backend/documentation/EQUIPE.md).
 
 * **Módulo de Compromissos**<br/>
   Responsável pelo gerenciamento completo dos compromissos (RF12–RF17), incluindo cadastro, associação a um prédio, consulta, edição, remoção e conclusão. Também oferece pesquisa por título e filtros por prédio e período, retornando os resultados ordenados cronologicamente. O **CompromissoService** fornece ainda os dados utilizados na geração dos relatórios mensais.

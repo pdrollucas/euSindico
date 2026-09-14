@@ -1,4 +1,5 @@
 using euSindico.Application.Auth;
+using euSindico.Application.Equipe;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace euSindico.Application;
@@ -9,6 +10,8 @@ public static class DependencyInjection
     {
         services.AddScoped<AuthService>();
         services.AddScoped<PerfilService>();
+        services.AddScoped<AutorizacaoPredioService>();
+        services.AddScoped<EquipeService>();
 
         return services;
     }

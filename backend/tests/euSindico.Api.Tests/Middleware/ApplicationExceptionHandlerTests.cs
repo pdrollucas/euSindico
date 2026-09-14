@@ -30,6 +30,50 @@ public class ApplicationExceptionHandlerTests
     }
 
     [Fact]
+    public async Task PredioNaoEncontradoException_retorna_404()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new PredioNaoEncontradoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status404NotFound, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AcaoNaoPermitidaException_retorna_403()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new AcaoNaoPermitidaException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status403Forbidden, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ConviteInvalidoException_retorna_400()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new ConviteInvalidoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status400BadRequest, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task EmailJaVinculadoException_retorna_409()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new EmailJaVinculadoException("ana@eusindico.com"), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status409Conflict, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task Excecao_nao_mapeada_retorna_500_com_mensagem_generica_sem_vazar_detalhe_interno()
     {
         var httpContext = CriarHttpContext();

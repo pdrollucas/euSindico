@@ -120,4 +120,54 @@ public class TokenServiceTests
 
         Assert.NotEqual(hash1, hash2);
     }
+
+    [Fact]
+    public void GerarTokenConvite_gera_token_diferente_do_hash_e_hash_deterministico()
+    {
+        var gerado = _sut.GerarTokenConvite();
+
+        Assert.NotEqual(gerado.Token, gerado.Hash);
+        Assert.NotEmpty(gerado.Token);
+        Assert.NotEmpty(gerado.Hash);
+    }
+
+    [Fact]
+    public void GerarTokenConvite_chamado_duas_vezes_gera_tokens_diferentes()
+    {
+        var primeiro = _sut.GerarTokenConvite();
+        var segundo = _sut.GerarTokenConvite();
+
+        Assert.NotEqual(primeiro.Token, segundo.Token);
+        Assert.NotEqual(primeiro.Hash, segundo.Hash);
+    }
+
+    [Fact]
+    public void HashTokenConvite_reproduz_o_mesmo_hash_gerado_originalmente_para_o_token()
+    {
+        var gerado = _sut.GerarTokenConvite();
+
+        var hashRecalculado = _sut.HashTokenConvite(gerado.Token);
+
+        Assert.Equal(gerado.Hash, hashRecalculado);
+    }
+
+    // Regressão: o token vai dentro de um path de URL (GET /convites/{token}) — "+", "/" e "="
+    // do Base64 padrão corrompiam o token no caminho (copiar/colar, navegador), fazendo o hash
+    // recalculado no aceite nunca bater com o salvo na criação do convite.
+    [Fact]
+    public void GerarTokenConvite_produz_token_seguro_para_uso_em_url()
+    {
+        var gerado = _sut.GerarTokenConvite();
+
+        Assert.Matches("^[A-Za-z0-9_-]+$", gerado.Token);
+    }
+
+    [Fact]
+    public void HashTokenConvite_para_tokens_diferentes_produz_hashes_diferentes()
+    {
+        var hash1 = _sut.HashTokenConvite("token-a");
+        var hash2 = _sut.HashTokenConvite("token-b");
+
+        Assert.NotEqual(hash1, hash2);
+    }
 }

@@ -100,12 +100,21 @@ Espelhando os módulos do backend ([ARCHITECTURE.md](../../backend/documentation
 | **Landing** *(novo, ver nota no topo)* | `LandingView` | — (página estática/institucional) | — | nenhum |
 | **Autenticação e Conta** | `LoginView`, `RegistrarView`, `EsqueciSenhaView`, `VerificarCodigoView`, `RedefinirSenhaView`, `PerfilView` | `authStore`, `recuperacaoSenhaStore`, `perfilStore` | `authService`, `perfilService` | `/auth/*`, `/perfil` |
 | **Prédios** | `PrediosListView`, `PredioDetalheView` | `predioStore` | `predioService` | `/predios/*` |
+| **Equipe e Acesso** *(novo — RF29–RF34)* | `EquipePredioView` (aba/seção do `PredioDetalheView`, só para quem é Síndico do prédio), `AceitarConviteView` (pública) | `equipeStore` | `equipeService` | `/predios/{id}/convites`, `/predios/{id}/equipe`, `/convites/{token}` |
 | **Compromissos** | `CompromissosListView`, `CompromissoDetalheView` | `compromissoStore` | `compromissoService` | `/predios/{id}/compromissos` |
 | **Planejamentos** | `PlanejamentosListView`, `PlanejamentoDetalheView` | `planejamentoStore` | `planejamentoService` | `/predios/{id}/planejamentos` |
 | **Documentos** (atas e normas) | `DocumentosListView`, `DocumentoDetalheView` | `documentoStore` | `documentoService` | `/predios/{id}/documentos` |
 | **Relatórios** | `RelatoriosListView`, `RelatorioDetalheView` | `relatorioStore` | `relatorioService` | `/predios/{id}/relatorios` |
 
 O **`recuperacaoSenhaStore`** é atípico entre as stores: em vez de cachear uma lista já carregada, ele guarda o *estado do fluxo* de recuperação de senha (RF06-A) entre as três telas — e-mail informado, código verificado e o instante em que o cooldown de reenvio expira (ver [SECURITY.md](SECURITY.md), seção 4). O e-mail e o cooldown são espelhados em `sessionStorage` para o **timer sobreviver a um F5** — sem isso, recarregar zeraria a contagem e permitiria um reenvio que o backend aceitaria (204) sem enviar nada, uma UX enganosa. O **código verificado nunca é persistido** (é um segredo). Por isso, após um reload: `/verificar-codigo` sem e-mail volta para `/esqueci-senha`, e `/redefinir-senha` sem código volta para `/verificar-codigo`. Esses dados vivem na store (não em `query`/`params` de rota) para não expor e-mail/código na URL.
+
+**Equipe (RF29–RF34):** `PredioDetalheView` ganha uma seção "Equipe", visível só quando o `equipeStore` resolve que o usuário logado é Síndico daquele prédio (perfil vem do backend, junto com os dados do prédio — nunca inferido no frontend). Um funcionário (Secretária/Ajudante) simplesmente não vê essa seção. `AceitarConviteView` é pública (rota `/convite/:token`), fora do `AppLayout`, seguindo o mesmo padrão de tela isolada que `VerificarCodigoView`/`RedefinirSenhaView` já usam para o fluxo de recuperação de senha.
+
+**Home e "Prédios" (mudança de semântica, sem mudança de rótulo):** com funcionários, a lista de prédios deixa de ser só "os que eu criei" — passa a ser "os prédios aos quais tenho acesso" (dono ou convidado). O rótulo na Home continua **"Prédios"** (não "Meus Prédios") — já era genérico o suficiente para cobrir os dois casos sem precisar mudar copy.
+
+**Filtro "meus/todos" em Compromissos (RF34):** `CompromissosListView` ganha um filtro de escopo, junto dos já existentes (prédio, atrasados, hoje — RFC seção 3.1). Comportamento por perfil:
+- **Síndico e Gestor:** abre em "meus compromissos" por padrão; o filtro oferece a opção "todos os compromissos" do prédio.
+- **Colaborador:** o filtro de escopo **nem aparece** na UI — ele só tem acesso aos próprios compromissos de qualquer forma (RN21), então oferecer a opção "todos" seria mostrar um controle que nunca faz nada. A restrição real é do backend ([EQUIPE.md](../../backend/documentation/EQUIPE.md)) — a UI só evita confundir o usuário com uma opção que não existe pra ele.
 
 `DocumentoDetalheView` e `RelatorioDetalheView` incluem uma **pré-visualização do arquivo** antes do download (ex: visualizador de PDF embutido para PDFs, miniatura para JPG/PNG) — evita um download às cegas só para conferir se é o arquivo certo. Para tipos sem preview viável no navegador (DOCX, XLSX), a tela mostra os metadados (nome, tipo, data de envio) e o botão de download direto, sem tentar renderizar o conteúdo.
 
@@ -133,12 +142,19 @@ flowchart TD
     L --> O[Atas]
     L --> P[Normas]
     L --> Q[Relatórios]
+    L --> R[Equipe - só Síndico]
+
+    Z[Link recebido por e-mail] --> Y[/convite/:token Aceitar convite/]
+    Y -->|conta criada/vinculada| C
 ```
+
+O nó "Link recebido por e-mail" é um ponto de entrada paralelo à Landing — o convidado nunca passa por `/`, chega direto no link do e-mail (RF29/RF30).
 
 | Rota | Pública? | Layout |
 |---|---|---|
 | `/` (Landing) | Sim | `LandingLayout` |
 | `/login`, `/registrar`, `/esqueci-senha`, `/verificar-codigo`, `/redefinir-senha` | Sim | `AuthLayout` |
+| `/convite/:token` *(novo — RF30)* | Sim | `AuthLayout` — mesma casca de login/cadastro, já que quem chega aqui também não tem sessão |
 | `/home`, `/predios/**`, `/compromissos/**`, `/configuracoes` | **Não** — exige sessão ativa | `AppLayout` |
 
 A guarda global de navegação (`router.beforeEach`) verifica se a rota de destino exige autenticação (`meta.requiresAuth`) e consulta o `authStore`. Sem sessão válida, o usuário é redirecionado para `/login` — nunca para `/`, já que quem tenta acessar uma rota protegida já demonstrou intenção de entrar no sistema, não de conhecer o produto. Esse comportamento é o equivalente, no frontend, ao fluxo "Acesso sem autenticação" descrito no [RFC](../../documentation/RFC/RFC.md#32-fluxos-alternativos) (seção 3.2) — lá o RFC previa redirecionamento "para a tela de autenticação", o que hoje significa `/login`, não a landing page.

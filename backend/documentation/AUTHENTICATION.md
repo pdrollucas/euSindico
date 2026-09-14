@@ -68,6 +68,8 @@ Pontos importantes desse desenho:
 - **Não há índice único em `codigo_hash` isolado** (diferente de `refresh_tokens.token_hash`) — com só 6 caracteres, colisão do mesmo código entre usuários diferentes é estatisticamente plausível; a busca sempre escopa por `usuario_id` + `codigo_hash` juntos.
 - **Código só com maiúsculas e números, validação case-insensitive:** o código gerado usa apenas A–Z e 0–9 (sem caracteres ambíguos como `0`/`O`/`1`/`I`/`L` — ver [SECURITY.md](SECURITY.md), seção 10). O que o usuário digita é normalizado para maiúsculas antes de hashear e comparar, então `ab12cd` e `AB12CD` validam igual — melhora a experiência em teclado mobile sem abrir mão de segurança (a normalização é só sobre o valor a ser hasheado, não amplia o espaço de códigos possíveis).
 
+> **Desde a v2.2.0 do RFC:** `POST /auth/registrar` (Fluxo 1, abaixo) cria só contas "raiz" — o dono/síndico que vai gerenciar prédios por conta própria. Funcionários (Gestor/Colaborador) nunca passam por este fluxo — a conta deles nasce vinculada a um prédio específico através de um convite aceito, RF29/RF30. Ver [EQUIPE.md](EQUIPE.md).
+
 ## Fluxo 1 — Criar conta (RF01) ✅ implementado
 
 ```mermaid
