@@ -74,6 +74,28 @@ public class ApplicationExceptionHandlerTests
     }
 
     [Fact]
+    public async Task PredioDuplicadoException_retorna_409()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new PredioDuplicadoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status409Conflict, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PredioLimiteAtingidoException_retorna_409()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new PredioLimiteAtingidoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status409Conflict, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task Excecao_nao_mapeada_retorna_500_com_mensagem_generica_sem_vazar_detalhe_interno()
     {
         var httpContext = CriarHttpContext();
