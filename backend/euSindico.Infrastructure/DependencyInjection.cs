@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ICodigoRedefinicaoSenhaRepository, CodigoRedefinicaoSenhaRepository>();
+        services.AddScoped<IPredioRepository, PredioRepository>();
         services.AddScoped<IPredioUsuarioRepository, PredioUsuarioRepository>();
         services.AddScoped<IConviteFuncionarioRepository, ConviteFuncionarioRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();

@@ -1,5 +1,6 @@
 using euSindico.Application.Auth;
 using euSindico.Application.Equipe;
+using euSindico.Application.Predios;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace euSindico.Application;
@@ -12,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<PerfilService>();
         services.AddScoped<AutorizacaoPredioService>();
         services.AddScoped<EquipeService>();
+        services.AddScoped<PredioService>();
 
         return services;
     }

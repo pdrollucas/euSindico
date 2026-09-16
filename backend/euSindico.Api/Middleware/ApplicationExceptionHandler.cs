@@ -27,6 +27,8 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
             CodigoRedefinicaoInvalidoException => StatusCodes.Status400BadRequest,
             UsuarioNaoEncontradoException => StatusCodes.Status404NotFound,
             PredioNaoEncontradoException => StatusCodes.Status404NotFound,
+            PredioDuplicadoException => StatusCodes.Status409Conflict,
+            PredioLimiteAtingidoException => StatusCodes.Status409Conflict,
             MembroNaoEncontradoException => StatusCodes.Status404NotFound,
             AcaoNaoPermitidaException => StatusCodes.Status403Forbidden,
             EmailJaVinculadoException => StatusCodes.Status409Conflict,

@@ -298,7 +298,9 @@ public class AutorizacaoPredioService(IPredioUsuarioRepository predioUsuarioRepo
 public enum AcaoPredio
 {
     GerenciarEquipe,
-    // Próximos valores prováveis, quando os módulos correspondentes forem desenhados:
+    // Próximos valores, já desenhados em PREDIOS.md (CRUD de Prédios ainda não implementado):
+    // VisualizarPredio (Síndico/Gestor/Colaborador), GerenciarPredio (só Síndico — editar/excluir o prédio).
+    // Prováveis quando os demais módulos forem desenhados:
     // CriarCompromisso, EditarCompromissoAlheio, GerenciarPlanejamento, GerenciarDocumento, GerenciarRelatorio...
 }
 ```

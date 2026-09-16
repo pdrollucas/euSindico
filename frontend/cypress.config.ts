@@ -7,6 +7,16 @@ import vuetify from 'vite-plugin-vuetify'
 import istanbul from 'vite-plugin-istanbul'
 
 export default defineConfig({
+  // Só em run mode (CI): o servidor Vite recém-subido às vezes ainda está compilando o chunk da
+  // rota quando o primeiro cy.visit() chega (mesmo com o warmup do vite.config.ts, que roda em
+  // background e não é aguardado pelo start-server-and-test), gerando "Failed to fetch
+  // dynamically imported module". Retry resolve porque na 2ª tentativa o módulo já está pronto;
+  // um erro real da aplicação falharia de novo. Fica de fora do openMode para não mascarar bugs
+  // durante o desenvolvimento local.
+  retries: {
+    runMode: 2,
+    openMode: 0,
+  },
   e2e: {
     specPattern: 'cypress/e2e/**/*.{cy,spec}.{js,jsx,ts,tsx}',
     baseUrl: 'http://localhost:5173',
