@@ -27,8 +27,13 @@ public class PredioController(PredioService predioService, IValidator<CriarPredi
 
         var predio = await predioService.CriarAsync(UsuarioId, dto, ct);
 
-        // Sem CreatedAtAction: ainda não existe uma action GET /predios/{id} para referenciar
-        // (próximo endpoint a ser implementado, ver PREDIOS.md) — o Location é montado à mão.
-        return Created($"/predios/{predio.Id}", predio);
+        return CreatedAtAction(nameof(Obter), new { id = predio.Id }, predio);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> Obter(int id, CancellationToken ct)
+    {
+        var predio = await predioService.ObterAsync(UsuarioId, id, ct);
+        return Ok(predio);
     }
 }

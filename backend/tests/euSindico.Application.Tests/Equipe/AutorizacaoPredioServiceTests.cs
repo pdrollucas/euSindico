@@ -55,4 +55,22 @@ public class AutorizacaoPredioServiceTests
         await Assert.ThrowsAsync<AcaoNaoPermitidaException>(
             () => _sut.VerificarAcessoAsync(20, 1, AcaoPredio.GerenciarEquipe));
     }
+
+    [Theory]
+    [InlineData(PapelPredio.Sindico)]
+    [InlineData(PapelPredio.Gestor)]
+    [InlineData(PapelPredio.Colaborador)]
+    public async Task VerificarAcessoAsync_com_qualquer_papel_permite_visualizar_predio(PapelPredio papel)
+    {
+        var vinculo = papel == PapelPredio.Sindico
+            ? PredioUsuario.CriarComoDono(predioId: 1, usuarioId: 10)
+            : PredioUsuario.CriarComoConvidado(predioId: 1, usuarioId: 10, papel, convidadoPorUsuarioId: 1);
+        _predioUsuarioRepository
+            .Setup(r => r.BuscarVinculoAsync(1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(vinculo);
+
+        var resultado = await _sut.VerificarAcessoAsync(10, 1, AcaoPredio.VisualizarPredio);
+
+        Assert.Equal(papel, resultado.Papel);
+    }
 }
