@@ -9,4 +9,5 @@ namespace euSindico.Application.Equipe;
 public enum AcaoPredio
 {
     GerenciarEquipe,
+    VisualizarPredio,
 }

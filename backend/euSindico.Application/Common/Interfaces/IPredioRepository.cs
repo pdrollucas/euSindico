@@ -9,6 +9,13 @@ public interface IPredioRepository
     Task<bool> ExisteNomeEEnderecoAtivoAsync(int usuarioId, string nome, string endereco, CancellationToken ct = default);
 
     /// <summary>
+    /// Busca o prédio pelo Id, incluindo os excluídos — quem chama decide o que fazer com
+    /// <see cref="Predio.Excluido"/> (ex: <see cref="Predios.PredioService"/> trata como
+    /// "não encontrado", RN08). Retorna <c>null</c> se o Id não existir.
+    /// </summary>
+    Task<Predio?> BuscarPorIdAsync(int id, CancellationToken ct = default);
+
+    /// <summary>
     /// Persiste o prédio e, na mesma transação, a linha de dono em <c>predio_usuarios</c>
     /// (<see cref="PredioUsuario.CriarComoDono"/>) — sem isso, o próprio criador não passaria
     /// na checagem do <see cref="Equipe.AutorizacaoPredioService"/> sobre o prédio recém-criado.

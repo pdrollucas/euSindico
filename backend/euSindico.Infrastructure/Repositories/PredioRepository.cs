@@ -13,6 +13,9 @@ public class PredioRepository(AppDbContext context) : IPredioRepository
     public Task<bool> ExisteNomeEEnderecoAtivoAsync(int usuarioId, string nome, string endereco, CancellationToken ct = default) =>
         context.Predios.AnyAsync(p => p.UsuarioId == usuarioId && p.Nome == nome && p.Endereco == endereco && !p.Excluido, ct);
 
+    public Task<Predio?> BuscarPorIdAsync(int id, CancellationToken ct = default) =>
+        context.Predios.FirstOrDefaultAsync(p => p.Id == id, ct);
+
     public async Task<Predio> AdicionarComDonoAsync(Predio predio, CancellationToken ct = default)
     {
         // Transação explícita (mesmo padrão de UsuarioRepository.ExcluirUsuarioEDadosRelacionadosAsync):
