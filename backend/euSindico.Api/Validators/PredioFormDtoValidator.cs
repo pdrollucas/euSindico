@@ -3,9 +3,9 @@ using FluentValidation;
 
 namespace euSindico.Api.Validators;
 
-public class CriarPredioDtoValidator : AbstractValidator<CriarPredioDto>
+public class PredioFormDtoValidator : AbstractValidator<PredioFormDto>
 {
-    public CriarPredioDtoValidator()
+    public PredioFormDtoValidator()
     {
         RuleFor(x => x.Nome)
             .SetValidator(new PredioNomeValidator());

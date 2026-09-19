@@ -2,7 +2,7 @@
 
 Este documento descreve o CRUD de prédios (RF08–RF11, RNF10, RN02, RN07–RN09) do [RFC](../../documentation/RFC/RFC.md). Referência para `PredioController`/`PredioService`/`PredioRepository`.
 
-> **Status:** parcialmente implementado. Prontos: **Fluxo 1 — Criar** (RF08, `POST /predios`) e **Fluxo 3 — Obter detalhes** (RF09, `GET /predios/{id}`), incluindo `PredioDto.Papel` e `AcaoPredio.VisualizarPredio`. Pendentes: **Fluxo 2 — Listar paginado** (RF09, `GET /predios`), **Fluxo 4 — Editar** (RF10, exige `AcaoPredio.GerenciarPredio`, ainda não criada) e **Fluxo 5 — Remover** (RF11).
+> **Status:** implementado — CRUD completo (RF08–RF11): `POST`/`GET /predios`/`GET`/`PUT`/`DELETE /predios/{id}`. Único ponto fora do escopo é a restauração de prédio excluído (ver [Pendência](#pendência-restaurar-prédio-excluído)).
 
 ## Sumário
 
@@ -13,7 +13,7 @@ Este documento descreve o CRUD de prédios (RF08–RF11, RNF10, RN02, RN07–RN0
 - [Endpoints](#endpoints)
 - [Fluxo 1 — Criar prédio (RF08)](#fluxo-1--criar-prédio-rf08)
 - [Fluxo 3 — Obter detalhes de um prédio (RF09)](#fluxo-3--obter-detalhes-de-um-prédio-rf09)
-- [Fluxos 2, 4 e 5 — pendentes](#fluxos-2-4-e-5--pendentes)
+- [Fluxos 2, 4 e 5](#fluxos-2-4-e-5)
 - [Validação de entrada e sanitização](#validação-de-entrada-e-sanitização)
 - [Paginação (RNF10)](#paginação-rnf10)
 - [Tratamento de exceções](#tratamento-de-exceções)
@@ -22,7 +22,6 @@ Este documento descreve o CRUD de prédios (RF08–RF11, RNF10, RN02, RN07–RN0
 - [Pendência: restaurar prédio excluído](#pendência-restaurar-prédio-excluído)
 - [Testes](#testes)
 - [Notas para módulos futuros](#notas-para-módulos-futuros)
-- [Próximos passos](#próximos-passos)
 
 ## Visão geral
 
@@ -42,15 +41,16 @@ Seguindo [ARCHITECTURE.md](ARCHITECTURE.md) e o padrão do módulo de Auth/Perfi
 |---|---|---|---|
 | `Predio` | Domain | ✅ | Entidade com invariantes (`AtualizarDados`, `ExcluirLogicamente`), setters privados. |
 | `PredioConfiguration` | Infrastructure | ✅ | Mapeamento EF Core (tabela `predios`, índice composto `(usuario_id, excluido)`). |
-| `PredioController` | Api | ✅ Fluxos 1 e 3 | `Criar` e `Obter` prontos; `Listar`/`Atualizar`/`Remover` pendentes. |
-| `PredioService` | Application | ✅ Fluxos 1 e 3 | `CriarAsync` (cria a linha de dono em `predio_usuarios`, aplica duplicidade/limite escopados ao dono); `ObterAsync` (delega ao `AutorizacaoPredioService`). Fluxos 2, 4 e 5 pendentes. |
-| `IPredioRepository` | Application (interface) | ✅ Fluxos 1 e 3 | `ContarAtivosDoUsuarioAsync`, `ExisteNomeEEnderecoAtivoAsync`, `AdicionarComDonoAsync`, `BuscarPorIdAsync`. `AtualizarAsync` pendente. |
-| `PredioRepository` | Infrastructure | ✅ Fluxos 1 e 3 | Busca/persiste `Predio` no MySQL via `AppDbContext`. |
-| `IPredioUsuarioRepository` | Application (interface) | ✅ já existe (Equipe) | `PredioService` depende dela indiretamente via `AutorizacaoPredioService`. `ListarPrediosDoUsuarioAsync` (Fluxo 2) ainda não existe. |
-| `AutorizacaoPredioService` | Application | ✅ `VisualizarPredio` | Reaproveitado no Fluxo 3. `AcaoPredio.GerenciarPredio` (exclusiva de Síndico, Fluxos 4–5) ainda não existe — ver [Próximos passos](#próximos-passos). |
+| `PredioController` | Api | ✅ | `Criar`, `Listar`, `Obter`, `Atualizar`, `Remover`. |
+| `PredioService` | Application | ✅ | `CriarAsync` (cria a linha de dono em `predio_usuarios`, aplica duplicidade/limite escopados ao dono); `ObterAsync`/`AtualizarAsync`/`ExcluirAsync` (delegam ao `AutorizacaoPredioService`); `ListarAsync` (via `IPredioUsuarioRepository`). |
+| `IPredioRepository` | Application (interface) | ✅ | `ContarAtivosDoUsuarioAsync`, `ExisteNomeEEnderecoAtivoAsync` (com `excluirId` opcional), `AdicionarComDonoAsync`, `BuscarPorIdAsync`, `AtualizarAsync`. |
+| `PredioRepository` | Infrastructure | ✅ | Busca/persiste `Predio` no MySQL via `AppDbContext`. |
+| `IPredioUsuarioRepository` | Application (interface) | ✅ | `ListarPrediosDoUsuarioAsync` (Fluxo 2, novo nesta etapa) além dos métodos já existentes de Equipe. |
+| `AutorizacaoPredioService` | Application | ✅ | Matriz com `VisualizarPredio` (Síndico/Gestor/Colaborador) e `GerenciarPredio` (só Síndico, novo nesta etapa), além de `GerenciarEquipe`. |
 | `PredioDuplicadoException`, `PredioLimiteAtingidoException` | Application | ✅ | Mapeadas para `409` no `ApplicationExceptionHandler`. |
 | `PredioNaoEncontradoException` | Application | ✅ já existe (Equipe) | **Não recriar** — reaproveitada de `AutorizacaoPredioService`, já mapeada para `404`. |
-| `PredioNomeValidator`, `EnderecoValidator` | Api | ✅ | Validação de formato de `Nome`/`Endereco`. |
+| `PredioNomeValidator`, `EnderecoValidator`, `PredioFormDtoValidator` | Api | ✅ | Validação de formato de `Nome`/`Endereco`. `PredioFormDtoValidator` é único para criação e edição — os dois DTOs têm o mesmo formato ([Validação de entrada e sanitização](#validação-de-entrada-e-sanitização)). |
+| `PagedResultDto<T>` | Application (`Common/Dtos`) | ✅ | Envelope genérico de paginação (RNF10), reutilizável pelos módulos futuros. |
 
 ## Entidade Predio
 
@@ -167,11 +167,11 @@ sequenceDiagram
 
 Um prédio soft-deletado continua "não encontrado" mesmo para quem tem vínculo — a exclusão lógica não é revertida pela existência do vínculo. Esse é o padrão de checagem (vínculo → papel → não-excluído) que os Fluxos 4 e 5 reaproveitam, só trocando a ação final.
 
-## Fluxos 2, 4 e 5 — pendentes
+## Fluxos 2, 4 e 5
 
 Os três reaproveitam o mesmo padrão do Fluxo 3 (`AutorizacaoPredioService.VerificarAcessoAsync` → busca → checagem de excluído); aqui só a diferença de cada um:
 
-- **Fluxo 2 — Listar, paginado (RF09, RNF10):** não passa por `AutorizacaoPredioService` — filtra direto por vínculo em `predio_usuarios` (`ListarPrediosDoUsuarioAsync`, método novo a criar nela), já que "qualquer vínculo" cobre todos os papéis. Query: `SELECT p.*, pu.papel FROM predios p JOIN predio_usuarios pu ON pu.predio_id = p.id WHERE pu.usuario_id = ? AND p.excluido = false ORDER BY p.nome ASC LIMIT ? OFFSET ?`. O índice único existente em `predio_usuarios (predio_id, usuario_id)` já cobre esse join; não é preciso índice novo.
+- **Fluxo 2 — Listar, paginado (RF09, RNF10):** não passa por `AutorizacaoPredioService` — filtra direto por vínculo em `predio_usuarios` (`IPredioUsuarioRepository.ListarPrediosDoUsuarioAsync`), já que "qualquer vínculo" cobre todos os papéis. Query equivalente: `SELECT p.*, pu.papel FROM predios p JOIN predio_usuarios pu ON pu.predio_id = p.id WHERE pu.usuario_id = ? AND p.excluido = false ORDER BY p.nome ASC LIMIT ? OFFSET ?`. O índice único existente em `predio_usuarios (predio_id, usuario_id)` já cobre esse join; não foi preciso criar índice novo.
 - **Fluxo 4 — Editar (RF10):** ação exigida é `AcaoPredio.GerenciarPredio` (só Síndico) em vez de `VisualizarPredio` — vínculo existe mas papel é Gestor/Colaborador → `403` (não `404`, já sabe que o prédio existe). Depois da checagem de excluído, roda `ExisteNomeEEnderecoAtivoAsync(..., excluirId: id)` (mesma duplicidade do Fluxo 1, com `id <> ?` pra não comparar o prédio consigo mesmo — sem isso, salvar sem mudar nome/endereço sempre daria falso-positivo). Limite de 20 **não** é checado aqui — editar não cria prédio novo.
 - **Fluxo 5 — Remover (RF11):** mesma checagem de `GerenciarPredio` do Fluxo 4, sem duplicidade — só `ExcluirLogicamente()` + `UPDATE`. **Diferente do logout** (idempotente, sempre `204`): excluir um prédio já excluído retorna `404`, porque um prédio excluído é "não existe mais" (RN08), sem o "estado desejado" implícito que o logout tem. Remover o vínculo do próprio Síndico **não** é feito por este endpoint (deixaria o prédio órfão) — a linha de dono em `predio_usuarios` permanece intacta após o soft delete, só o `Predio` é marcado excluído (mesmo raciocínio de RN22 em EQUIPE.md).
 
@@ -192,7 +192,9 @@ Ambos os regex são **allowlists** — um payload `<script>alert(1)</script>` é
 
 **Limite** (20 ativos por usuário, regra nova): checado só na criação → `PredioLimiteAtingidoException` (`409`).
 
-**Mass assignment:** `CriarPredioDto`/`AtualizarPredioDto` expõem só `Nome`/`Endereco` — sem caminho pro cliente definir `Id`/`UsuarioId`/`CriadoEm`/`Excluido` via body.
+**Um DTO só para criar e editar:** `PredioFormDto(Nome, Endereco)` é usado tanto em `POST /predios` quanto em `PUT /predios/{id}` — os dois formulários têm exatamente o mesmo formato e as mesmas regras, então não há razão pra manter dois tipos (e dois validators) idênticos. Se um dia divergirem, separar de novo é um refactor pequeno.
+
+**Mass assignment:** `PredioFormDto` expõe só `Nome`/`Endereco` — sem caminho pro cliente definir `Id`/`UsuarioId`/`CriadoEm`/`Excluido` via body.
 
 ## Paginação (RNF10)
 
@@ -268,32 +270,16 @@ Esforço estimado: pequeno-médio — a maior parte (repositório, DTOs, exceç�
 
 Convenção do projeto: `Metodo_condicao_resultado`, `Moq`, `TestValidate` para validators.
 
-**Implementados (Fluxos 1 e 3)** — ver os arquivos, que já documentam os cenários pelos próprios nomes de teste:
+Cobre os cinco fluxos — ver os arquivos, que já documentam os cenários pelos próprios nomes de teste:
 - `euSindico.Domain.Tests/PredioTests.cs`
-- `euSindico.Application.Tests/Predios/PredioServiceTests.cs`
-- `euSindico.Api.Tests/Controllers/PredioControllerTests.cs`
+- `euSindico.Application.Tests/Predios/PredioServiceTests.cs` — inclui listagem por qualquer papel vinculado, exclusão do próprio id na checagem de duplicidade da edição (`excluirId`), e os casos `404`/`403` de edição/remoção por papel.
+- `euSindico.Application.Tests/Equipe/AutorizacaoPredioServiceTests.cs` — cobre `AcaoPredio.GerenciarPredio` (só Síndico) e `VisualizarPredio`.
+- `euSindico.Api.Tests/Controllers/PredioControllerTests.cs` — inclui os limites de paginação (`400` fora da faixa `1..20`).
 - `euSindico.Api.Tests/Validators/PredioNomeValidatorTests.cs`, `EnderecoValidatorTests.cs`
 
-**Pendentes (Fluxos 2, 4, 5)** — casos que ainda vão guiar a implementação:
-- Listagem: retorna prédios com vínculo como Síndico **ou** Gestor **ou** Colaborador (não só criados pelo usuário); `Papel` reflete o vínculo correto.
-- Edição/remoção: `404` pra "sem vínculo"/"já excluído"; `403` pra "vínculo existe mas papel é Gestor/Colaborador" tentando `PUT`/`DELETE`; `200`/`204` pra Síndico válido.
-- **Sem testes de integração de `PredioRepository` contra banco real** — gap conhecido, sem precedente no projeto (`euSindico.Infrastructure.Tests` só cobre `Security/`).
+**Sem testes de integração de `PredioRepository`/`PredioUsuarioRepository` contra banco real** — gap conhecido, sem precedente no projeto (`euSindico.Infrastructure.Tests` só cobre `Security/`).
 
 ## Notas para módulos futuros
 
 RN09 ("prédio excluído não pode ser usado por Compromissos/Planejamentos/Documentos/Relatórios") não é responsabilidade deste CRUD, mas o desenho já deixa o caminho pronto: cada `Service` futuro deve reaproveitar `AutorizacaoPredioService.VerificarAcessoAsync` (com a `AcaoPredio` específica, ex: `CriarCompromisso`, já prevista em EQUIPE.md) antes de aceitar um `predioId`, e checar `!Excluido` — nunca mais a antiga checagem direta contra `predios.usuario_id`.
 
-## Próximos passos
-
-**Feito** (Fluxos 1 e 3): `IPredioRepository`/`PredioRepository`, `PredioService.CriarAsync`/`ObterAsync`, `PredioDto.Papel`, `PredioDuplicadoException`/`PredioLimiteAtingidoException` (+ mapeamento), `PredioNomeValidator`/`EnderecoValidator`, `PredioController` (`POST`/`GET /predios/{id}` com `CreatedAtAction`), `AcaoPredio.VisualizarPredio` + testes.
-
-**Restante**, para os Fluxos 2, 4 e 5:
-
-1. `AcaoPredio.GerenciarPredio` (só Síndico) na matriz de `AutorizacaoPredioService`.
-2. `IPredioUsuarioRepository.ListarPrediosDoUsuarioAsync(usuarioId, page, pageSize)` — join com `predios`, `excluido = false`.
-3. `IPredioRepository.AtualizarAsync`.
-4. `PredioService.ListarAsync`/`AtualizarAsync`/`ExcluirAsync` + DTOs (`AtualizarPredioDto`, `PagedResultDto<T>`, `ListarPrediosQueryDto`).
-5. `PredioController`: `GET /predios` (paginado), `PUT`/`DELETE /predios/{id}`.
-6. Testes dos três fluxos, incluindo papel e paginação.
-
-Fica registrado para depois: `Predio.Reativar()`, `GET /predios/excluidos`, `POST /predios/{id}/restaurar` (ver [Pendência](#pendência-restaurar-prédio-excluído)).

@@ -10,8 +10,10 @@ public class PredioRepository(AppDbContext context) : IPredioRepository
     public Task<int> ContarAtivosDoUsuarioAsync(int usuarioId, CancellationToken ct = default) =>
         context.Predios.CountAsync(p => p.UsuarioId == usuarioId && !p.Excluido, ct);
 
-    public Task<bool> ExisteNomeEEnderecoAtivoAsync(int usuarioId, string nome, string endereco, CancellationToken ct = default) =>
-        context.Predios.AnyAsync(p => p.UsuarioId == usuarioId && p.Nome == nome && p.Endereco == endereco && !p.Excluido, ct);
+    public Task<bool> ExisteNomeEEnderecoAtivoAsync(int usuarioId, string nome, string endereco, int? excluirId = null, CancellationToken ct = default) =>
+        context.Predios.AnyAsync(
+            p => p.UsuarioId == usuarioId && p.Nome == nome && p.Endereco == endereco && !p.Excluido && p.Id != excluirId,
+            ct);
 
     public Task<Predio?> BuscarPorIdAsync(int id, CancellationToken ct = default) =>
         context.Predios.FirstOrDefaultAsync(p => p.Id == id, ct);
@@ -32,4 +34,9 @@ public class PredioRepository(AppDbContext context) : IPredioRepository
         await transaction.CommitAsync(ct);
         return predio;
     }
+
+    // O parâmetro não precisa ser usado diretamente: o prédio já veio de BuscarPorIdAsync
+    // no mesmo DbContext (escopo por requisição), então já está tracked — só falta persistir.
+    public async Task AtualizarAsync(Predio predio, CancellationToken ct = default) =>
+        await context.SaveChangesAsync(ct);
 }

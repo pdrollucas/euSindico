@@ -17,6 +17,23 @@ public class PredioUsuarioRepository(AppDbContext context) : IPredioUsuarioRepos
         context.PredioUsuarios
             .AnyAsync(pu => pu.PredioId == predioId && pu.Usuario!.Email == email, ct);
 
+    public async Task<(IReadOnlyList<PredioUsuario> Itens, int Total)> ListarPrediosDoUsuarioAsync(
+        int usuarioId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = context.PredioUsuarios
+            .Include(pu => pu.Predio)
+            .Where(pu => pu.UsuarioId == usuarioId && !pu.Predio!.Excluido);
+
+        var total = await query.CountAsync(ct);
+        var itens = await query
+            .OrderBy(pu => pu.Predio!.Nome)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (itens, total);
+    }
+
     public Task<List<PredioUsuario>> ListarDoPredioAsync(int predioId, CancellationToken ct = default) =>
         context.PredioUsuarios
             .Include(pu => pu.Usuario)

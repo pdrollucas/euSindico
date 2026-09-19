@@ -30,18 +30,19 @@ public class PredioControllerTests
     public PredioControllerTests()
     {
         var autorizacaoPredioService = new AutorizacaoPredioService(_predioUsuarioRepository.Object);
-        var predioService = new PredioService(_predioRepository.Object, autorizacaoPredioService);
+        var predioService = new PredioService(_predioRepository.Object, _predioUsuarioRepository.Object, autorizacaoPredioService);
 
         _predioRepository.Setup(r => r.ContarAtivosDoUsuarioAsync(UsuarioId, It.IsAny<CancellationToken>())).ReturnsAsync(0);
         _predioRepository
-            .Setup(r => r.ExisteNomeEEnderecoAtivoAsync(UsuarioId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.ExisteNomeEEnderecoAtivoAsync(
+                UsuarioId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _predioRepository
             .Setup(r => r.AdicionarComDonoAsync(It.IsAny<Predio>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Predio p, CancellationToken _) => p);
 
         var claims = new[] { new Claim(JwtRegisteredClaimNames.Sub, UsuarioId.ToString()) };
-        _sut = new PredioController(predioService, new CriarPredioDtoValidator())
+        _sut = new PredioController(predioService, new PredioFormDtoValidator())
         {
             ControllerContext = new ControllerContext
             {
@@ -56,7 +57,7 @@ public class PredioControllerTests
     [Fact]
     public async Task Criar_com_dados_validos_retorna_201_com_location_e_corpo()
     {
-        var resultado = await _sut.Criar(new CriarPredioDto("Edifício Aurora", "Rua X, 100"), CancellationToken.None);
+        var resultado = await _sut.Criar(new PredioFormDto("Edifício Aurora", "Rua X, 100"), CancellationToken.None);
 
         var criado = Assert.IsType<CreatedAtActionResult>(resultado);
         Assert.Equal(StatusCodes.Status201Created, criado.StatusCode);
@@ -69,7 +70,7 @@ public class PredioControllerTests
     [Fact]
     public async Task Criar_com_nome_invalido_retorna_400_e_nao_persiste()
     {
-        var resultado = await _sut.Criar(new CriarPredioDto("<script>alert(1)</script>", "Rua X, 100"), CancellationToken.None);
+        var resultado = await _sut.Criar(new PredioFormDto("<script>alert(1)</script>", "Rua X, 100"), CancellationToken.None);
 
         var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
         Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
@@ -92,5 +93,72 @@ public class PredioControllerTests
         var ok = Assert.IsType<OkObjectResult>(resultado);
         var corpo = Assert.IsType<PredioDto>(ok.Value);
         Assert.Equal("Edifício Aurora", corpo.Nome);
+    }
+
+    [Fact]
+    public async Task Listar_com_paginacao_valida_retorna_200()
+    {
+        _predioUsuarioRepository
+            .Setup(r => r.ListarPrediosDoUsuarioAsync(UsuarioId, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<PredioUsuario>(), 0));
+
+        var resultado = await _sut.Listar(page: 1, pageSize: 10, ct: CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(resultado);
+    }
+
+    [Theory]
+    [InlineData(0, 10)]
+    [InlineData(1, 0)]
+    [InlineData(1, 21)]
+    public async Task Listar_com_paginacao_fora_da_faixa_retorna_400(int page, int pageSize)
+    {
+        var resultado = await _sut.Listar(page, pageSize, CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
+    }
+
+    [Fact]
+    public async Task Atualizar_com_sindico_e_dados_validos_retorna_200()
+    {
+        _predioUsuarioRepository
+            .Setup(r => r.BuscarVinculoAsync(10, UsuarioId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PredioUsuario.CriarComoDono(10, UsuarioId));
+        _predioRepository
+            .Setup(r => r.BuscarPorIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Predio("Nome Antigo", "Endereço Antigo", UsuarioId));
+
+        var resultado = await _sut.Atualizar(10, new PredioFormDto("Edifício Aurora", "Rua X, 100"), CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(resultado);
+        var corpo = Assert.IsType<PredioDto>(ok.Value);
+        Assert.Equal("Edifício Aurora", corpo.Nome);
+    }
+
+    [Fact]
+    public async Task Atualizar_com_nome_invalido_retorna_400_e_nao_persiste()
+    {
+        var resultado = await _sut.Atualizar(
+            10, new PredioFormDto("<script>alert(1)</script>", "Rua X, 100"), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
+        _predioRepository.Verify(r => r.AtualizarAsync(It.IsAny<Predio>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Remover_com_sindico_retorna_204()
+    {
+        _predioUsuarioRepository
+            .Setup(r => r.BuscarVinculoAsync(10, UsuarioId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PredioUsuario.CriarComoDono(10, UsuarioId));
+        _predioRepository
+            .Setup(r => r.BuscarPorIdAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Predio("Edifício Aurora", "Rua X, 100", UsuarioId));
+
+        var resultado = await _sut.Remover(10, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(resultado);
     }
 }

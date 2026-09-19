@@ -17,6 +17,15 @@ public interface IPredioUsuarioRepository
     Task<bool> ExisteMembroComEmailAsync(int predioId, string email, CancellationToken ct = default);
 
     /// <summary>
+    /// Prédios vinculados a um usuário (RF09, RN16), qualquer papel — não só os criados por
+    /// ele. Cada item traz <see cref="PredioUsuario.Predio"/> carregado (papel + dados do
+    /// prédio numa única consulta). Filtra prédios excluídos (RN08). Ordenado por
+    /// <c>Predio.Nome</c> crescente (ver PREDIOS.md, Paginação).
+    /// </summary>
+    Task<(IReadOnlyList<PredioUsuario> Itens, int Total)> ListarPrediosDoUsuarioAsync(
+        int usuarioId, int page, int pageSize, CancellationToken ct = default);
+
+    /// <summary>
     /// Todos os membros de um prédio (RF31), com <see cref="PredioUsuario.Usuario"/> já carregado
     /// para expor nome/e-mail sem uma segunda consulta.
     /// </summary>
