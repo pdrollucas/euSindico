@@ -6,7 +6,12 @@ public interface IPredioRepository
 {
     Task<int> ContarAtivosDoUsuarioAsync(int usuarioId, CancellationToken ct = default);
 
-    Task<bool> ExisteNomeEEnderecoAtivoAsync(int usuarioId, string nome, string endereco, CancellationToken ct = default);
+    /// <summary>
+    /// <paramref name="excluirId"/> exclui um prédio da comparação (o próprio prédio sendo
+    /// editado, Fluxo 4 de PREDIOS.md) — sem isso, salvar um prédio sem mudar nome/endereço
+    /// sempre daria falso-positivo de duplicidade contra si mesmo.
+    /// </summary>
+    Task<bool> ExisteNomeEEnderecoAtivoAsync(int usuarioId, string nome, string endereco, int? excluirId = null, CancellationToken ct = default);
 
     /// <summary>
     /// Busca o prédio pelo Id, incluindo os excluídos — quem chama decide o que fazer com
@@ -22,4 +27,11 @@ public interface IPredioRepository
     /// Ver PREDIOS.md, Fluxo 1.
     /// </summary>
     Task<Predio> AdicionarComDonoAsync(Predio predio, CancellationToken ct = default);
+
+    /// <summary>
+    /// Persiste alterações num <see cref="Predio"/> já rastreado pelo <c>DbContext</c> (buscado
+    /// antes via <see cref="BuscarPorIdAsync"/> na mesma requisição) — mesmo padrão de
+    /// <c>UsuarioRepository.AtualizarAsync</c>: só falta chamar <c>SaveChangesAsync</c>.
+    /// </summary>
+    Task AtualizarAsync(Predio predio, CancellationToken ct = default);
 }

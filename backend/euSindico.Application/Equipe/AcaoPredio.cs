@@ -10,4 +10,5 @@ public enum AcaoPredio
 {
     GerenciarEquipe,
     VisualizarPredio,
+    GerenciarPredio,
 }

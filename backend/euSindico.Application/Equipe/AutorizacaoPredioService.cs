@@ -18,6 +18,7 @@ public class AutorizacaoPredioService(IPredioUsuarioRepository predioUsuarioRepo
     {
         [AcaoPredio.GerenciarEquipe] = [PapelPredio.Sindico],
         [AcaoPredio.VisualizarPredio] = [PapelPredio.Sindico, PapelPredio.Gestor, PapelPredio.Colaborador],
+        [AcaoPredio.GerenciarPredio] = [PapelPredio.Sindico],
     };
 
     /// <summary>
