@@ -1,19 +1,22 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import {
+  createRouter,
+  createWebHistory,
+  type RouteLocationNormalizedLoaded,
+  type RouteLocationRaw,
+} from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
-// Tipagem do `meta` das rotas (ver guarda abaixo e EmConstrucaoView).
+// `voltarPara`: destino do botão "voltar" do AppHeader — nunca o histórico do navegador (ver
+// ARCHITECTURE.md, seção 5).
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     titulo?: string
+    voltarPara?: (route: RouteLocationNormalizedLoaded) => RouteLocationRaw
   }
 }
 
-// Mapa de rotas conforme frontend/documentation/ARCHITECTURE.md, seção 5. Já implementadas:
-// Landing, Login, Registrar, o fluxo de recuperação de senha (EsqueciSenha -> VerificarCodigo ->
-// RedefinirSenha, RF06-A) e a Home (hub). Compromissos, Prédios e Configurações existem hoje só
-// como placeholders "em construção" (EmConstrucaoView) — as telas reais dos módulos (incluindo
-// Planejamentos, Documentos, Relatórios, Perfil) entram nos próximos marcos do RFC.
+// Mapa de rotas conforme frontend/documentation/ARCHITECTURE.md, seção 5.
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -47,6 +50,11 @@ const router = createRouter({
           name: 'redefinir-senha',
           component: () => import('@/views/auth/RedefinirSenhaView.vue'),
         },
+        {
+          path: 'convite/:token',
+          name: 'aceitar-convite',
+          component: () => import('@/views/equipe/AceitarConviteView.vue'),
+        },
       ],
     },
     {
@@ -66,8 +74,23 @@ const router = createRouter({
         {
           path: 'predios',
           name: 'predios',
-          meta: { titulo: 'Prédios' },
-          component: () => import('@/views/EmConstrucaoView.vue'),
+          meta: { titulo: 'Prédios', voltarPara: () => '/home' },
+          component: () => import('@/views/predios/PrediosListView.vue'),
+        },
+        {
+          path: 'predios/:id',
+          name: 'predios-detalhe',
+          meta: { titulo: 'Prédio', voltarPara: () => '/predios' },
+          component: () => import('@/views/predios/PredioDetalheView.vue'),
+        },
+        {
+          path: 'predios/:id/equipe',
+          name: 'predios-equipe',
+          meta: {
+            titulo: 'Equipe',
+            voltarPara: (route) => `/predios/${route.params.id}`,
+          },
+          component: () => import('@/views/equipe/EquipePredioView.vue'),
         },
         {
           path: 'configuracoes',

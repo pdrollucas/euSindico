@@ -64,6 +64,7 @@ Padrões já estabelecidos — reutilize antes de criar um novo. Referências de
   - Não zere o respiro do cabeçalho: `pb-0` no `v-card-item` cola o subtítulo no primeiro campo. Deixe o padding padrão separar header e formulário.
   - `persistent-hint` já reserva uma linha — considere isso antes de somar `mt-*` grande no botão seguinte.
 - **`data-cy`**: todo elemento interativo relevante (inputs, botões, links, alertas) leva um `data-cy` estável, usado pelos testes Cypress. Ao redesenhar, **preserve os `data-cy` existentes** — mudar markup não deve quebrar teste. Ver [TEST.md](TEST.md).
+- **`v-alert` (erros/avisos)**: o ícone da esquerda vem alinhado ao topo por padrão no Vuetify (`align-self: flex-start`) — fica descentralizado quando a mensagem quebra em mais de uma linha. Corrigido globalmente em [`src/assets/main.css`](../src/assets/main.css) (importado uma vez em `main.ts`), não tela a tela — é o único ajuste de CSS puro do projeto fora de [`vuetify.ts`](../src/plugins/vuetify.ts), reservado para comportamento padrão do Vuetify sem prop equivalente.
 
 ## 5. Voz e conteúdo
 
