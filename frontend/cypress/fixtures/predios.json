@@ -1,0 +1,11 @@
+{
+  "items": [
+    { "id": 1, "nome": "Edifício Solar", "endereco": "Rua da Silva, 192, Floresta", "criadoEm": "2026-01-01T12:00:00Z", "papel": 1 },
+    { "id": 2, "nome": "Edifício Nuvem", "endereco": "Av. Brasil, 500, Centro", "criadoEm": "2026-01-05T12:00:00Z", "papel": 1 },
+    { "id": 3, "nome": "Edifício Praiol", "endereco": "Rua das Flores, 45", "criadoEm": "2026-01-10T12:00:00Z", "papel": 3 }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 3,
+  "totalPages": 1
+}

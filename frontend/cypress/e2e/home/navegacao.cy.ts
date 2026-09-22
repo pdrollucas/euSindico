@@ -19,12 +19,26 @@ describe('Home (hub da área logada)', () => {
     cy.get('[data-cy=card-configuracoes]').should('be.visible')
   })
 
-  it('navega para o placeholder "em construção" ao clicar num card e volta para a Home', () => {
-    cy.get('[data-cy=card-predios]').click()
-    cy.url().should('include', '/predios')
-    cy.get('[data-cy=em-construcao-titulo]').should('contain', 'Prédios')
+  it('navega para o placeholder "em construção" ao clicar num card ainda não implementado e volta para a Home', () => {
+    cy.get('[data-cy=card-compromissos]').click()
+    cy.url().should('include', '/compromissos')
+    cy.get('[data-cy=em-construcao-titulo]').should('contain', 'Compromissos')
 
     cy.get('[data-cy=link-home]').click()
+    cy.url().should('include', '/home')
+  })
+
+  it('navega para a lista de prédios ao clicar no card (módulo Prédios, RF08-RF11)', () => {
+    cy.intercept('GET', '**/predios?*', {
+      statusCode: 200,
+      body: { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 },
+    }).as('listarPredios')
+
+    cy.get('[data-cy=card-predios]').click()
+    cy.wait('@listarPredios')
+    cy.url().should('include', '/predios')
+
+    cy.get('[data-cy=btn-home]').click()
     cy.url().should('include', '/home')
   })
 })

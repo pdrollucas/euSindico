@@ -1,0 +1,17 @@
+/* Ajustes de comportamento padrão do Vuetify sem prop equivalente — ver DESIGN.md. */
+
+:root {
+  /* Altura do AppHeader — referenciada por quem precisa grudar logo abaixo dele. */
+  --app-header-height: 56px;
+}
+
+/* v-alert: o ícone vem alinhado ao topo por padrão, descentralizado quando o texto quebra
+   linha. Reaproveita o grid do modificador `prominent` (ícone ocupa as duas linhas) sem o
+   ícone maior que ele também traz. */
+.v-alert:not(.v-alert--prominent) {
+  grid-template-areas: 'prepend content append close' 'prepend content . .';
+}
+
+.v-alert:not(.v-alert--prominent) .v-alert__prepend {
+  align-self: center;
+}
