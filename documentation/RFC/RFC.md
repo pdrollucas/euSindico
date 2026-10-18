@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>2.2.0 — adiciona RF06-A (recuperação de senha esquecida) e RF29–RF34 (gestão de equipe/funcionários, com perfis de acesso), não previstos na proposta original
+- <strong>Versão: </strong>2.3.0 — detalha o módulo de compromissos (RF15, RF17, RN23–RN28 e rota única `/compromissos`), definido na implementação do backend; anterior, 2.2.0 — adiciona RF06-A (recuperação de senha esquecida) e RF29–RF34 (gestão de equipe/funcionários, com perfis de acesso), não previstos na proposta original
 - <strong>Disponível em PDF: </strong>[RFC.pdf](https://github.com/user-attachments/files/29358895/RFC.pdf)
 
 
@@ -295,7 +295,7 @@ flowchart LR
         UC1((Criar compromisso))
         UC2((Visualizar compromissos))
         UC3((Editar compromisso))
-        UC4((Concluir compromisso))
+        UC4((Concluir ou reabrir compromisso))
         UC5((Remover compromisso))
 
     end
@@ -429,9 +429,9 @@ flowchart LR
 - RF12 — O sistema deve permitir que o usuário registre compromissos.
 - RF13 — O sistema deve permitir que o usuário associe compromissos a um prédio.
 - RF14 — O sistema deve permitir que o usuário visualize compromissos cadastrados.
-- RF15 — O sistema deve permitir que o usuário edite compromissos cadastrados.
+- RF15 — O sistema deve permitir que o usuário edite compromissos cadastrados, incluindo — para os perfis Síndico e Gestor — reatribuir o responsável e mover o compromisso para outro prédio (RN24). *(detalhado na v2.3.0)*
 - RF16 — O sistema deve permitir que o usuário remova compromissos cadastrados.
-- RF17 — O sistema deve permitir que o usuário marque compromissos como concluídos.
+- RF17 — O sistema deve permitir que o usuário marque compromissos como concluídos e desfaça essa marcação (RN23). *(detalhado na v2.3.0)*
 - RF18 — O sistema deve permitir que o usuário registre planejamentos futuros.
 - RF19 — O sistema deve permitir que o usuário visualize planejamentos futuros.
 - RF20 — O sistema deve permitir que o usuário edite planejamentos futuros.
@@ -488,6 +488,12 @@ flowchart LR
 - RN20 — Um compromisso criado por um usuário com perfil Colaborador tem obrigatoriamente esse usuário como responsável, sem possibilidade de reatribuição; usuários com perfil Síndico ou Gestor podem escolher o responsável entre os usuários vinculados ao prédio no momento da criação, com o próprio autor como padrão. *(v2.2.0)*
 - RN21 — Um usuário com perfil Colaborador só visualiza, edita e remove os compromissos dos quais é responsável, mesmo que outros compromissos existam no mesmo prédio (RF34). Usuários com perfil Síndico ou Gestor podem alternar entre ver apenas os próprios ou todos os compromissos do prédio. *(v2.2.0)*
 - RN22 — A remoção do acesso de um funcionário a um prédio (RF32) não exclui os compromissos ou demais registros já criados por ele; esses registros permanecem associados ao prédio. *(v2.2.0)*
+- RN23 — Marcar um compromisso como concluído é reversível: o usuário pode desmarcar a conclusão. Um compromisso concluído continua podendo ser editado e removido, respeitando o perfil (RN20, RN21). *(v2.3.0)*
+- RN24 — Na edição de um compromisso, apenas os perfis Síndico e Gestor podem reatribuir o responsável ou mover o compromisso para outro prédio. Mover exige perfil Síndico ou Gestor também no prédio de destino, e o responsável (mantido ou novo) deve estar vinculado ao prédio de destino. Quando o responsável não é alterado e o prédio é o mesmo, o vínculo do responsável com o prédio não é revalidado (um ex-funcionário, RN22, não impede editar o compromisso). O Colaborador nunca reatribui nem move. *(v2.3.0)*
+- RN25 — A remoção de um compromisso é definitiva (exclusão física), diferente da exclusão lógica de prédios (RN08). *(v2.3.0)*
+- RN26 — Compromissos podem ser cadastrados e editados com data e horário no passado, para registrar atividades já realizadas (RN10 exige data e horário, não que sejam futuros). *(v2.3.0)*
+- RN27 — A listagem de compromissos exibe, por padrão, apenas os compromissos não concluídos de hoje em diante, dos quais o usuário é responsável (RN21, RF34), em ordem cronológica (RN14). Compromissos atrasados (não concluídos cuja data e horário já passaram), os de hoje e os concluídos são obtidos por filtro de situação. "Hoje" e "agora" são calculados no fuso America/Sao_Paulo, não no do servidor. *(v2.3.0)*
+- RN28 — Na exclusão de conta (RF07): se o usuário é funcionário (Gestor ou Colaborador) de prédios de outro síndico, os compromissos pelos quais ele responde — pendentes e concluídos — passam a ter o dono do prédio como responsável, e os vínculos dele são removidos; se é Síndico, seus prédios e tudo associado a eles (inclusive a equipe vinculada, os convites e os compromissos de todos) são removidos, e os funcionários mantêm suas contas. *(v2.3.0)*
 
 ### 2.6 Fora do escopo
 
@@ -508,7 +514,7 @@ flowchart LR
 4. Visualiza a lista de compromissos ordenada por data e horário.
 5. Adiciona um novo compromisso.
 6. Visualiza os detalhes de um compromisso.
-7. Edita, conclui ou remove um compromisso.
+7. Edita, conclui (ou desmarca a conclusão) ou remove um compromisso.
 
 **Diagrama de fluxo**
 
@@ -524,6 +530,8 @@ B --> D[Abrir filtros]
 D --> E[Filtrar por prédio]
 D --> F[Filtrar compromissos atrasados]
 D --> G[Filtrar compromissos de hoje]
+D --> G2[Filtrar compromissos concluídos]
+D --> G3[Alternar entre meus e todos]
 
 C --> H[Lista de compromissos]
 E --> H
@@ -567,7 +575,7 @@ DB-->>API: Lista ordenada por data e horário
 API-->>FE: Retorna dados
 
 U->>FE: Pesquisa por título ou aplica filtros
-FE->>API: GET /compromissos?titulo=&predio=&periodo=
+FE->>API: GET /compromissos?titulo=&predioId=&escopo=&situacao=
 API->>DB: Consultar compromissos
 DB-->>API: Lista filtrada
 API-->>FE: Atualiza a lista
@@ -579,7 +587,7 @@ DB-->>API: OK
 API-->>FE: Confirmação
 
 U->>FE: Conclui ou remove compromisso
-FE->>API: PATCH/DELETE /compromissos/{id}
+FE->>API: PATCH (concluir/reabrir) ou DELETE /compromissos/{id}
 API->>DB: Atualizar ou remover
 DB-->>API: OK
 API-->>FE: Confirmação
@@ -1121,7 +1129,9 @@ Mesmo princípio de `codigos_redefinicao_senha`: o token em texto puro nunca é 
 | responsavel_usuario_id | INT | FK, NOT NULL |
 | criado_em | DATETIME | NOT NULL |
 
-`responsavel_usuario_id` — campo novo na v2.2.0 (RF34, RN20, RN21), define de quem é a responsabilidade do compromisso dentro do prédio: um usuário com perfil Colaborador só enxerga/gerencia compromissos onde é o responsável; Síndico e Gestor podem alternar entre ver só os próprios ou todos. Detalhamento em [EQUIPE.md](../../backend/documentation/EQUIPE.md).
+`responsavel_usuario_id` — campo novo na v2.2.0 (RF34, RN20, RN21), define de quem é a responsabilidade do compromisso dentro do prédio: um usuário com perfil Colaborador só enxerga/gerencia compromissos onde é o responsável; Síndico e Gestor podem alternar entre ver só os próprios ou todos. Detalhamento em [EQUIPE.md](../../backend/documentation/EQUIPE.md) e [COMPROMISSOS.md](../../backend/documentation/COMPROMISSOS.md).
+
+A FK de `responsavel_usuario_id` para `usuarios` é `Restrict` (RN22): remover o acesso de um funcionário não apaga seus compromissos, que continuam apontando para ele até serem reatribuídos (RN24). Na exclusão da conta do próprio funcionário, passam ao dono do prédio (RN28). A remoção de um compromisso é física (RN25) — não há coluna `excluido`.
 
 Índices compostos: `(predio_id, data_compromisso, horario_compromisso)` — otimiza a listagem de compromissos de um prédio já ordenada cronologicamente (RN14). `(predio_id, responsavel_usuario_id)` — otimiza o filtro "meus compromissos" (RF34).
 
@@ -1198,7 +1208,7 @@ O sistema **euSíndico** é estruturado em torno de sete módulos funcionais, to
   Responsável pelo convite, aceite e remoção de funcionários vinculados a um prédio, e pela autorização de ações conforme o perfil (Síndico, Gestor ou Colaborador) de cada usuário naquele prédio (RF29–RF34). Composto pelo **EquipeController** (convites e gestão de membros) e um serviço de autorização compartilhado pelos demais módulos, que resolve o perfil do usuário para um prédio antes de permitir cada ação. Detalhamento completo em [EQUIPE.md](../../backend/documentation/EQUIPE.md).
 
 * **Módulo de Compromissos**<br/>
-  Responsável pelo gerenciamento completo dos compromissos (RF12–RF17), incluindo cadastro, associação a um prédio, consulta, edição, remoção e conclusão. Também oferece pesquisa por título e filtros por prédio e período, retornando os resultados ordenados cronologicamente. O **CompromissoService** fornece ainda os dados utilizados na geração dos relatórios mensais.
+  Responsável pelo gerenciamento completo dos compromissos (RF12–RF17), incluindo cadastro, associação a um prédio, consulta, edição, remoção e conclusão. Expõe um único conjunto de rotas, `/compromissos` — a tela global e a tela de um prédio usam a mesma listagem, esta última com o filtro `predioId`. Oferece pesquisa por título e filtros por prédio, escopo (meus/todos) e situação (próximos, hoje, atrasados, concluídos), retornando os resultados ordenados cronologicamente (RN14, RN27). A conclusão é alterada por `PATCH` e é reversível (RN23). Detalhamento em [COMPROMISSOS.md](../../backend/documentation/COMPROMISSOS.md). O **CompromissoService** fornece ainda os dados utilizados na geração dos relatórios mensais.
 
 * **Módulo de Planejamentos Futuros**<br/>
   Responsável pelo cadastro, visualização, edição e remoção de planejamentos futuros (RF18–RF21). Diferentemente dos compromissos, planejamentos não possuem obrigatoriedade de data e não podem ser marcados como concluídos. O módulo é composto pelo **PlanejamentoController** e **PlanejamentoService**.
@@ -1411,6 +1421,8 @@ Após a solicitação, serão removidos:
 - relatórios gerados.
 
 A exclusão será realizada de forma permanente.
+
+Quando o usuário é funcionário (Gestor ou Colaborador) de prédios de outro síndico, apenas seus dados pessoais e vínculos são removidos; os compromissos pelos quais ele respondia permanecem no prédio, sob responsabilidade do dono (RN28), pois pertencem à administração do prédio e não ao funcionário.
 
 ## 7. Planejamento do projeto
 

@@ -341,8 +341,10 @@ sequenceDiagram
         S-->>P: erro (404 Not Found)
     else Usuário existe
         S->>R: ExcluirUsuarioEDadosRelacionados(usuarioId)
-        R->>DB: DELETE compromissos, planejamentos, documentos e relatórios dos prédios do usuário
-        R->>DB: DELETE prédios, refresh_tokens e o usuário
+        R->>DB: DELETE compromissos, planejamentos, documentos, relatórios e convites dos prédios do usuário
+        R->>DB: UPDATE compromissos em prédios alheios onde ele é responsável (passam ao dono do prédio)
+        R->>DB: DELETE predio_usuarios (equipe dos prédios dele + vínculos dele em prédios alheios)
+        R->>DB: DELETE prédios, refresh_tokens, códigos de redefinição e o usuário
         DB-->>R: OK
         R-->>S: OK
         S-->>P: OK
@@ -350,7 +352,9 @@ sequenceDiagram
     P-->>C: 204 No Content ou erro
 ```
 
-Diferente da exclusão de `Predio` (RN08, soft delete), a exclusão de conta é **definitiva** (seção 6.2 do RFC — "a exclusão será realizada de forma permanente"), removendo o usuário e todos os dados vinculados, incluindo os refresh tokens. Como todas as chaves estrangeiras envolvidas são `Restrict` (nenhum `ON DELETE CASCADE` no banco), a `UsuarioRepository` apaga na ordem correta — filhos de `Predio` primeiro, depois `Predio`, depois `RefreshToken`, só então o `Usuario` — dentro de uma transação, para não deixar dados órfãos se alguma etapa falhar no meio.
+Diferente da exclusão de `Predio` (RN08, soft delete), a exclusão de conta é **definitiva** (seção 6.2 do RFC — "a exclusão será realizada de forma permanente"), removendo o usuário e todos os dados vinculados, incluindo os refresh tokens. Como todas as chaves estrangeiras envolvidas são `Restrict` (nenhum `ON DELETE CASCADE` no banco), a `UsuarioRepository` apaga na ordem correta — filhos de `Predio` primeiro (compromissos, planejamentos, documentos, relatórios, convites e o vínculo `predio_usuarios` de toda a equipe), depois `Predio`, depois `RefreshToken`, só então o `Usuario` — dentro de uma transação, para não deixar dados órfãos se alguma etapa falhar no meio.
+
+**Conta de funcionário (Gestor/Colaborador):** quem exclui a própria conta sem ser dono de nenhum prédio perde só os vínculos dele (`predio_usuarios`). Os compromissos em que ele era responsável — pendentes **e** concluídos — continuam no prédio e passam a ter o **dono do prédio** (`Predio.UsuarioId`) como responsável, em vez de serem apagados (espírito da RN22: o registro pertence ao prédio, não a quem o executou). Decisão confirmada na implementação de Compromissos, ver [COMPROMISSOS.md](COMPROMISSOS.md). Até então a exclusão de conta de qualquer usuário que tivesse prédio falhava por violação de FK (`predio_usuarios` e `convites_funcionario` não eram apagados antes dos prédios) — corrigido junto.
 
 **Sobre o access token em uso:** assim como no logout (Fluxo 5), o access token que o cliente já tem continua *stateless* e aceito até sua expiração natural (~30 min), mesmo depois que a conta (e o refresh token) já não existem mais no banco. Qualquer chamada a um endpoint que precise buscar o usuário no banco (ex: `GET /perfil`) já falha nesse intervalo com `404 Not Found`, já que o registro não existe mais — mas o access token em si não é invalidado de forma imediata.
 

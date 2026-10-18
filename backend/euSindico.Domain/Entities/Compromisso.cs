@@ -10,9 +10,11 @@ public class Compromisso
     public string? Detalhes { get; private set; }
     public bool Concluido { get; private set; }
     public int PredioId { get; private set; }
+    public int ResponsavelUsuarioId { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
     public Predio? Predio { get; private set; }
+    public Usuario? Responsavel { get; private set; }
 
     protected Compromisso() { }
 
@@ -21,6 +23,7 @@ public class Compromisso
         DateOnly dataCompromisso,
         TimeOnly horarioCompromisso,
         int predioId,
+        int responsavelUsuarioId,
         string? nomePrestadorServico = null,
         string? detalhes = null)
     {
@@ -28,6 +31,7 @@ public class Compromisso
         DataCompromisso = dataCompromisso;
         HorarioCompromisso = horarioCompromisso;
         PredioId = predioId;
+        ResponsavelUsuarioId = responsavelUsuarioId;
         NomePrestadorServico = nomePrestadorServico;
         Detalhes = detalhes;
         Concluido = false;
@@ -39,17 +43,33 @@ public class Compromisso
         DateOnly dataCompromisso,
         TimeOnly horarioCompromisso,
         string? nomePrestadorServico,
-        string? detalhes)
+        string? detalhes,
+        int predioId,
+        int responsavelUsuarioId)
     {
         Titulo = titulo;
         DataCompromisso = dataCompromisso;
         HorarioCompromisso = horarioCompromisso;
         NomePrestadorServico = nomePrestadorServico;
         Detalhes = detalhes;
+        PredioId = predioId;
+        ResponsavelUsuarioId = responsavelUsuarioId;
     }
 
+    // Reversível de propósito (RF17): o usuário marca pelo celular e pode clicar errado.
     public void Concluir()
     {
         Concluido = true;
+    }
+
+    public void Reabrir()
+    {
+        Concluido = false;
+    }
+
+    // Usado quando o responsável exclui a própria conta (RF07) — o compromisso fica com o dono do prédio.
+    public void AtribuirResponsavel(int responsavelUsuarioId)
+    {
+        ResponsavelUsuarioId = responsavelUsuarioId;
     }
 }

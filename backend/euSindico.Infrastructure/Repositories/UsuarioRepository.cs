@@ -40,9 +40,30 @@ public class UsuarioRepository(AppDbContext context) : IUsuarioRepository
             .Select(p => p.Id);
 
         await context.Compromissos.Where(c => prediosIds.Contains(c.PredioId)).ExecuteDeleteAsync(ct);
+
+        // Compromissos em que ele é responsável nos prédios de OUTRO síndico (conta de funcionário)
+        // ficam com o dono do prédio — o registro continua no prédio (RN22), só muda quem responde por
+        // ele. Os dos prédios dele próprio já foram apagados acima, então não entram aqui.
+        var orfaos = await context.Compromissos
+            .Include(c => c.Predio)
+            .Where(c => c.ResponsavelUsuarioId == usuarioId)
+            .ToListAsync(ct);
+        foreach (var compromisso in orfaos)
+        {
+            compromisso.AtribuirResponsavel(compromisso.Predio!.UsuarioId);
+        }
+
+        await context.SaveChangesAsync(ct);
+
         await context.Planejamentos.Where(p => prediosIds.Contains(p.PredioId)).ExecuteDeleteAsync(ct);
         await context.Documentos.Where(d => prediosIds.Contains(d.PredioId)).ExecuteDeleteAsync(ct);
         await context.Relatorios.Where(r => prediosIds.Contains(r.PredioId)).ExecuteDeleteAsync(ct);
+        await context.ConvitesFuncionario.Where(c => prediosIds.Contains(c.PredioId)).ExecuteDeleteAsync(ct);
+
+        // Vínculos de toda a equipe dos prédios dele, mais os vínculos dele como funcionário em prédios alheios.
+        await context.PredioUsuarios
+            .Where(pu => prediosIds.Contains(pu.PredioId) || pu.UsuarioId == usuarioId)
+            .ExecuteDeleteAsync(ct);
         await context.Predios.Where(p => p.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
         await context.RefreshTokens.Where(rt => rt.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
         await context.CodigosRedefinicaoSenha.Where(c => c.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);

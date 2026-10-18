@@ -112,6 +112,28 @@ public class ApplicationExceptionHandlerTests
         Assert.Equal("Ocorreu um erro inesperado. Tente novamente mais tarde.", body.Title);
     }
 
+    [Fact]
+    public async Task CompromissoNaoEncontradoException_retorna_404()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new CompromissoNaoEncontradoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status404NotFound, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResponsavelInvalidoException_retorna_400()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new ResponsavelInvalidoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status400BadRequest, httpContext.Response.StatusCode);
+    }
+
     private static DefaultHttpContext CriarHttpContext()
     {
         var httpContext = new DefaultHttpContext();

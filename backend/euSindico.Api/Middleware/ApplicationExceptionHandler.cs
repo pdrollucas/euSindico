@@ -35,6 +35,8 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
             ConviteInvalidoException => StatusCodes.Status400BadRequest,
             DadosCadastroObrigatoriosException => StatusCodes.Status400BadRequest,
             RemoverDonoDoPredioException => StatusCodes.Status400BadRequest,
+            CompromissoNaoEncontradoException => StatusCodes.Status404NotFound,
+            ResponsavelInvalidoException => StatusCodes.Status400BadRequest,
             _ => 0,
         };
 

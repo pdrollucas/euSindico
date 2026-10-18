@@ -100,6 +100,10 @@ namespace euSindico.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("predio_id");
 
+                    b.Property<int>("ResponsavelUsuarioId")
+                        .HasColumnType("int")
+                        .HasColumnName("responsavel_usuario_id");
+
                     b.Property<string>("Titulo")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -107,6 +111,10 @@ namespace euSindico.Infrastructure.Migrations
                         .HasColumnName("titulo");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ResponsavelUsuarioId");
+
+                    b.HasIndex("PredioId", "ResponsavelUsuarioId");
 
                     b.HasIndex("PredioId", "DataCompromisso", "HorarioCompromisso");
 
@@ -510,7 +518,15 @@ namespace euSindico.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("euSindico.Domain.Entities.Usuario", "Responsavel")
+                        .WithMany()
+                        .HasForeignKey("ResponsavelUsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Predio");
+
+                    b.Navigation("Responsavel");
                 });
 
             modelBuilder.Entity("euSindico.Domain.Entities.ConviteFuncionario", b =>

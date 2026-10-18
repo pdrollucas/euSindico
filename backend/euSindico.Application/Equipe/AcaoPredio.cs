@@ -11,4 +11,10 @@ public enum AcaoPredio
     GerenciarEquipe,
     VisualizarPredio,
     GerenciarPredio,
+
+    /// <summary>
+    /// Qualquer papel vinculado acessa compromissos do prédio; o que cada um pode fazer com um
+    /// compromisso específico (Colaborador só os próprios, RN21) é decidido pelo CompromissoService.
+    /// </summary>
+    GerenciarCompromissos,
 }
