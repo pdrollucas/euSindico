@@ -217,8 +217,8 @@ public enum AcaoPredio
 {
     GerenciarEquipe,
     // Próximos, já desenhados em PREDIOS.md: VisualizarPredio, GerenciarPredio.
-    // Prováveis quando os demais módulos forem desenhados: CriarCompromisso, EditarCompromissoAlheio,
-    // GerenciarPlanejamento, GerenciarDocumento, GerenciarRelatorio...
+    // Já implementados depois: GerenciarCompromissos, VisualizarPlanejamentos, GerenciarPlanejamentos.
+    // Prováveis quando os demais módulos forem desenhados: GerenciarDocumento, GerenciarRelatorio...
 }
 ```
 
@@ -234,9 +234,11 @@ public enum AcaoPredio
 | Reatribuir responsável / mover de prédio | ✅ | ✅ | ❌ | ✅ idem |
 | Concluir/reabrir compromisso | ✅ | ✅ | ✅ (só os próprios) | ✅ idem |
 | Visualizar compromisso alheio | ✅ | ✅ | ❌ (`403` ao tentar por id; fora da listagem) | ✅ idem |
-| Planejamentos, documentos, relatórios (CRUD completo) | ✅ | ✅ | ❌ — só visualização/download de documentos | 🔲 módulos não existem |
+| Criar/editar/remover planejamento (`AcaoPredio.GerenciarPlanejamentos`) | ✅ | ✅ | ❌ | ✅ ([PLANEJAMENTOS.md](PLANEJAMENTOS.md)) |
+| Visualizar planejamentos (`AcaoPredio.VisualizarPlanejamentos`) | ✅ | ✅ | ✅ (somente leitura) | ✅ idem |
+| Documentos, relatórios (CRUD completo) | ✅ | ✅ | ❌ — só visualização/download de documentos | 🔲 módulos não existem |
 
-Essa tabela é a fonte de verdade a manter atualizada conforme Planejamentos/Documentos/Relatórios forem desenhados em detalhe — hoje têm código as linhas de equipe, prédio e compromissos.
+Essa tabela é a fonte de verdade a manter atualizada conforme Documentos/Relatórios forem desenhados em detalhe — hoje têm código as linhas de equipe, prédio, compromissos e planejamentos.
 
 ## Compromissos e o campo responsável (RF34, RN20, RN21)
 

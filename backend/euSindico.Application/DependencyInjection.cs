@@ -1,6 +1,7 @@
 using euSindico.Application.Auth;
 using euSindico.Application.Compromissos;
 using euSindico.Application.Equipe;
+using euSindico.Application.Planejamentos;
 using euSindico.Application.Predios;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<EquipeService>();
         services.AddScoped<PredioService>();
         services.AddScoped<CompromissoService>();
+        services.AddScoped<PlanejamentoService>();
 
         return services;
     }

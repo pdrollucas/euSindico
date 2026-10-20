@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IPredioUsuarioRepository, PredioUsuarioRepository>();
         services.AddScoped<IConviteFuncionarioRepository, ConviteFuncionarioRepository>();
         services.AddScoped<ICompromissoRepository, CompromissoRepository>();
+        services.AddScoped<IPlanejamentoRepository, PlanejamentoRepository>();
         services.AddSingleton<TimeProvider>(_ => new FusoHorarioTimeProvider(
             TimeZoneInfo.FindSystemTimeZoneById(configuration["TimeZoneId"] ?? FusoHorarioTimeProvider.FusoPadrao)));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
