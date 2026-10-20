@@ -36,7 +36,6 @@ const modulosFuturos = [
   { titulo: 'Relatórios de atividade', icone: 'mdi-file-chart-outline' },
   { titulo: 'Atas', icone: 'mdi-file-document-outline' },
   { titulo: 'Normas', icone: 'mdi-file-document-multiple-outline' },
-  { titulo: 'Planejamentos futuros', icone: 'mdi-calendar-clock-outline' },
 ]
 
 onMounted(carregar)
@@ -139,6 +138,22 @@ async function onEditar(payload: PredioFormValues) {
         <v-card-text class="d-flex align-center ga-3">
           <v-icon icon="mdi-calendar-check-outline" color="primary" />
           <span class="text-subtitle-2 font-weight-medium">Compromissos</span>
+        </v-card-text>
+      </v-card>
+
+      <!-- Todos os papéis entram: o Colaborador só lê (RN29), e a tela de planejamentos já esconde
+           o que ele não pode fazer. -->
+      <v-card
+        :to="`/predios/${predioId}/planejamentos`"
+        data-cy="card-planejamentos-predio"
+        variant="flat"
+        border
+        rounded="lg"
+        class="mb-3"
+      >
+        <v-card-text class="d-flex align-center ga-3">
+          <v-icon icon="mdi-calendar-clock-outline" color="primary" />
+          <span class="text-subtitle-2 font-weight-medium">Planejamentos futuros</span>
         </v-card-text>
       </v-card>
 

@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { formatarData, formatarHorario, mascararHorario } from './dataHora'
+import { formatarData, formatarHorario, hojeIso, mascararHorario } from './dataHora'
+
+describe('hojeIso', () => {
+  it('formata a data local como yyyy-MM-dd, com zeros à esquerda', () => {
+    expect(hojeIso(new Date(2026, 0, 5, 12))).toBe('2026-01-05')
+  })
+
+  it('usa o dia local mesmo perto da meia-noite (sem passar por UTC)', () => {
+    expect(hojeIso(new Date(2026, 9, 20, 23, 59, 59))).toBe('2026-10-20')
+    expect(hojeIso(new Date(2026, 9, 20, 0, 0, 1))).toBe('2026-10-20')
+  })
+})
 
 describe('mascararHorario', () => {
   it('insere o ":" depois do segundo dígito', () => {

@@ -21,3 +21,12 @@ export function mascararHorario(texto: string | null | undefined): string {
 export function formatarHorario(horarioIso: string): string {
   return horarioIso.slice(0, 5)
 }
+
+// "2026-10-20" do dia de hoje no fuso do navegador — mesmo formato do <input type="date">, então
+// strings ISO se comparam lexicograficamente (usado pelo `min` do campo de data e pela regra
+// "não pode estar no passado" do planejamento, RN30). O backend continua sendo a fonte da verdade.
+export function hojeIso(hoje: Date = new Date()): string {
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0')
+  const dia = String(hoje.getDate()).padStart(2, '0')
+  return `${hoje.getFullYear()}-${mes}-${dia}`
+}
