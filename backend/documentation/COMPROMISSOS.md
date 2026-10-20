@@ -267,6 +267,8 @@ Pontos que o RFC não especificava, validados antes de implementar:
 12. **Validação de texto:** allowlist em `titulo`/`nomePrestadorServico`; `detalhes` só com limite de 2000 e sem `<`/`>`.
 13. **Exclusão de conta de funcionário:** compromissos passam ao dono do prédio. **Exclusão de conta do Síndico** corrigida junto (apaga equipe e convites).
 
+14. **Gestor lista a equipe (RF31/RN19, RFC v2.4.0):** adicionado depois, a pedido da tela de compromissos — o seletor de responsável precisa dos membros do prédio e o Gestor também atribui responsável (RN20). `GET /predios/{id}/equipe` aceita Síndico e Gestor (`AcaoPredio.VisualizarEquipe`); convidar e remover seguem só do Síndico, e o Colaborador continua sem acesso. Consequência aceita: o Gestor passa a ver nome e e-mail dos membros do prédio.
+
 ## Pendências
 
 - **RFC:** atualizado na v2.3.0 — RF15 e RF17 detalhados, RN23–RN28 (concluir reversível, reatribuir/mover, remoção física, datas passadas, listagem padrão e fuso, exclusão de conta), rota única e filtros nos diagramas da seção 3.1, módulo de compromissos (5.3), tabela `compromissos` (5.2.2) e exclusão de dados (6.2). A decisão 11 (`403` ao Colaborador indicar outro responsável) e a 10 (`403` em compromisso alheio) são comportamento da API e ficam só aqui.

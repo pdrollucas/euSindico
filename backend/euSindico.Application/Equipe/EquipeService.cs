@@ -75,7 +75,7 @@ public class EquipeService(
 
     public async Task<List<EquipeMembroDto>> ListarEquipeAsync(int usuarioId, int predioId, CancellationToken ct = default)
     {
-        await autorizacaoPredioService.VerificarAcessoAsync(usuarioId, predioId, AcaoPredio.GerenciarEquipe, ct);
+        await autorizacaoPredioService.VerificarAcessoAsync(usuarioId, predioId, AcaoPredio.VisualizarEquipe, ct);
 
         var membros = await predioUsuarioRepository.ListarDoPredioAsync(predioId, ct);
         return membros

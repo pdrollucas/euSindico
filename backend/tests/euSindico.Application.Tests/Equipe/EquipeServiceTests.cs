@@ -132,7 +132,26 @@ public class EquipeServiceTests
     }
 
     [Fact]
-    public async Task ListarEquipeAsync_sem_ser_sindico_lanca_AcaoNaoPermitida()
+    public async Task ListarEquipeAsync_gestor_consegue_listar()
+    {
+        const int gestorId = 3;
+        var membro = PredioUsuario.CriarComoConvidado(PredioId, 2, PapelPredio.Colaborador, SindicoId);
+        typeof(PredioUsuario).GetProperty(nameof(PredioUsuario.Usuario))!
+            .SetValue(membro, new Usuario("Carlos Mendes", "carlos@eusindico.com", "hash"));
+        _predioUsuarioRepository
+            .Setup(r => r.BuscarVinculoAsync(PredioId, gestorId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PredioUsuario.CriarComoConvidado(PredioId, gestorId, PapelPredio.Gestor, SindicoId));
+        _predioUsuarioRepository
+            .Setup(r => r.ListarDoPredioAsync(PredioId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([membro]);
+
+        var resultado = await _sut.ListarEquipeAsync(gestorId, PredioId);
+
+        Assert.Single(resultado);
+    }
+
+    [Fact]
+    public async Task ListarEquipeAsync_colaborador_lanca_AcaoNaoPermitida()
     {
         const int ajudanteId = 2;
         _predioUsuarioRepository

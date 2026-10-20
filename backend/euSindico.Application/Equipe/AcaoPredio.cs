@@ -9,6 +9,12 @@ namespace euSindico.Application.Equipe;
 public enum AcaoPredio
 {
     GerenciarEquipe,
+
+    /// <summary>
+    /// Somente leitura da equipe (RF31) — o Gestor precisa dela para escolher o responsável de um
+    /// compromisso (RN20). Convidar e remover continuam em <see cref="GerenciarEquipe"/> (RN19).
+    /// </summary>
+    VisualizarEquipe,
     VisualizarPredio,
     GerenciarPredio,
 

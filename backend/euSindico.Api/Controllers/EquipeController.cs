@@ -9,8 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace euSindico.Api.Controllers;
 
 /// <summary>
-/// Convidar, listar e remover membros da equipe de um prédio (RF29, RF31, RF32). Todas as
-/// ações exigem que quem chama seja o Síndico do prédio — checado dentro do
+/// Convidar, listar e remover membros da equipe de um prédio (RF29, RF31, RF32). Convidar e
+/// remover exigem o Síndico; listar também admite o Gestor (somente leitura, para escolher o
+/// responsável de um compromisso — RN20). Checado dentro do
 /// <see cref="EquipeService"/> via <see cref="AutorizacaoPredioService"/>, nunca aqui no
 /// Controller (ver EQUIPE.md).
 /// </summary>

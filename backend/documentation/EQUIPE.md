@@ -111,7 +111,7 @@ Mesmo princípio de `CodigoRedefinicaoSenha` ([AUTHENTICATION.md](AUTHENTICATION
 | Método | Rota | Ação | Autenticado? | Perfil exigido | Sucesso | Erros possíveis |
 |---|---|---|---|---|---|---|
 | `POST` | `/predios/{predioId}/convites` | Convidar (RF29) | Sim | Síndico | `201` | `400`, `403`, `404`, `409` (já membro/já convidado) |
-| `GET` | `/predios/{predioId}/equipe` | Listar (RF31) | Sim | Síndico | `200` | `403`, `404` |
+| `GET` | `/predios/{predioId}/equipe` | Listar (RF31) | Sim | Síndico ou Gestor (`VisualizarEquipe`, só leitura) | `200` | `403`, `404` |
 | `DELETE` | `/predios/{predioId}/equipe/{usuarioId}` | Remover (RF32) | Sim | Síndico | `204` | `403`, `404` |
 | `GET` | `/convites/{token}` | Detalhes do convite | **Não** | — | `200` | `400`/`404` (resposta única) |
 | `POST` | `/convites/{token}/aceitar` | Aceitar e criar conta (RF30) | **Não** | — | `201` | `400`/`404` |
@@ -228,7 +228,8 @@ public enum AcaoPredio
 
 | Ação | Síndico | Gestor | Colaborador | Implementado? |
 |---|---|---|---|---|
-| Editar/excluir prédio, gerenciar equipe | ✅ | ❌ | ❌ | ✅ ([PREDIOS.md](PREDIOS.md)) |
+| Editar/excluir prédio, convidar/remover equipe | ✅ | ❌ | ❌ | ✅ ([PREDIOS.md](PREDIOS.md)) |
+| Visualizar a equipe (`AcaoPredio.VisualizarEquipe`) | ✅ | ✅ (para escolher o responsável de um compromisso) | ❌ | ✅ |
 | Criar/editar/remover compromisso | ✅ (qualquer um) | ✅ (qualquer um) | ✅ (só os próprios) | ✅ `AcaoPredio.GerenciarCompromissos` + regra de dono no `CompromissoService` ([COMPROMISSOS.md](COMPROMISSOS.md)) |
 | Reatribuir responsável / mover de prédio | ✅ | ✅ | ❌ | ✅ idem |
 | Concluir/reabrir compromisso | ✅ | ✅ | ✅ (só os próprios) | ✅ idem |

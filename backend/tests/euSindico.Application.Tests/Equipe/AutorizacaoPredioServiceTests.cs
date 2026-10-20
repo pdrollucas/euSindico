@@ -104,6 +104,35 @@ public class AutorizacaoPredioServiceTests
     [Theory]
     [InlineData(PapelPredio.Sindico)]
     [InlineData(PapelPredio.Gestor)]
+    public async Task VerificarAcessoAsync_permite_visualizar_equipe_a_sindico_e_gestor(PapelPredio papel)
+    {
+        var vinculo = papel == PapelPredio.Sindico
+            ? PredioUsuario.CriarComoDono(predioId: 1, usuarioId: 20)
+            : PredioUsuario.CriarComoConvidado(predioId: 1, usuarioId: 20, papel, convidadoPorUsuarioId: 10);
+        _predioUsuarioRepository
+            .Setup(r => r.BuscarVinculoAsync(1, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(vinculo);
+
+        var resultado = await _sut.VerificarAcessoAsync(20, 1, AcaoPredio.VisualizarEquipe);
+
+        Assert.Equal(papel, resultado.Papel);
+    }
+
+    [Fact]
+    public async Task VerificarAcessoAsync_colaborador_nao_pode_visualizar_equipe()
+    {
+        var vinculo = PredioUsuario.CriarComoConvidado(predioId: 1, usuarioId: 20, PapelPredio.Colaborador, convidadoPorUsuarioId: 10);
+        _predioUsuarioRepository
+            .Setup(r => r.BuscarVinculoAsync(1, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(vinculo);
+
+        await Assert.ThrowsAsync<AcaoNaoPermitidaException>(
+            () => _sut.VerificarAcessoAsync(20, 1, AcaoPredio.VisualizarEquipe));
+    }
+
+    [Theory]
+    [InlineData(PapelPredio.Sindico)]
+    [InlineData(PapelPredio.Gestor)]
     [InlineData(PapelPredio.Colaborador)]
     public async Task VerificarAcessoAsync_permite_acessar_compromissos_a_qualquer_papel_vinculado(PapelPredio papel)
     {
