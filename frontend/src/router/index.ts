@@ -5,6 +5,7 @@ import {
   type RouteLocationRaw,
 } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { rotaListaCompromissos } from '@/utils/rotasCompromisso'
 
 // `voltarPara`: destino do botão "voltar" do AppHeader — nunca o histórico do navegador (ver
 // ARCHITECTURE.md, seção 5).
@@ -63,14 +64,32 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         { path: 'home', name: 'home', component: () => import('@/views/home/HomeView.vue') },
-        // Placeholders "em construção" dos módulos ainda não implementados — a Home (hub) já
-        // linka para cá; a tela real substitui o EmConstrucaoView no marco correspondente.
+        // Rota única de compromissos (COMPROMISSOS.md): a tela do prédio abre esta mesma lista com
+        // ?predioId=, e o "voltar" das telas filhas devolve para a lista com o mesmo filtro.
         {
           path: 'compromissos',
           name: 'compromissos',
-          meta: { titulo: 'Compromissos' },
-          component: () => import('@/views/EmConstrucaoView.vue'),
+          meta: {
+            titulo: 'Compromissos',
+            voltarPara: (route) =>
+              route.query.predioId ? `/predios/${route.query.predioId}` : '/home',
+          },
+          component: () => import('@/views/compromissos/CompromissosListView.vue'),
         },
+        {
+          path: 'compromissos/novo',
+          name: 'compromissos-novo',
+          meta: { voltarPara: (route) => rotaListaCompromissos(route.query.predioId) },
+          component: () => import('@/views/compromissos/CompromissoDetalheView.vue'),
+        },
+        {
+          path: 'compromissos/:id(\\d+)',
+          name: 'compromissos-detalhe',
+          meta: { voltarPara: (route) => rotaListaCompromissos(route.query.predioId) },
+          component: () => import('@/views/compromissos/CompromissoDetalheView.vue'),
+        },
+        // Placeholder "em construção" — a tela real substitui o EmConstrucaoView no marco
+        // correspondente.
         {
           path: 'predios',
           name: 'predios',

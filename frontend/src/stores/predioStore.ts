@@ -31,6 +31,15 @@ export const usePredioStore = defineStore('predio', () => {
     totalPaginas.value = resultado.totalPages
   }
 
+  // Seletores de prédio (filtro e formulário de compromissos) precisam da lista inteira, não de
+  // uma página — mesma consulta paginada, repetida até acabar.
+  async function carregarTodas() {
+    await listarPrimeiraPagina()
+    while (temMaisPaginas.value) {
+      await carregarProximaPagina()
+    }
+  }
+
   async function obter(id: number): Promise<Predio> {
     const predio = await predioService.obter(id)
     predioAtual.value = predio
@@ -70,6 +79,7 @@ export const usePredioStore = defineStore('predio', () => {
     temMaisPaginas,
     listarPrimeiraPagina,
     carregarProximaPagina,
+    carregarTodas,
     obter,
     criar,
     atualizar,
