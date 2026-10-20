@@ -41,6 +41,10 @@ public class CompromissoConfiguration : IEntityTypeConfiguration<Compromisso>
             .HasColumnName("predio_id")
             .IsRequired();
 
+        builder.Property(c => c.ResponsavelUsuarioId)
+            .HasColumnName("responsavel_usuario_id")
+            .IsRequired();
+
         builder.Property(c => c.CriadoEm)
             .HasColumnName("criado_em")
             .IsRequired();
@@ -50,7 +54,16 @@ public class CompromissoConfiguration : IEntityTypeConfiguration<Compromisso>
             .HasForeignKey(c => c.PredioId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Restrict, não Cascade (RN22): remover o acesso de um funcionário não apaga os compromissos dele.
+        builder.HasOne(c => c.Responsavel)
+            .WithMany()
+            .HasForeignKey(c => c.ResponsavelUsuarioId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Cobre a listagem por prédio já ordenada cronologicamente (RN14), incluindo o filtro "hoje".
         builder.HasIndex(c => new { c.PredioId, c.DataCompromisso, c.HorarioCompromisso });
+
+        // Cobre o filtro "meus compromissos" (RF34, RN21).
+        builder.HasIndex(c => new { c.PredioId, c.ResponsavelUsuarioId });
     }
 }

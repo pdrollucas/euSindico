@@ -1,0 +1,36 @@
+{
+  "items": [
+    {
+      "id": 11,
+      "titulo": "Reunião",
+      "dataCompromisso": "2099-02-18",
+      "horarioCompromisso": "18:30:00",
+      "nomePrestadorServico": null,
+      "detalhes": null,
+      "concluido": false,
+      "predioId": 1,
+      "predioNome": "Edifício Solar",
+      "responsavelUsuarioId": 1,
+      "responsavelNome": "Luciano Souza",
+      "criadoEm": "2026-01-01T12:00:00Z"
+    },
+    {
+      "id": 12,
+      "titulo": "Conserto de portão",
+      "dataCompromisso": "2099-02-18",
+      "horarioCompromisso": "18:00:00",
+      "nomePrestadorServico": "Portões Silva",
+      "detalhes": "Trocar o motor",
+      "concluido": false,
+      "predioId": 2,
+      "predioNome": "Edifício Nuvem",
+      "responsavelUsuarioId": 1,
+      "responsavelNome": "Luciano Souza",
+      "criadoEm": "2026-01-02T12:00:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 2,
+  "totalPages": 1
+}

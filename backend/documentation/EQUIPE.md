@@ -2,7 +2,7 @@
 
 Este documento descreve o módulo de gestão de equipe/perfis de acesso (RF29–RF34, RN16–RN22) do [RFC](../../documentation/RFC/RFC.md). É o que permite a um síndico ter funcionários (hoje: secretária e ajudante) com acesso supervisionado aos seus prédios, cada um com um conjunto diferente de permissões.
 
-> **Status:** implementado (Domain, Application, Infrastructure, Api e migration `AddEquipeEAcesso`), já integrado ao CRUD de Prédios: `PredioService.CriarAsync` (RF08) cria a linha `PredioUsuario.CriarComoDono` na mesma transação do prédio, e `PredioService.ObterAsync` (RF09) reaproveita `AutorizacaoPredioService.VerificarAcessoAsync` — ver [PREDIOS.md](PREDIOS.md). Pré-requisito do módulo de Compromissos: `responsavel_usuario_id` ainda não foi adicionado à entidade `Compromisso` (fora do escopo desta etapa).
+> **Status:** implementado (Domain, Application, Infrastructure, Api e migration `AddEquipeEAcesso`), já integrado ao CRUD de Prédios: `PredioService.CriarAsync` (RF08) cria a linha `PredioUsuario.CriarComoDono` na mesma transação do prédio, e `PredioService.ObterAsync` (RF09) reaproveita `AutorizacaoPredioService.VerificarAcessoAsync` — ver [PREDIOS.md](PREDIOS.md). O módulo de Compromissos também está implementado (`responsavel_usuario_id` adicionado, RN20/RN21/RF34 aplicados) — ver [COMPROMISSOS.md](COMPROMISSOS.md).
 
 ## Sumário
 
@@ -111,7 +111,7 @@ Mesmo princípio de `CodigoRedefinicaoSenha` ([AUTHENTICATION.md](AUTHENTICATION
 | Método | Rota | Ação | Autenticado? | Perfil exigido | Sucesso | Erros possíveis |
 |---|---|---|---|---|---|---|
 | `POST` | `/predios/{predioId}/convites` | Convidar (RF29) | Sim | Síndico | `201` | `400`, `403`, `404`, `409` (já membro/já convidado) |
-| `GET` | `/predios/{predioId}/equipe` | Listar (RF31) | Sim | Síndico | `200` | `403`, `404` |
+| `GET` | `/predios/{predioId}/equipe` | Listar (RF31) | Sim | Síndico ou Gestor (`VisualizarEquipe`, só leitura) | `200` | `403`, `404` |
 | `DELETE` | `/predios/{predioId}/equipe/{usuarioId}` | Remover (RF32) | Sim | Síndico | `204` | `403`, `404` |
 | `GET` | `/convites/{token}` | Detalhes do convite | **Não** | — | `200` | `400`/`404` (resposta única) |
 | `POST` | `/convites/{token}/aceitar` | Aceitar e criar conta (RF30) | **Não** | — | `201` | `400`/`404` |
@@ -228,24 +228,28 @@ public enum AcaoPredio
 
 | Ação | Síndico | Gestor | Colaborador | Implementado? |
 |---|---|---|---|---|
-| Editar/excluir prédio, gerenciar equipe | ✅ | ❌ | ❌ | ✅ gerenciar equipe; editar/excluir prédio pendente ([PREDIOS.md](PREDIOS.md)) |
-| Criar/editar/remover compromisso | ✅ (qualquer um) | ✅ (qualquer um) | ✅ (só os próprios) | 🔲 módulo de Compromissos não existe |
-| Concluir compromisso | ✅ | ✅ | ✅ (só os próprios) | 🔲 idem |
-| Visualizar compromisso alheio | ✅ | ✅ | ❌ | 🔲 idem |
+| Editar/excluir prédio, convidar/remover equipe | ✅ | ❌ | ❌ | ✅ ([PREDIOS.md](PREDIOS.md)) |
+| Visualizar a equipe (`AcaoPredio.VisualizarEquipe`) | ✅ | ✅ (para escolher o responsável de um compromisso) | ❌ | ✅ |
+| Criar/editar/remover compromisso | ✅ (qualquer um) | ✅ (qualquer um) | ✅ (só os próprios) | ✅ `AcaoPredio.GerenciarCompromissos` + regra de dono no `CompromissoService` ([COMPROMISSOS.md](COMPROMISSOS.md)) |
+| Reatribuir responsável / mover de prédio | ✅ | ✅ | ❌ | ✅ idem |
+| Concluir/reabrir compromisso | ✅ | ✅ | ✅ (só os próprios) | ✅ idem |
+| Visualizar compromisso alheio | ✅ | ✅ | ❌ (`403` ao tentar por id; fora da listagem) | ✅ idem |
 | Planejamentos, documentos, relatórios (CRUD completo) | ✅ | ✅ | ❌ — só visualização/download de documentos | 🔲 módulos não existem |
 
-Essa tabela é a fonte de verdade a manter atualizada conforme Compromissos/Planejamentos/Documentos/Relatórios forem desenhados em detalhe — só a linha "gerenciar equipe" tem código hoje.
+Essa tabela é a fonte de verdade a manter atualizada conforme Planejamentos/Documentos/Relatórios forem desenhados em detalhe — hoje têm código as linhas de equipe, prédio e compromissos.
 
 ## Compromissos e o campo responsável (RF34, RN20, RN21)
 
 Regra que faz o Colaborador "não ver o dos outros" funcionar de fato — sem ela, ele enxergaria todos os compromissos do prédio, só sem poder editá-los.
 
-**Ao criar** (`POST /predios/{predioId}/compromissos`, fora do escopo deste documento):
-- **Colaborador:** `responsavel_usuario_id` é sempre o próprio usuário — o Service ignora/rejeita `responsavelUsuarioId` do corpo (RN20).
+> Detalhamento completo (rotas, filtros, edição, exclusão de conta) em [COMPROMISSOS.md](COMPROMISSOS.md). A rota mudou em relação ao desenho original: não existe `/predios/{predioId}/compromissos` — tudo é `/compromissos`, com `predioId` como filtro/corpo.
+
+**Ao criar** (`POST /compromissos`, `predioId` no corpo):
+- **Colaborador:** `responsavel_usuario_id` é sempre o próprio usuário; indicar outro responsável → `403` (RN20).
 - **Síndico/Gestor:** pode informar `responsavelUsuarioId`, validado contra `predio_usuarios` (usuário fora da equipe → `400`); se omitido, padrão é o próprio criador.
 
-**Ao listar** (`GET /predios/{predioId}/compromissos?escopo=meus|todos`, RF34):
-- **Colaborador:** `escopo` é **ignorado no backend** — sempre filtra pelo próprio usuário, mesmo que o cliente envie `escopo=todos` (RN21 é restrição rígida, não preferência de UI).
+**Ao listar** (`GET /compromissos?escopo=meus|todos`, RF34):
+- **Colaborador:** `escopo` é **ignorado no backend** — sempre filtra pelo próprio usuário, mesmo que o cliente envie `escopo=todos` (RN21 é restrição rígida, não preferência de UI). Como o papel é por prédio (RN18), a regra é avaliada por prédio: o mesmo usuário vê tudo onde é Síndico/Gestor e só o que é dele onde é Colaborador.
 - **Síndico/Gestor:** padrão `meus`; `escopo=todos` remove o filtro.
 
 ## Segurança
@@ -281,4 +285,4 @@ Convenção do projeto ([PREDIOS.md](PREDIOS.md), [GETTING_STARTED.md](GETTING_S
 - `euSindico.Api.Tests/Validators/ConvidarFuncionarioDtoValidatorTests.cs`, `AceitarConviteDtoValidatorTests.cs`
 - `euSindico.Api.Tests/Middleware/ApplicationExceptionHandlerTests.cs`
 
-Pendente pra quando Compromissos for desenhado: testes de `responsavel_usuario_id` (Colaborador não vendo/editando compromisso alheio, Síndico/Gestor alternando `escopo=meus|todos`).
+Os testes de `responsavel_usuario_id` (Colaborador não vendo/editando compromisso alheio, Síndico/Gestor alternando `escopo=meus|todos`) estão em `CompromissoServiceTests` e `CompromissoRepositoryTests` — ver [COMPROMISSOS.md](COMPROMISSOS.md#testes).

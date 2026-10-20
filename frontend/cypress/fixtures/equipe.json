@@ -1,0 +1,4 @@
+[
+  { "usuarioId": 1, "nome": "Luciano Souza", "email": "sindico@exemplo.com", "papel": 1, "criadoEm": "2026-01-01T12:00:00Z" },
+  { "usuarioId": 2, "nome": "Ana Souza", "email": "ana@exemplo.com", "papel": 2, "criadoEm": "2026-01-03T12:00:00Z" }
+]

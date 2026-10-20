@@ -127,6 +127,12 @@ A configuração segue a ordem de precedência padrão do ASP.NET Core (a últim
 
 Localmente, o `ASPNETCORE_ENVIRONMENT` já vem definido como `Development` pelos profiles do `launchSettings.json` — você não precisa configurar nada manualmente para rodar.
 
+## Fuso horário da aplicação
+
+Os filtros "hoje" e "atrasados" dos compromissos ([COMPROMISSOS.md](COMPROMISSOS.md)) comparam a data/horário do compromisso — que não têm fuso, são o horário de parede do síndico — com o "agora" da aplicação. Esse "agora" usa o fuso configurado em `TimeZoneId` (padrão `America/Sao_Paulo`, definido em `appsettings.json`), **não** o do servidor, que em container costuma ser UTC. O valor é um id IANA/Windows aceito por `TimeZoneInfo.FindSystemTimeZoneById`.
+
+⚠️ Ao criar o `Dockerfile` para o App Runner, a imagem precisa ter a base de fusos instalada (`tzdata`) — as imagens `aspnet` baseadas em Debian costumam trazer, as baseadas em Alpine **não** (instalar o pacote `tzdata`). Sem isso `FindSystemTimeZoneById` lança exceção na primeira requisição que precisar do relógio.
+
 ## Qualidade de código e observabilidade
 
 - **Testes:** obrigatórios para toda funcionalidade nova (ver seção acima).
@@ -157,5 +163,6 @@ A API expõe o documento OpenAPI nativo em `/openapi/v1.json` e uma interface in
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — responsabilidades de cada camada (Api, Application, Domain, Infrastructure), o fluxo de uma requisição e a hospedagem planejada.
 - [AUTHENTICATION.md](AUTHENTICATION.md) — fluxo completo de autenticação e gerenciamento de conta.
+- [COMPROMISSOS.md](COMPROMISSOS.md) — CRUD de compromissos (RF12–RF17, RF34): regras, filtros, endpoints e decisões.
 - [SECURITY.md](SECURITY.md) — medidas de segurança implementadas (tokens, XSS, tratamento de erros, autorização).
 - [RFC](../../documentation/RFC/RFC.md) — visão de produto, requisitos e modelo de dados completo.

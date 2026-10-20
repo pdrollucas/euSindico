@@ -17,8 +17,10 @@ public class AutorizacaoPredioService(IPredioUsuarioRepository predioUsuarioRepo
     private static readonly Dictionary<AcaoPredio, PapelPredio[]> PermissoesPorAcao = new()
     {
         [AcaoPredio.GerenciarEquipe] = [PapelPredio.Sindico],
+        [AcaoPredio.VisualizarEquipe] = [PapelPredio.Sindico, PapelPredio.Gestor],
         [AcaoPredio.VisualizarPredio] = [PapelPredio.Sindico, PapelPredio.Gestor, PapelPredio.Colaborador],
         [AcaoPredio.GerenciarPredio] = [PapelPredio.Sindico],
+        [AcaoPredio.GerenciarCompromissos] = [PapelPredio.Sindico, PapelPredio.Gestor, PapelPredio.Colaborador],
     };
 
     /// <summary>

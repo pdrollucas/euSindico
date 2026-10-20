@@ -20,11 +20,29 @@ describe('Home (hub da área logada)', () => {
   })
 
   it('navega para o placeholder "em construção" ao clicar num card ainda não implementado e volta para a Home', () => {
-    cy.get('[data-cy=card-compromissos]').click()
-    cy.url().should('include', '/compromissos')
-    cy.get('[data-cy=em-construcao-titulo]').should('contain', 'Compromissos')
+    cy.get('[data-cy=card-configuracoes]').click()
+    cy.url().should('include', '/configuracoes')
+    cy.get('[data-cy=em-construcao-titulo]').should('contain', 'Configurações')
 
     cy.get('[data-cy=link-home]').click()
+    cy.url().should('include', '/home')
+  })
+
+  it('navega para a lista de compromissos ao clicar no card (módulo Compromissos, RF12-RF17)', () => {
+    cy.intercept('GET', '**/predios?*', {
+      statusCode: 200,
+      body: { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 },
+    })
+    cy.intercept('GET', '**/compromissos?*', {
+      statusCode: 200,
+      body: { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 },
+    }).as('listarCompromissos')
+
+    cy.get('[data-cy=card-compromissos]').click()
+    cy.wait('@listarCompromissos')
+    cy.url().should('include', '/compromissos')
+
+    cy.get('[data-cy=btn-home]').click()
     cy.url().should('include', '/home')
   })
 

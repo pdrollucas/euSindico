@@ -64,6 +64,7 @@ Camada de **implementação concreta** dos detalhes técnicos — é aqui que o 
 - Repositories (`UsuarioRepository`, `PredioRepository`, `CompromissoRepository` etc.) que implementam as interfaces definidas na Application.
 - Implementação do armazenamento de arquivos usando AWS S3 (implementa `IFileStorageService`).
 - Implementação do hashing de senha com BCrypt (implementa `IPasswordHasher`).
+- `FusoHorarioTimeProvider` — `TimeProvider` com o fuso da aplicação (`TimeZoneId`, padrão `America/Sao_Paulo`), injetado na Application para os filtros "hoje"/"atrasados" de compromissos serem independentes do fuso do servidor. Ver [GETTING_STARTED.md](GETTING_STARTED.md).
 - Implementação do envio de e-mail via SMTP (`SmtpEmailSender`, implementa `IEmailSender`) — usada hoje pelo fluxo de recuperação de senha (RF06-A). Em produção, o `Smtp:Host`/`Smtp:Usuario`/`Smtp:Senha` apontam para o provedor real (ver [GETTING_STARTED.md](GETTING_STARTED.md)); nada na Application muda se o provedor SMTP for trocado por outro (ex: AWS SES) no futuro.
 
 **Não é responsabilidade desta camada:**

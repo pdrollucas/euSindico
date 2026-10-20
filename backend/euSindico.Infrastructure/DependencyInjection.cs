@@ -3,6 +3,7 @@ using euSindico.Infrastructure.Email;
 using euSindico.Infrastructure.Persistence;
 using euSindico.Infrastructure.Repositories;
 using euSindico.Infrastructure.Security;
+using euSindico.Infrastructure.Time;
 using euSindico.Infrastructure.Web;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,6 +33,9 @@ public static class DependencyInjection
         services.AddScoped<IPredioRepository, PredioRepository>();
         services.AddScoped<IPredioUsuarioRepository, PredioUsuarioRepository>();
         services.AddScoped<IConviteFuncionarioRepository, ConviteFuncionarioRepository>();
+        services.AddScoped<ICompromissoRepository, CompromissoRepository>();
+        services.AddSingleton<TimeProvider>(_ => new FusoHorarioTimeProvider(
+            TimeZoneInfo.FindSystemTimeZoneById(configuration["TimeZoneId"] ?? FusoHorarioTimeProvider.FusoPadrao)));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
