@@ -8,6 +8,7 @@ using euSindico.Application.Common.Interfaces;
 using euSindico.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace euSindico.Api.Tests.Controllers;
@@ -28,10 +29,16 @@ public class PerfilControllerTests
 
     public PerfilControllerTests()
     {
+        _usuarioRepository
+            .Setup(r => r.ExcluirUsuarioEDadosRelacionadosAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
         var perfilService = new PerfilService(
             _usuarioRepository.Object,
             _refreshTokenRepository.Object,
-            _passwordHasher.Object);
+            _passwordHasher.Object,
+            new Mock<IFileStorageService>().Object,
+            NullLogger<PerfilService>.Instance);
 
         var claims = new[] { new Claim(JwtRegisteredClaimNames.Sub, UsuarioIdAutenticado.ToString()) };
         _sut = new PerfilController(

@@ -1,14 +1,18 @@
 using euSindico.Application.Auth.Dtos;
 using euSindico.Application.Common.Exceptions;
 using euSindico.Application.Common.Interfaces;
+using euSindico.Application.Relatorios;
 using euSindico.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace euSindico.Application.Auth;
 
 public class PerfilService(
     IUsuarioRepository usuarioRepository,
     IRefreshTokenRepository refreshTokenRepository,
-    IPasswordHasher passwordHasher)
+    IPasswordHasher passwordHasher,
+    IFileStorageService fileStorage,
+    ILogger<PerfilService> logger)
 {
     public async Task<UsuarioDto> ObterPerfilAsync(int usuarioId, CancellationToken ct = default)
     {
@@ -48,7 +52,33 @@ public class PerfilService(
     {
         await BuscarUsuarioOuFalharAsync(usuarioId, ct);
 
-        await usuarioRepository.ExcluirUsuarioEDadosRelacionadosAsync(usuarioId, ct);
+        var prediosApagados = await usuarioRepository.ExcluirUsuarioEDadosRelacionadosAsync(usuarioId, ct);
+
+        // RFC 6.2: a exclusão é permanente, o que inclui os arquivos no armazenamento. Só depois de a
+        // transação do banco confirmar — se ela falhar, nada é apagado do S3. Só Síndico tem prédios
+        // apagados; conta de funcionário devolve lista vazia e não toca no armazenamento.
+        foreach (var predioId in prediosApagados)
+        {
+            await LimparArquivosDoPredioAsync(predioId);
+        }
+    }
+
+    // A conta já foi excluída: falha no armazenamento não pode virar erro para o usuário (ele
+    // repetiria um pedido que não tem mais o que apagar). Fica como arquivo órfão e o prefixo vai
+    // para o log, para limpeza manual.
+    private async Task LimparArquivosDoPredioAsync(int predioId)
+    {
+        try
+        {
+            await fileStorage.RemoverPrefixoAsync(ChaveRelatorio.Prefixo(predioId), CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Arquivos órfãos no armazenamento após exclusão de conta: {Prefixo}",
+                ChaveRelatorio.Prefixo(predioId));
+        }
     }
 
     private async Task<Usuario> BuscarUsuarioOuFalharAsync(int usuarioId, CancellationToken ct) =>

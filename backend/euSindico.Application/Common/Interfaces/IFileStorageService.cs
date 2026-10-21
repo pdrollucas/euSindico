@@ -14,4 +14,12 @@ public interface IFileStorageService
 
     /// <summary>Remove o objeto; não falha se ele não existir.</summary>
     Task RemoverAsync(string chave, CancellationToken ct = default);
+
+    /// <summary>
+    /// Remove todos os objetos cujo nome começa com o prefixo. O prefixo é obrigatório e deve terminar
+    /// em <c>/</c> (<see cref="ArgumentException"/> caso contrário): sem a barra, <c>relatorios/1</c>
+    /// também apagaria <c>relatorios/10/...</c>, e um prefixo vazio apagaria tudo. Não falha se não
+    /// houver objetos.
+    /// </summary>
+    Task RemoverPrefixoAsync(string prefixo, CancellationToken ct = default);
 }

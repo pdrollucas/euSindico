@@ -323,8 +323,15 @@ public class CompromissoRepositoryTests : IDisposable
         var sindicoId = _sindicoA.Id;
         var predioAId = _predioA.Id;
 
-        await new UsuarioRepository(_context).ExcluirUsuarioEDadosRelacionadosAsync(sindicoId);
+        var prediosApagados = await new UsuarioRepository(_context).ExcluirUsuarioEDadosRelacionadosAsync(sindicoId);
         _context.ChangeTracker.Clear();
+
+        // Devolve todos os prédios que eram dele — inclusive o de exclusão lógica, cujos arquivos também
+        // precisam sair do armazenamento — e nenhum de outro síndico.
+        Assert.Equal(
+            new[] { predioAId, _predioExcluido.Id }.OrderBy(id => id),
+            prediosApagados.OrderBy(id => id));
+        Assert.DoesNotContain(_predioB.Id, prediosApagados);
 
         Assert.False(await _context.Usuarios.AnyAsync(u => u.Id == sindicoId));
         Assert.False(await _context.Predios.AnyAsync(p => p.Id == predioAId));
@@ -347,8 +354,11 @@ public class CompromissoRepositoryTests : IDisposable
         var doGestor = Adicionar("Do gestor", 18, _predioA, _gestor);
         var colabId = _colaborador.Id;
 
-        await new UsuarioRepository(_context).ExcluirUsuarioEDadosRelacionadosAsync(colabId);
+        var prediosApagados = await new UsuarioRepository(_context).ExcluirUsuarioEDadosRelacionadosAsync(colabId);
         _context.ChangeTracker.Clear();
+
+        // Funcionário não é dono de prédio nenhum: nada para limpar no armazenamento.
+        Assert.Empty(prediosApagados);
 
         Assert.False(await _context.Usuarios.AnyAsync(u => u.Id == colabId));
         Assert.False(await _context.PredioUsuarios.AnyAsync(pu => pu.UsuarioId == colabId));

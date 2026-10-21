@@ -48,4 +48,41 @@ public class S3FileStorageService(IAmazonS3 s3, IOptions<S3Options> options) : I
     // O S3 responde 204 também para chave inexistente, então "não falha se não existir" é nativo.
     public async Task RemoverAsync(string chave, CancellationToken ct = default) =>
         await s3.DeleteObjectAsync(_bucket, chave, ct);
+
+    public async Task RemoverPrefixoAsync(string prefixo, CancellationToken ct = default)
+    {
+        // Trava contra apagar mais do que o pretendido: "relatorios/1" casaria com "relatorios/10/...",
+        // e prefixo vazio casaria com o bucket inteiro.
+        if (string.IsNullOrWhiteSpace(prefixo) || !prefixo.EndsWith('/'))
+        {
+            throw new ArgumentException("O prefixo deve ser não vazio e terminar em '/'.", nameof(prefixo));
+        }
+
+        string? token = null;
+        do
+        {
+            var pagina = await s3.ListObjectsV2Async(
+                new ListObjectsV2Request { BucketName = _bucket, Prefix = prefixo, ContinuationToken = token },
+                ct);
+
+            // O DeleteObjects aceita até 1000 chaves por chamada, o mesmo máximo de uma página da listagem.
+            var objetos = pagina.S3Objects?.Select(o => new KeyVersion { Key = o.Key }).ToList() ?? [];
+            if (objetos.Count > 0)
+            {
+                var resposta = await s3.DeleteObjectsAsync(
+                    new DeleteObjectsRequest { BucketName = _bucket, Objects = objetos, Quiet = true },
+                    ct);
+
+                // Falha parcial vem na resposta, não como exceção: sem isso ela passaria despercebida.
+                if (resposta.DeleteErrors is { Count: > 0 } erros)
+                {
+                    throw new InvalidOperationException(
+                        $"Não foi possível apagar {erros.Count} objeto(s) sob '{prefixo}' (ex.: {erros[0].Key}: {erros[0].Code}).");
+                }
+            }
+
+            token = pagina.IsTruncated == true ? pagina.NextContinuationToken : null;
+        }
+        while (token is not null);
+    }
 }

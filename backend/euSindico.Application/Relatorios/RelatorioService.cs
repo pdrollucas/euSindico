@@ -63,8 +63,7 @@ public class RelatorioService(
 
         var pdf = pdfGenerator.Gerar(dados);
 
-        // A chave não carrega dado do usuário (só id e um guid): sem path traversal nem colisão.
-        var chave = $"relatorios/{predioId}/{Guid.NewGuid():N}.pdf";
+        var chave = ChaveRelatorio.Nova(predioId);
         await fileStorage.SalvarAsync(chave, pdf, ContentTypePdf, ct);
 
         var relatorio = new Relatorio(mes, ano, NomeArquivoRelatorio.Montar(predio.Nome, mes, ano), chave, predioId);

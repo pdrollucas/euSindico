@@ -332,6 +332,7 @@ sequenceDiagram
     participant S as PerfilService
     participant R as IUsuarioRepository
     participant DB as MySQL
+    participant FS as IFileStorageService (S3)
 
     C->>P: DELETE /perfil (token)
     P->>S: ExcluirConta(usuarioId do token)
@@ -345,12 +346,18 @@ sequenceDiagram
         R->>DB: UPDATE compromissos em prédios alheios onde ele é responsável (passam ao dono do prédio)
         R->>DB: DELETE predio_usuarios (equipe dos prédios dele + vínculos dele em prédios alheios)
         R->>DB: DELETE prédios, refresh_tokens, códigos de redefinição e o usuário
-        DB-->>R: OK
-        R-->>S: OK
+        DB-->>R: OK (transação confirmada)
+        R-->>S: ids dos prédios apagados (vazio para conta de funcionário)
+        loop Cada prédio apagado
+            S->>FS: RemoverPrefixo("relatorios/{predioId}/")
+            Note over S,FS: falha só vai para o log — a conta já foi excluída
+        end
         S-->>P: OK
     end
     P-->>C: 204 No Content ou erro
 ```
+
+**Arquivos no armazenamento:** depois que a transação confirma, o `PerfilService` apaga do S3 tudo sob `relatorios/{predioId}/` de cada prédio que era do usuário — inclusive prédios com exclusão lógica, já que a exclusão de conta é definitiva. Só acontece depois do commit (se o banco falhar, nada é apagado) e uma falha do S3 não faz o pedido falhar: a conta já não existe, então o prefixo vai para o log como arquivo órfão. Detalhes em [RELATORIOS.md](RELATORIOS.md).
 
 Diferente da exclusão de `Predio` (RN08, soft delete), a exclusão de conta é **definitiva** (seção 6.2 do RFC — "a exclusão será realizada de forma permanente"), removendo o usuário e todos os dados vinculados, incluindo os refresh tokens. Como todas as chaves estrangeiras envolvidas são `Restrict` (nenhum `ON DELETE CASCADE` no banco), a `UsuarioRepository` apaga na ordem correta — filhos de `Predio` primeiro (compromissos, planejamentos, documentos, relatórios, convites e o vínculo `predio_usuarios` de toda a equipe), depois `Predio`, depois `RefreshToken`, só então o `Usuario` — dentro de uma transação, para não deixar dados órfãos se alguma etapa falhar no meio.
 

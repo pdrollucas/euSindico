@@ -13,7 +13,9 @@ public interface IUsuarioRepository
     /// <summary>
     /// Exclui definitivamente o usuário e todos os dados vinculados (prédios, compromissos,
     /// planejamentos, documentos, relatórios, refresh tokens e códigos de redefinição de
-    /// senha) — ver AUTHENTICATION.md, Fluxo 7.
+    /// senha) — ver AUTHENTICATION.md, Fluxo 7. Devolve os ids dos prédios que eram do usuário e foram
+    /// apagados (vazio para conta de funcionário), para quem chamou limpar os arquivos deles no
+    /// armazenamento depois que a transação confirmou.
     /// </summary>
-    Task ExcluirUsuarioEDadosRelacionadosAsync(int usuarioId, CancellationToken ct = default);
+    Task<IReadOnlyList<int>> ExcluirUsuarioEDadosRelacionadosAsync(int usuarioId, CancellationToken ct = default);
 }

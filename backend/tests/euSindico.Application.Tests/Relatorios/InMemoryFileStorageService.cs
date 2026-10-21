@@ -28,4 +28,19 @@ public class InMemoryFileStorageService : IFileStorageService
         Arquivos.Remove(chave);
         return Task.CompletedTask;
     }
+
+    public Task RemoverPrefixoAsync(string prefixo, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(prefixo) || !prefixo.EndsWith('/'))
+        {
+            throw new ArgumentException("Prefixo inválido.", nameof(prefixo));
+        }
+
+        foreach (var chave in Arquivos.Keys.Where(k => k.StartsWith(prefixo, StringComparison.Ordinal)).ToList())
+        {
+            Arquivos.Remove(chave);
+        }
+
+        return Task.CompletedTask;
+    }
 }

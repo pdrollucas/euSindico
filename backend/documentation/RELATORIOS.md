@@ -148,7 +148,8 @@ QuestPDF é usado sob a licença **Community** (definida em `RelatorioPdfGenerat
 - **Chave:** `relatorios/{predioId}/{guid}.pdf` — só ids e um guid, nunca dado do usuário (sem path traversal, sem colisão, nome do arquivo para o usuário vem de `NomeArquivo`: `Relatorio_AAAA-MM.pdf`).
 - **Privado e criptografado:** o bucket não tem URL pública; objetos gravados com `ServerSideEncryptionMethod.AES256`.
 - **Configuração:** `S3:BucketName` e `S3:Region` (padrão `us-east-2`). Credenciais **nunca** em `appsettings` — vêm da cadeia padrão da AWS (variáveis `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, perfil local ou a role do App Runner). O cliente é criado sem rede, então a aplicação sobe sem AWS configurada; só as rotas de geração/download falham (`500`) até o bucket existir.
-- **Permissões IAM mínimas** para a role/usuário da aplicação: `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` no prefixo `relatorios/*` do bucket.
+- **Permissões IAM mínimas** para a role/usuário da aplicação: `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` nos objetos `relatorios/*` do bucket **e** `s3:ListBucket` no próprio bucket (restrito ao prefixo `relatorios/*` pela condição `s3:prefix`). A listagem é necessária para a limpeza da exclusão de conta; sem ela o `RemoverPrefixoAsync` falha e os arquivos ficam órfãos.
+- **Exclusão de conta de Síndico:** depois de a transação do banco confirmar, `PerfilService` chama `IFileStorageService.RemoverPrefixoAsync("relatorios/{predioId}/")` para cada prédio apagado (`ChaveRelatorio.Prefixo`). O prefixo é obrigatório e termina em `/` (senão `relatorios/1` apagaria `relatorios/10/...`; prefixo vazio apagaria o bucket). O S3 lista em páginas de até 1000 chaves e apaga em lote; falha parcial do `DeleteObjects` vira exceção. Falha do S3 não faz a exclusão da conta falhar — vai para o log como arquivo órfão. Conta de funcionário não apaga prédios e não toca no S3. Ver [AUTHENTICATION.md](AUTHENTICATION.md), Fluxo 7.
 
 ## Segurança
 
@@ -176,7 +177,7 @@ Escolhas de implementação (não perguntadas, seguem o padrão dos módulos ant
 ## Pendências
 
 - **RFC:** atualizado na v2.6.0 — RN33–RN36, RF26–RF28 detalhados, módulo (5.3) e rotas.
-- **Arquivos órfãos na exclusão de conta:** `UsuarioRepository.ExcluirUsuarioEDadosRelacionadosAsync` (RF07) apaga as linhas de `relatorios` dos prédios do síndico, mas **não remove os PDFs do S3**. Precisa listar as chaves antes e remover os objetos depois (ou uma lifecycle policy por prefixo) — o RFC 6.2 promete exclusão permanente. Resolver junto com o módulo de Documentos, que tem o mesmo problema.
+- **Arquivos órfãos na exclusão de conta (resolvido, com ressalva):** a limpeza por prefixo está descrita acima. Ressalva: se o servidor cair entre o commit do banco e a limpeza do S3, ou se o S3 falhar, os PDFs ficam órfãos (só o log registra o prefixo). Uma fila de pendências com nova tentativa só vale se for preciso garantia estrita. O módulo de Documentos deve chamar `RemoverPrefixoAsync` também para o prefixo dele (ex.: `documentos/{predioId}/`) em `PerfilService.LimparArquivosDoPredioAsync`.
 - **Sem teste contra S3 real:** `S3FileStorageService` é fina e não tem teste automatizado; os testes usam fake em memória/mock. Validar manualmente com um bucket antes do deploy.
 - **Sem teste de integração contra MySQL real** (SQLite em memória, mesma ressalva de [COMPROMISSOS.md](COMPROMISSOS.md)).
 - **Fontes do QuestPDF na imagem Docker:** o QuestPDF usa as fontes instaladas no sistema. O PDF pede **Times New Roman** (existe no Windows); em Linux ela não vem instalada, então o código cai para a **Liberation Serif** (mesmas métricas, visual equivalente). A imagem precisa de `fontconfig` e `fonts-liberation` — sem uma fonte serifada o texto sai com outra fonte ou com acentos quebrados. Incluir no `Dockerfile` (ainda não criado) e testar um PDF gerado no container.
@@ -191,4 +192,8 @@ Convenção do projeto: `Metodo_condicao_resultado`, `Moq`, `TestValidate` para 
 - `euSindico.Api.Tests/Controllers/RelatorioControllerTests.cs` — status codes, limites de paginação, download.
 - `euSindico.Api.Tests/Validators/GerarRelatorioDtoValidatorTests.cs`
 - `euSindico.Api.Tests/Middleware/ApplicationExceptionHandlerTests.cs` — as três exceções novas.
+- `euSindico.Application.Tests/Auth/PerfilServiceTests.cs` — exclusão de conta: limpa o prefixo de cada prédio apagado, funcionário não toca no armazenamento, banco falhou = nada apagado no S3, falha do S3 não derruba a exclusão e os demais prédios são tentados.
+- `euSindico.Application.Tests/Relatorios/ChaveRelatorioTests.cs` — prefixo com barra final e chave única sob o prefixo.
+- `euSindico.Infrastructure.Tests/Storage/S3FileStorageServiceTests.cs` — `RemoverPrefixoAsync` com cliente S3 mockado: prefixo inválido, paginação, lote e falha parcial.
+- `euSindico.Infrastructure.Tests/Persistence/CompromissoRepositoryTests.cs` — a exclusão de conta devolve os ids dos prédios apagados (inclusive o de exclusão lógica) e lista vazia para funcionário.
 - `euSindico.Infrastructure.Tests/Persistence/RelatorioRepositoryTests.cs` — SQLite em memória: ordem, filtros, paginação, prédio excluído; concluídos do mês (fronteiras de mês e ano, só concluídos, ordem, responsável).
