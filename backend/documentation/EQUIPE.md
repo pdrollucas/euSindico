@@ -235,6 +235,9 @@ public enum AcaoPredio
 | Concluir/reabrir compromisso | ✅ | ✅ | ✅ (só os próprios) | ✅ idem |
 | Visualizar compromisso alheio | ✅ | ✅ | ❌ (`403` ao tentar por id; fora da listagem) | ✅ idem |
 | Criar/editar/remover planejamento (`AcaoPredio.GerenciarPlanejamentos`) | ✅ | ✅ | ❌ | ✅ ([PLANEJAMENTOS.md](PLANEJAMENTOS.md)) |
+| Gerar relatório mensal (`AcaoPredio.GerenciarRelatorios`) | ✅ | ✅ | ❌ | ✅ ([RELATORIOS.md](RELATORIOS.md)) |
+| Excluir relatório (`AcaoPredio.ExcluirRelatorios`) | ✅ | ❌ | ❌ | ✅ ([RELATORIOS.md](RELATORIOS.md)) |
+| Listar/consultar/baixar relatório (`AcaoPredio.VisualizarRelatorios`) | ✅ | ✅ | ✅ | ✅ ([RELATORIOS.md](RELATORIOS.md)) |
 | Visualizar planejamentos (`AcaoPredio.VisualizarPlanejamentos`) | ✅ | ✅ | ✅ (somente leitura) | ✅ idem |
 | Documentos, relatórios (CRUD completo) | ✅ | ✅ | ❌ — só visualização/download de documentos | 🔲 módulos não existem |
 

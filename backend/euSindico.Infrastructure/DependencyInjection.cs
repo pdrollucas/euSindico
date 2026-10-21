@@ -1,13 +1,17 @@
+using Amazon;
+using Amazon.S3;
 using euSindico.Application.Common.Interfaces;
 using euSindico.Infrastructure.Email;
 using euSindico.Infrastructure.Persistence;
 using euSindico.Infrastructure.Repositories;
 using euSindico.Infrastructure.Security;
+using euSindico.Infrastructure.Storage;
 using euSindico.Infrastructure.Time;
 using euSindico.Infrastructure.Web;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace euSindico.Infrastructure;
 
@@ -35,6 +39,15 @@ public static class DependencyInjection
         services.AddScoped<IConviteFuncionarioRepository, ConviteFuncionarioRepository>();
         services.AddScoped<ICompromissoRepository, CompromissoRepository>();
         services.AddScoped<IPlanejamentoRepository, PlanejamentoRepository>();
+        services.AddScoped<IRelatorioRepository, RelatorioRepository>();
+
+        // Credenciais pela cadeia padrão da AWS (variáveis de ambiente, perfil local ou role do App Runner) —
+        // nunca em appsettings. O cliente é criado sem rede, então a aplicação sobe sem AWS configurada.
+        services.Configure<S3Options>(configuration.GetSection(S3Options.SectionName));
+        services.AddSingleton<IAmazonS3>(sp => new AmazonS3Client(
+            RegionEndpoint.GetBySystemName(sp.GetRequiredService<IOptions<S3Options>>().Value.Region)));
+        services.AddSingleton<IFileStorageService, S3FileStorageService>();
+
         services.AddSingleton<TimeProvider>(_ => new FusoHorarioTimeProvider(
             TimeZoneInfo.FindSystemTimeZoneById(configuration["TimeZoneId"] ?? FusoHorarioTimeProvider.FusoPadrao)));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();

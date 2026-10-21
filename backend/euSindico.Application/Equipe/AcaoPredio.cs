@@ -29,4 +29,13 @@ public enum AcaoPredio
 
     /// <summary>Criar, editar e remover planejamentos (RF18, RF20, RF21) — Síndico e Gestor.</summary>
     GerenciarPlanejamentos,
+
+    /// <summary>Leitura e download de relatórios (RF27, RF28) — todos os papéis, inclusive o Colaborador.</summary>
+    VisualizarRelatorios,
+
+    /// <summary>Gerar relatórios mensais (RF26) — Síndico e Gestor.</summary>
+    GerenciarRelatorios,
+
+    /// <summary>Excluir relatórios gerados (RN36) — só o Síndico.</summary>
+    ExcluirRelatorios,
 }

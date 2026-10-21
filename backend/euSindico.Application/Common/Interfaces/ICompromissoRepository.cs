@@ -19,6 +19,14 @@ public interface ICompromissoRepository
     Task<(IReadOnlyList<Compromisso> Itens, int Total)> ListarAsync(
         CompromissoFiltro filtro, int page, int pageSize, CancellationToken ct = default);
 
+    /// <summary>
+    /// Compromissos concluídos de um prédio cuja data cai no mês/ano informado, em ordem cronológica
+    /// (RN06, RN14), com <see cref="Compromisso.Responsavel"/> carregado. Sem paginação: alimenta o PDF
+    /// do relatório. O acesso ao prédio é checado antes, pelo Service.
+    /// </summary>
+    Task<IReadOnlyList<Compromisso>> ListarConcluidosDoMesAsync(
+        int predioId, int ano, int mes, CancellationToken ct = default);
+
     Task AdicionarAsync(Compromisso compromisso, CancellationToken ct = default);
     Task AtualizarAsync(Compromisso compromisso, CancellationToken ct = default);
     Task RemoverAsync(Compromisso compromisso, CancellationToken ct = default);
