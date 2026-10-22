@@ -61,10 +61,10 @@ Camada de **implementação concreta** dos detalhes técnicos — é aqui que o 
 **Responsabilidades:**
 - `AppDbContext` e configuração do Entity Framework Core / Pomelo (MySQL).
 - Migrations do banco de dados.
-- Repositories (`UsuarioRepository`, `PredioRepository`, `CompromissoRepository` etc.) que implementam as interfaces definidas na Application.
+- Repositories (`UsuarioRepository`, `PredioRepository`, `CompromissoRepository`, `PlanejamentoRepository` etc.) que implementam as interfaces definidas na Application.
 - Implementação do armazenamento de arquivos usando AWS S3 (implementa `IFileStorageService`).
 - Implementação do hashing de senha com BCrypt (implementa `IPasswordHasher`).
-- `FusoHorarioTimeProvider` — `TimeProvider` com o fuso da aplicação (`TimeZoneId`, padrão `America/Sao_Paulo`), injetado na Application para os filtros "hoje"/"atrasados" de compromissos serem independentes do fuso do servidor. Ver [GETTING_STARTED.md](GETTING_STARTED.md).
+- `FusoHorarioTimeProvider` — `TimeProvider` com o fuso da aplicação (`TimeZoneId`, padrão `America/Sao_Paulo`), injetado na Application para os filtros "hoje"/"atrasados" de compromissos e a regra de data de planejamentos (hoje ou futura) serem independentes do fuso do servidor. Ver [GETTING_STARTED.md](GETTING_STARTED.md).
 - Implementação do envio de e-mail via SMTP (`SmtpEmailSender`, implementa `IEmailSender`) — usada hoje pelo fluxo de recuperação de senha (RF06-A). Em produção, o `Smtp:Host`/`Smtp:Usuario`/`Smtp:Senha` apontam para o provedor real (ver [GETTING_STARTED.md](GETTING_STARTED.md)); nada na Application muda se o provedor SMTP for trocado por outro (ex: AWS SES) no futuro.
 
 **Não é responsabilidade desta camada:**

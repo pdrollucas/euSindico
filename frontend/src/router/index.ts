@@ -111,6 +111,34 @@ const router = createRouter({
           },
           component: () => import('@/views/equipe/EquipePredioView.vue'),
         },
+        // Planejamentos são aninhados no prédio, como no backend (PLANEJAMENTOS.md) — não há lista
+        // global. O "voltar" é sempre determinístico, calculado do `:id` da própria rota.
+        {
+          path: 'predios/:id/planejamentos',
+          name: 'planejamentos',
+          meta: { titulo: 'Planejamentos', voltarPara: (route) => `/predios/${route.params.id}` },
+          component: () => import('@/views/planejamentos/PlanejamentosListView.vue'),
+        },
+        {
+          path: 'predios/:id/planejamentos/novo',
+          name: 'planejamentos-novo',
+          meta: { voltarPara: (route) => `/predios/${route.params.id}/planejamentos` },
+          component: () => import('@/views/planejamentos/PlanejamentoDetalheView.vue'),
+        },
+        {
+          path: 'predios/:id/planejamentos/:planejamentoId(\\d+)',
+          name: 'planejamentos-detalhe',
+          meta: { voltarPara: (route) => `/predios/${route.params.id}/planejamentos` },
+          component: () => import('@/views/planejamentos/PlanejamentoDetalheView.vue'),
+        },
+        // Relatórios também são aninhados no prédio (RELATORIOS.md). Só a lista: o PDF abre numa
+        // nova aba ou baixa direto dos cards, sem tela de detalhe.
+        {
+          path: 'predios/:id/relatorios',
+          name: 'relatorios',
+          meta: { titulo: 'Relatórios', voltarPara: (route) => `/predios/${route.params.id}` },
+          component: () => import('@/views/relatorios/RelatoriosListView.vue'),
+        },
         {
           path: 'configuracoes',
           name: 'configuracoes',

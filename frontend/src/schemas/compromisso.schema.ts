@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { tituloEhValido, prestadorEhValido, detalhesEhValido } from '@/utils/compromissoValidator'
 
-const tituloSchema = z
+export const tituloSchema = z
   .string({ required_error: 'Título obrigatório' })
   .trim()
   .min(1, 'Título obrigatório')
@@ -9,13 +9,13 @@ const tituloSchema = z
   .refine(tituloEhValido, 'O título contém caracteres não permitidos')
 
 // Opcionais: o campo vazio é válido, a regra só vale quando preenchido (igual ao backend).
-const prestadorSchema = z
+export const prestadorSchema = z
   .string()
   .trim()
   .max(150, 'O nome do prestador deve ter no máximo 150 caracteres')
   .refine((valor) => valor === '' || prestadorEhValido(valor), 'O nome do prestador contém caracteres não permitidos')
 
-const detalhesSchema = z
+export const detalhesSchema = z
   .string()
   .max(2000, 'Os detalhes devem ter no máximo 2000 caracteres')
   .refine(detalhesEhValido, 'Os detalhes contêm caracteres não permitidos')

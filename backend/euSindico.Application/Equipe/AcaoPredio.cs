@@ -23,4 +23,19 @@ public enum AcaoPredio
     /// compromisso específico (Colaborador só os próprios, RN21) é decidido pelo CompromissoService.
     /// </summary>
     GerenciarCompromissos,
+
+    /// <summary>Leitura de planejamentos (RF19) — todos os papéis, inclusive o Colaborador.</summary>
+    VisualizarPlanejamentos,
+
+    /// <summary>Criar, editar e remover planejamentos (RF18, RF20, RF21) — Síndico e Gestor.</summary>
+    GerenciarPlanejamentos,
+
+    /// <summary>Leitura e download de relatórios (RF27, RF28) — todos os papéis, inclusive o Colaborador.</summary>
+    VisualizarRelatorios,
+
+    /// <summary>Gerar relatórios mensais (RF26) — Síndico e Gestor.</summary>
+    GerenciarRelatorios,
+
+    /// <summary>Excluir relatórios gerados (RN36) — só o Síndico.</summary>
+    ExcluirRelatorios,
 }

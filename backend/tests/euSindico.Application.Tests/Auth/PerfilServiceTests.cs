@@ -3,6 +3,7 @@ using euSindico.Application.Auth.Dtos;
 using euSindico.Application.Common.Exceptions;
 using euSindico.Application.Common.Interfaces;
 using euSindico.Domain.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace euSindico.Application.Tests.Auth;
@@ -12,11 +13,21 @@ public class PerfilServiceTests
     private readonly Mock<IUsuarioRepository> _usuarioRepository = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepository = new();
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
+    private readonly Mock<IFileStorageService> _fileStorage = new();
     private readonly PerfilService _sut;
 
     public PerfilServiceTests()
     {
-        _sut = new PerfilService(_usuarioRepository.Object, _refreshTokenRepository.Object, _passwordHasher.Object);
+        _usuarioRepository
+            .Setup(r => r.ExcluirUsuarioEDadosRelacionadosAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _sut = new PerfilService(
+            _usuarioRepository.Object,
+            _refreshTokenRepository.Object,
+            _passwordHasher.Object,
+            _fileStorage.Object,
+            NullLogger<PerfilService>.Instance);
     }
 
     [Fact]
@@ -118,6 +129,64 @@ public class PerfilServiceTests
         await _sut.ExcluirContaAsync(1);
 
         _usuarioRepository.Verify(r => r.ExcluirUsuarioEDadosRelacionadosAsync(1, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExcluirContaAsync_de_Sindico_limpa_o_prefixo_de_cada_predio_apagado_no_armazenamento()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-fake");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(usuario);
+        _usuarioRepository
+            .Setup(r => r.ExcluirUsuarioEDadosRelacionadosAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([10, 20]);
+
+        await _sut.ExcluirContaAsync(1);
+
+        _fileStorage.Verify(s => s.RemoverPrefixoAsync("relatorios/10/", It.IsAny<CancellationToken>()), Times.Once);
+        _fileStorage.Verify(s => s.RemoverPrefixoAsync("relatorios/20/", It.IsAny<CancellationToken>()), Times.Once);
+        _fileStorage.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ExcluirContaAsync_de_funcionario_nao_toca_no_armazenamento()
+    {
+        var usuario = new Usuario("Carlos", "carlos@eusindico.com", "hash-fake");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(usuario);
+
+        await _sut.ExcluirContaAsync(1);
+
+        _fileStorage.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ExcluirContaAsync_se_o_banco_falha_nao_apaga_nada_no_armazenamento()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-fake");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(usuario);
+        _usuarioRepository
+            .Setup(r => r.ExcluirUsuarioEDadosRelacionadosAsync(1, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("banco fora"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExcluirContaAsync(1));
+
+        _fileStorage.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ExcluirContaAsync_se_o_armazenamento_falha_ainda_conclui_e_tenta_os_demais_predios()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-fake");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(usuario);
+        _usuarioRepository
+            .Setup(r => r.ExcluirUsuarioEDadosRelacionadosAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([10, 20]);
+        _fileStorage
+            .Setup(s => s.RemoverPrefixoAsync("relatorios/10/", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("s3 fora"));
+
+        await _sut.ExcluirContaAsync(1);
+
+        _fileStorage.Verify(s => s.RemoverPrefixoAsync("relatorios/20/", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

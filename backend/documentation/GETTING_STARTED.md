@@ -127,6 +127,10 @@ A configuração segue a ordem de precedência padrão do ASP.NET Core (a últim
 
 Localmente, o `ASPNETCORE_ENVIRONMENT` já vem definido como `Development` pelos profiles do `launchSettings.json` — você não precisa configurar nada manualmente para rodar.
 
+## Armazenamento de arquivos (AWS S3)
+
+Os relatórios em PDF ([RELATORIOS.md](RELATORIOS.md)) são gravados num bucket S3 privado. Configure `S3:BucketName` (e `S3:Region`, padrão `us-east-2`) por User Secrets ou variável de ambiente (`S3__BucketName`). As credenciais **não** vão em configuração: o SDK usa a cadeia padrão da AWS (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `aws configure` ou a role do serviço em produção). O pacote `AWSSDK.Signin` (no `euSindico.Infrastructure`) é o que permite ao SDK ler as credenciais criadas por `aws login` (login pelo navegador); sem ele, o SDK não encontra credenciais num perfil desse tipo. Em produção ele fica sem uso, pois as credenciais vêm da role do serviço. Sem bucket configurado a API sobe normalmente, mas gerar e baixar relatórios responde `500`.
+
 ## Fuso horário da aplicação
 
 Os filtros "hoje" e "atrasados" dos compromissos ([COMPROMISSOS.md](COMPROMISSOS.md)) comparam a data/horário do compromisso — que não têm fuso, são o horário de parede do síndico — com o "agora" da aplicação. Esse "agora" usa o fuso configurado em `TimeZoneId` (padrão `America/Sao_Paulo`, definido em `appsettings.json`), **não** o do servidor, que em container costuma ser UTC. O valor é um id IANA/Windows aceito por `TimeZoneInfo.FindSystemTimeZoneById`.

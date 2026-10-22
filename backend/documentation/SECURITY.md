@@ -126,9 +126,9 @@ Exemplo real que motivou essa camada: `{"nome": "<script>alert('Pedro')</script>
 
 ### O que ainda não está coberto
 
-Campos de texto livre dos módulos que ainda não existem (Planejamento, Documento) têm o mesmo risco em potencial e precisam da mesma atenção quando forem implementados — não há uma regra genérica de "todo campo de texto é validado assim" no projeto, cada campo precisa da sua própria regra de validação deliberada.
+Campos de texto livre dos módulos que ainda não existem (Documento) têm o mesmo risco em potencial e precisam da mesma atenção quando forem implementados — não há uma regra genérica de "todo campo de texto é validado assim" no projeto, cada campo precisa da sua própria regra de validação deliberada.
 
-**Compromissos (implementado):** `titulo` → `TituloValidator` e `nomePrestadorServico` → `PrestadorServicoValidator` usam allowlist (letras, números, espaço e `. , : ; ' - ( ) / º ª & % # ! ? + @ $ °`; máx. 150), sem `<`, `>`, aspas, crase e chaves. `detalhes` é texto livre: só limite de 2000 caracteres e rejeição de `<`/`>`, porque uma allowlist bloquearia anotações legítimas ("R$ 1.200,00", "e-mail@x.com", quebras de linha) — nesse campo a defesa primária é o escape do Vue ainda mais do que nos outros. `TituloValidator` e `DetalhesValidator` são reaproveitáveis por Planejamento (mesmos campos no RFC). Ver [COMPROMISSOS.md](COMPROMISSOS.md).
+**Compromissos (implementado):** `titulo` → `TituloValidator` e `nomePrestadorServico` → `PrestadorServicoValidator` usam allowlist (letras, números, espaço e `. , : ; ' - ( ) / º ª & % # ! ? + @ $ °`; máx. 150), sem `<`, `>`, aspas, crase e chaves. `detalhes` é texto livre: só limite de 2000 caracteres e rejeição de `<`/`>`, porque uma allowlist bloquearia anotações legítimas ("R$ 1.200,00", "e-mail@x.com", quebras de linha) — nesse campo a defesa primária é o escape do Vue ainda mais do que nos outros. `TituloValidator` e `DetalhesValidator` são reaproveitados por Planejamentos (mesmos campos no RFC; `orcamentoPrevisto` ganhou limite e no máximo 2 casas decimais). Ver [COMPROMISSOS.md](COMPROMISSOS.md) e [PLANEJAMENTOS.md](PLANEJAMENTOS.md).
 
 ## 4. Tratamento de erros
 

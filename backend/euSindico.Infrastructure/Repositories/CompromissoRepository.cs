@@ -71,6 +71,27 @@ public class CompromissoRepository(AppDbContext context) : ICompromissoRepositor
         return (itens, total);
     }
 
+    public async Task<IReadOnlyList<Compromisso>> ListarConcluidosDoMesAsync(
+        int predioId, int ano, int mes, CancellationToken ct = default)
+    {
+        var inicio = new DateOnly(ano, mes, 1);
+        var fim = inicio.AddMonths(1);
+
+        // RN06: só concluídos. RN14: ordem cronológica; id desempata.
+        return await context.Compromissos
+            .AsNoTracking()
+            .Include(c => c.Responsavel)
+            .Where(c => c.PredioId == predioId
+                && !c.Predio!.Excluido
+                && c.Concluido
+                && c.DataCompromisso >= inicio
+                && c.DataCompromisso < fim)
+            .OrderBy(c => c.DataCompromisso)
+            .ThenBy(c => c.HorarioCompromisso)
+            .ThenBy(c => c.Id)
+            .ToListAsync(ct);
+    }
+
     public async Task AdicionarAsync(Compromisso compromisso, CancellationToken ct = default)
     {
         context.Compromissos.Add(compromisso);

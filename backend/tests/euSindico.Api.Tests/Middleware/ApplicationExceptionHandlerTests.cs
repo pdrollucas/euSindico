@@ -124,6 +124,72 @@ public class ApplicationExceptionHandlerTests
     }
 
     [Fact]
+    public async Task PlanejamentoNaoEncontradoException_retorna_404()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new PlanejamentoNaoEncontradoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status404NotFound, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RelatorioNaoEncontradoException_retorna_404()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new RelatorioNaoEncontradoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status404NotFound, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PeriodoRelatorioFuturoException_retorna_400()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new PeriodoRelatorioFuturoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status400BadRequest, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LimiteRelatoriosAtingidoException_retorna_409()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new LimiteRelatoriosAtingidoException(3), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status409Conflict, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RelatorioSemCompromissosException_retorna_422()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new RelatorioSemCompromissosException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DataPlanejamentoNoPassadoException_retorna_400()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new DataPlanejamentoNoPassadoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status400BadRequest, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task ResponsavelInvalidoException_retorna_400()
     {
         var httpContext = CriarHttpContext();

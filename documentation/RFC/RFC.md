@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>2.4.0 — o Gestor passa a visualizar a equipe do prédio (RF31, RN19), necessário para escolher o responsável de um compromisso na interface; anterior, 2.3.0 — detalha o módulo de compromissos (RF15, RF17, RN23–RN28 e rota única `/compromissos`), definido na implementação do backend; anterior, 2.2.0 — adiciona RF06-A (recuperação de senha esquecida) e RF29–RF34 (gestão de equipe/funcionários, com perfis de acesso), não previstos na proposta original
+- <strong>Versão: </strong>2.6.0 — detalha o módulo de relatórios mensais (RF26–RF28, RN33–RN36 e rotas aninhadas em `/predios/{predioId}/relatorios`), definido na implementação do backend; anterior, 2.5.0 — detalha o módulo de planejamentos futuros (RF18–RF21, RN29–RN32 e rotas aninhadas em `/predios/{predioId}/planejamentos`), definido na implementação do backend; anterior, 2.4.0 — o Gestor passa a visualizar a equipe do prédio (RF31, RN19), necessário para escolher o responsável de um compromisso na interface; anterior, 2.3.0 — detalha o módulo de compromissos (RF15, RF17, RN23–RN28 e rota única `/compromissos`), definido na implementação do backend; anterior, 2.2.0 — adiciona RF06-A (recuperação de senha esquecida) e RF29–RF34 (gestão de equipe/funcionários, com perfis de acesso), não previstos na proposta original
 - <strong>Disponível em PDF: </strong>[RFC.pdf](https://github.com/user-attachments/files/29358895/RFC.pdf)
 
 
@@ -432,17 +432,17 @@ flowchart LR
 - RF15 — O sistema deve permitir que o usuário edite compromissos cadastrados, incluindo — para os perfis Síndico e Gestor — reatribuir o responsável e mover o compromisso para outro prédio (RN24). *(detalhado na v2.3.0)*
 - RF16 — O sistema deve permitir que o usuário remova compromissos cadastrados.
 - RF17 — O sistema deve permitir que o usuário marque compromissos como concluídos e desfaça essa marcação (RN23). *(detalhado na v2.3.0)*
-- RF18 — O sistema deve permitir que o usuário registre planejamentos futuros.
-- RF19 — O sistema deve permitir que o usuário visualize planejamentos futuros.
-- RF20 — O sistema deve permitir que o usuário edite planejamentos futuros.
-- RF21 — O sistema deve permitir que o usuário remova planejamentos futuros.
+- RF18 — O sistema deve permitir que o usuário registre planejamentos futuros. *(Síndico e Gestor, RN29; detalhado na v2.5.0)*
+- RF19 — O sistema deve permitir que o usuário visualize planejamentos futuros de um prédio, com busca por título e filtro por faixa de orçamento (RN31). *(todos os perfis, inclusive o Colaborador; detalhado na v2.5.0)*
+- RF20 — O sistema deve permitir que o usuário edite planejamentos futuros. *(Síndico e Gestor, RN29; detalhado na v2.5.0)*
+- RF21 — O sistema deve permitir que o usuário remova planejamentos futuros (RN32). *(Síndico e Gestor, RN29; detalhado na v2.5.0)*
 - RF22 — O sistema deve permitir que o usuário envie documentos (atas de reunião e normas internas) vinculados a um prédio.
 - RF23 — O sistema deve permitir que o usuário visualize documentos (atas de reunião e normas internas) armazenados.
 - RF24 — O sistema deve permitir que o usuário baixe documentos (atas de reunião e normas internas) armazenados.
 - RF25 — O sistema deve permitir que o usuário remova documentos (atas de reunião e normas internas) armazenados.
-- RF26 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos concluídos.
-- RF27 — O sistema deve permitir que o usuário visualize relatórios mensais gerados.
-- RF28 — O sistema deve permitir que o usuário baixe relatórios mensais gerados.
+- RF26 — O sistema deve permitir que o usuário gere relatórios mensais com base nos compromissos concluídos. *(Síndico e Gestor, RN35; mês/ano conforme RN34; detalhado na v2.6.0)*
+- RF27 — O sistema deve permitir que o usuário visualize relatórios mensais gerados. *(todos os perfis, inclusive o Colaborador; histórico completo, RN33; detalhado na v2.6.0)*
+- RF28 — O sistema deve permitir que o usuário baixe relatórios mensais gerados. *(todos os perfis; o arquivo é entregue pela API, sem URL pública; detalhado na v2.6.0)*
 - RF29 — O sistema deve permitir que o síndico convide um funcionário (por e-mail) para um prédio, definindo seu perfil de acesso (Gestor ou Colaborador). *(Requisito adicionado na v2.2.0, após a proposta original — não previsto em RF01–RF28.)*
 - RF30 — O sistema deve permitir que o convidado crie sua conta a partir do link de convite recebido, ficando automaticamente vinculado ao prédio e ao perfil definidos no convite. *(v2.2.0)*
 - RF31 — O sistema deve permitir que o síndico visualize os funcionários vinculados a um prédio e seus respectivos perfis; o Gestor também visualiza (somente leitura), para escolher o responsável de um compromisso (RN19, RN20). *(v2.2.0; Gestor na v2.4.0)*
@@ -494,6 +494,16 @@ flowchart LR
 - RN26 — Compromissos podem ser cadastrados e editados com data e horário no passado, para registrar atividades já realizadas (RN10 exige data e horário, não que sejam futuros). *(v2.3.0)*
 - RN27 — A listagem de compromissos exibe, por padrão, apenas os compromissos não concluídos de hoje em diante, dos quais o usuário é responsável (RN21, RF34), em ordem cronológica (RN14). Compromissos atrasados (não concluídos cuja data e horário já passaram), os de hoje e os concluídos são obtidos por filtro de situação. "Hoje" e "agora" são calculados no fuso America/Sao_Paulo, não no do servidor. *(v2.3.0)*
 - RN28 — Na exclusão de conta (RF07): se o usuário é funcionário (Gestor ou Colaborador) de prédios de outro síndico, os compromissos pelos quais ele responde — pendentes e concluídos — passam a ter o dono do prédio como responsável, e os vínculos dele são removidos; se é Síndico, seus prédios e tudo associado a eles (inclusive a equipe vinculada, os convites e os compromissos de todos) são removidos, e os funcionários mantêm suas contas. *(v2.3.0)*
+- RN29 — Síndico e Gestor criam, editam e removem planejamentos futuros (RF18, RF20, RF21); o Colaborador apenas os visualiza (RF19), sem poder alterá-los. Planejamento não tem responsável nem posse individual: a permissão depende só do perfil no prédio. *(v2.5.0)*
+- RN30 — A data de um planejamento, quando informada, deve ser hoje ou posterior (calculada no fuso America/Sao_Paulo), na criação e em toda edição — mesmo que a data não tenha sido alterada. Diferente dos compromissos (RN26), planejamentos não registram o que já passou. Para corrigir um planejamento vencido, o usuário troca ou remove a data (RN11). *(v2.5.0)*
+- RN31 — A listagem de planejamentos é feita por prédio, em ordem de data decrescente (a mais distante primeiro), com os planejamentos sem data ao final; dentro de cada grupo, o cadastrado mais recentemente vem antes. Pode ser filtrada por trecho do título e por faixa de orçamento previsto (limites inclusivos); planejamento sem orçamento não aparece quando algum limite da faixa é informado. *(v2.5.0)*
+- RN32 — A remoção de um planejamento é definitiva (exclusão física), como a dos compromissos (RN25). O orçamento previsto, quando informado, aceita zero e é limitado a 99.999.999,99, com no máximo 2 casas decimais. *(v2.5.0)*
+
+- RN33 — Cada geração de relatório (RF26) cria um novo registro e um novo arquivo PDF; gerar o mesmo prédio/mês/ano mais de uma vez não substitui o anterior — o histórico é mantido e a listagem (RF27) mostra todas as gerações, da mais recente para a mais antiga. *(v2.6.0)*
+- RN34 — O relatório pode ser gerado para qualquer mês já iniciado, inclusive o corrente (que resulta num relatório parcial); mês futuro é rejeitado, calculado no fuso America/Sao_Paulo. Um compromisso pertence ao mês da sua data (`data_compromisso`), já que o sistema não registra a data de conclusão. Sem compromissos concluídos no período, nenhum relatório é gerado e o usuário é informado (fluxo "Geração de relatório sem dados", 3.2). *(v2.6.0)*
+- RN35 — Síndico e Gestor geram relatórios (RF26); os três perfis, inclusive o Colaborador, visualizam e baixam os já gerados (RF27, RF28). O relatório é do prédio: inclui os compromissos concluídos de todos os responsáveis, independente de quem o gera. *(v2.6.0)*
+
+- RN36 — Cada prédio pode ter no máximo 3 relatórios por mês de referência (mês/ano do relatório, não o da geração); ao atingir o limite, novas gerações desse período são recusadas com a mensagem de limite atingido. O limite conta os relatórios existentes. Apenas o perfil Síndico pode excluir um relatório (exclusão física do registro e do arquivo), o que libera uma vaga no limite do período. *(v2.6.0)*
 
 ### 2.6 Fora do escopo
 
@@ -1150,6 +1160,8 @@ A FK de `responsavel_usuario_id` para `usuarios` é `Restrict` (RN22): remover o
 | predio_id | INT | FK |
 | criado_em | DATETIME | NOT NULL |
 
+Sem coluna `concluido` (RN11) e sem `excluido`: a remoção é física (RN32). `orcamento_previsto` aceita zero (`DECIMAL(10,2)`, máx. 99.999.999,99). Detalhamento em [PLANEJAMENTOS.md](../../backend/documentation/PLANEJAMENTOS.md).
+
 ---
 
 ##### Tabela: tipo_documento
@@ -1192,6 +1204,8 @@ Valores diponíveis são "Atas" e "Normas"
 
 Índice composto: `(predio_id, ano_referencia, mes_referencia)` — otimiza a busca/geração de relatório por prédio e período (RF26–28).
 
+Não há unicidade nesse índice: cada geração é um registro novo (RN33). `url_arquivo` guarda a **chave** do objeto no bucket S3 (privado), nunca uma URL — o download passa pela API. Detalhamento em [RELATORIOS.md](../../backend/documentation/RELATORIOS.md).
+
 ---
 
 ### 5.3 Principais Componentes
@@ -1211,13 +1225,13 @@ O sistema **euSíndico** é estruturado em torno de sete módulos funcionais, to
   Responsável pelo gerenciamento completo dos compromissos (RF12–RF17), incluindo cadastro, associação a um prédio, consulta, edição, remoção e conclusão. Expõe um único conjunto de rotas, `/compromissos` — a tela global e a tela de um prédio usam a mesma listagem, esta última com o filtro `predioId`. Oferece pesquisa por título e filtros por prédio, escopo (meus/todos) e situação (próximos, hoje, atrasados, concluídos), retornando os resultados ordenados cronologicamente (RN14, RN27). A conclusão é alterada por `PATCH` e é reversível (RN23). Detalhamento em [COMPROMISSOS.md](../../backend/documentation/COMPROMISSOS.md). O **CompromissoService** fornece ainda os dados utilizados na geração dos relatórios mensais.
 
 * **Módulo de Planejamentos Futuros**<br/>
-  Responsável pelo cadastro, visualização, edição e remoção de planejamentos futuros (RF18–RF21). Diferentemente dos compromissos, planejamentos não possuem obrigatoriedade de data e não podem ser marcados como concluídos. O módulo é composto pelo **PlanejamentoController** e **PlanejamentoService**.
+  Responsável pelo cadastro, visualização, edição e remoção de planejamentos futuros (RF18–RF21). Diferentemente dos compromissos, planejamentos não possuem obrigatoriedade de data e não podem ser marcados como concluídos. O módulo é composto pelo **PlanejamentoController** e **PlanejamentoService**. As rotas são aninhadas no prédio (`/predios/{predioId}/planejamentos`), sem listagem global; Síndico e Gestor têm CRUD completo e o Colaborador apenas consulta (RN29). A listagem é paginada, ordenada por data decrescente e filtrável por título e faixa de orçamento (RN31). Detalhamento em [PLANEJAMENTOS.md](../../backend/documentation/PLANEJAMENTOS.md).
 
 * **Módulo de Documentos**<br/>
   Responsável pelo gerenciamento de documentos (atas de reunião e normas internas) vinculados aos prédios (RF22–RF25). O **DocumentoService** realiza upload, download, consulta e remoção de arquivos armazenados no AWS S3, mantendo apenas seus metadados no banco de dados MySQL.
 
 * **Módulo de Relatórios**<br/>
-  Responsável pela geração, armazenamento, visualização e download dos relatórios mensais (RF26–RF28). O **RelatorioService** consulta os compromissos concluídos do mês selecionado, gera um documento em formato PDF e o armazena no AWS S3 para posterior acesso pelo usuário.
+  Responsável pela geração, armazenamento, visualização e download dos relatórios mensais (RF26–RF28). O **RelatorioService** consulta os compromissos concluídos do mês selecionado, gera um documento em formato PDF e o armazena no AWS S3 para posterior acesso pelo usuário. Composto pelo **RelatorioController** e **RelatorioService**; as rotas são aninhadas no prédio (`/predios/{predioId}/relatorios`): `POST` gera (Síndico e Gestor, RN35), `GET` lista com paginação e filtros de ano e mês, `GET /{id}` consulta os metadados e `GET /{id}/download` entrega o PDF, sempre pela API autenticada, e `DELETE /{id}` exclui (só Síndico, RN36). Cada geração preserva as anteriores (RN33), até o limite de 3 por prédio e mês de referência (RN36). Detalhamento em [RELATORIOS.md](../../backend/documentation/RELATORIOS.md).
 
 * **Camada de Persistência**<br/>
   Compartilhada por todos os módulos, a camada de repositórios (**Repositories**) abstrai o acesso ao banco de dados MySQL utilizando o Entity Framework como ORM. Essa camada centraliza as operações de leitura e escrita, promovendo desacoplamento entre a lógica de negócio e a infraestrutura de persistência.

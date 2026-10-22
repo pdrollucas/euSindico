@@ -27,7 +27,7 @@ public class UsuarioRepository(AppDbContext context) : IUsuarioRepository
     public async Task AtualizarAsync(Usuario usuario, CancellationToken ct = default) =>
         await context.SaveChangesAsync(ct);
 
-    public async Task ExcluirUsuarioEDadosRelacionadosAsync(int usuarioId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<int>> ExcluirUsuarioEDadosRelacionadosAsync(int usuarioId, CancellationToken ct = default)
     {
         // Todas as FKs para usuarios/predios são Restrict (ver *Configuration.cs) — não há
         // ON DELETE CASCADE no banco, então a ordem (filhos antes de prédios antes do usuário)
@@ -38,6 +38,10 @@ public class UsuarioRepository(AppDbContext context) : IUsuarioRepository
         var prediosIds = context.Predios
             .Where(p => p.UsuarioId == usuarioId)
             .Select(p => p.Id);
+
+        // Lido dentro da transação, antes de apagar: é a lista exata do que será removido (inclusive
+        // prédios com exclusão lógica), e quem chamou usa para limpar os arquivos no armazenamento.
+        var prediosApagados = await prediosIds.ToListAsync(ct);
 
         await context.Compromissos.Where(c => prediosIds.Contains(c.PredioId)).ExecuteDeleteAsync(ct);
 
@@ -70,5 +74,7 @@ public class UsuarioRepository(AppDbContext context) : IUsuarioRepository
         await context.Usuarios.Where(u => u.Id == usuarioId).ExecuteDeleteAsync(ct);
 
         await transaction.CommitAsync(ct);
+
+        return prediosApagados;
     }
 }

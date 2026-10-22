@@ -37,6 +37,12 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
             RemoverDonoDoPredioException => StatusCodes.Status400BadRequest,
             CompromissoNaoEncontradoException => StatusCodes.Status404NotFound,
             ResponsavelInvalidoException => StatusCodes.Status400BadRequest,
+            PlanejamentoNaoEncontradoException => StatusCodes.Status404NotFound,
+            DataPlanejamentoNoPassadoException => StatusCodes.Status400BadRequest,
+            RelatorioNaoEncontradoException => StatusCodes.Status404NotFound,
+            PeriodoRelatorioFuturoException => StatusCodes.Status400BadRequest,
+            RelatorioSemCompromissosException => StatusCodes.Status422UnprocessableEntity,
+            LimiteRelatoriosAtingidoException => StatusCodes.Status409Conflict,
             _ => 0,
         };
 
