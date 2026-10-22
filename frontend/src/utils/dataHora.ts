@@ -22,6 +22,23 @@ export function formatarHorario(horarioIso: string): string {
   return horarioIso.slice(0, 5)
 }
 
+// Instante gerado pelo servidor (ex: `GeradoEm` do relatório) -> "20/10/2026 12:30", no fuso do
+// navegador. O backend grava em UTC, mas o EF devolve `DateTime` lido do banco sem o "Z" (e o recém
+// criado, com): sem designador de fuso o texto é tratado como UTC, senão o JS o leria como hora
+// local e mostraria um horário errado.
+export function formatarDataHoraUtc(iso: string): string {
+  const temFuso = /(Z|[+-]\d{2}:?\d{2})$/i.test(iso)
+  const data = new Date(temFuso ? iso : `${iso}Z`)
+  if (Number.isNaN(data.getTime())) {
+    return iso
+  }
+  const dois = (n: number) => String(n).padStart(2, '0')
+  return (
+    `${dois(data.getDate())}/${dois(data.getMonth() + 1)}/${data.getFullYear()} ` +
+    `${dois(data.getHours())}:${dois(data.getMinutes())}`
+  )
+}
+
 // "2026-10-20" do dia de hoje no fuso do navegador — mesmo formato do <input type="date">, então
 // strings ISO se comparam lexicograficamente (usado pelo `min` do campo de data e pela regra
 // "não pode estar no passado" do planejamento, RN30). O backend continua sendo a fonte da verdade.

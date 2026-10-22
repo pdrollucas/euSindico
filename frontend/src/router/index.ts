@@ -131,6 +131,14 @@ const router = createRouter({
           meta: { voltarPara: (route) => `/predios/${route.params.id}/planejamentos` },
           component: () => import('@/views/planejamentos/PlanejamentoDetalheView.vue'),
         },
+        // Relatórios também são aninhados no prédio (RELATORIOS.md). Só a lista: o PDF abre numa
+        // nova aba ou baixa direto dos cards, sem tela de detalhe.
+        {
+          path: 'predios/:id/relatorios',
+          name: 'relatorios',
+          meta: { titulo: 'Relatórios', voltarPara: (route) => `/predios/${route.params.id}` },
+          component: () => import('@/views/relatorios/RelatoriosListView.vue'),
+        },
         {
           path: 'configuracoes',
           name: 'configuracoes',
