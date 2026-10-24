@@ -70,6 +70,32 @@ public class CompromissoFormDtoValidatorTests
             .ShouldHaveValidationErrorFor(x => x.Detalhes);
 
     [Theory]
+    [InlineData("0")]
+    [InlineData("1500.50")]
+    [InlineData("99999999.99")]
+    public void Orcamento_valido_nao_gera_erro(string valor) =>
+        _sut.TestValidate(DtoValido() with { Orcamento = decimal.Parse(valor, System.Globalization.CultureInfo.InvariantCulture) })
+            .ShouldNotHaveValidationErrorFor(x => x.Orcamento);
+
+    [Fact]
+    public void Orcamento_negativo_gera_erro() =>
+        _sut.TestValidate(DtoValido() with { Orcamento = -0.01m })
+            .ShouldHaveValidationErrorFor(x => x.Orcamento)
+            .WithErrorMessage("O orçamento não pode ser negativo.");
+
+    [Fact]
+    public void Orcamento_acima_do_maximo_gera_erro() =>
+        _sut.TestValidate(DtoValido() with { Orcamento = 100_000_000m })
+            .ShouldHaveValidationErrorFor(x => x.Orcamento)
+            .WithErrorMessage("O orçamento excede o valor máximo permitido.");
+
+    [Fact]
+    public void Orcamento_com_mais_de_duas_casas_gera_erro() =>
+        _sut.TestValidate(DtoValido() with { Orcamento = 10.123m })
+            .ShouldHaveValidationErrorFor(x => x.Orcamento)
+            .WithErrorMessage("O orçamento deve ter no máximo 2 casas decimais.");
+
+    [Theory]
     [InlineData(0)]
     [InlineData(-3)]
     public void Responsavel_informado_mas_invalido_gera_erro(int responsavelId) =>

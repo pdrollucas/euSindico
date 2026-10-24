@@ -14,4 +14,5 @@ public record ItemRelatorio(
     string Titulo,
     string? NomePrestadorServico,
     string? Detalhes,
-    string ResponsavelNome);
+    string ResponsavelNome,
+    decimal? Orcamento = null);

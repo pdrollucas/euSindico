@@ -5,6 +5,9 @@ namespace euSindico.Api.Validators;
 
 public class CompromissoFormDtoValidator : AbstractValidator<CompromissoFormDto>
 {
+    // decimal(10,2) no banco: 8 dígitos inteiros + 2 casas.
+    public const decimal OrcamentoMaximo = 99_999_999.99m;
+
     public CompromissoFormDtoValidator()
     {
         // Anulável no DTO para "predioId": null chegar aqui (formato padrão de erro do projeto) em vez de
@@ -25,6 +28,15 @@ public class CompromissoFormDtoValidator : AbstractValidator<CompromissoFormDto>
 
         RuleFor(x => x.NomePrestadorServico)
             .SetValidator(new PrestadorServicoValidator());
+
+        // O orçamento é opcional e aceita zero. Mais de 2 casas decimais seriam arredondadas em
+        // silêncio pelo banco.
+        RuleFor(x => x.Orcamento)
+            .GreaterThanOrEqualTo(0m).WithMessage("O orçamento não pode ser negativo.")
+            .LessThanOrEqualTo(OrcamentoMaximo).WithMessage("O orçamento excede o valor máximo permitido.")
+            .Must(valor => decimal.Round(valor!.Value, 2) == valor.Value)
+            .WithMessage("O orçamento deve ter no máximo 2 casas decimais.")
+            .When(x => x.Orcamento is not null);
 
         RuleFor(x => x.Detalhes)
             .SetValidator(new DetalhesValidator());

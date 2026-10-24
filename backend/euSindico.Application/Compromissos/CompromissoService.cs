@@ -48,7 +48,8 @@ public class CompromissoService(
             dto.PredioId!.Value,
             responsavelId,
             NormalizarOpcional(dto.NomePrestadorServico),
-            NormalizarOpcional(dto.Detalhes));
+            NormalizarOpcional(dto.Detalhes),
+            dto.Orcamento);
 
         await compromissoRepository.AdicionarAsync(compromisso, ct);
 
@@ -149,7 +150,8 @@ public class CompromissoService(
             NormalizarOpcional(dto.NomePrestadorServico),
             NormalizarOpcional(dto.Detalhes),
             dto.PredioId!.Value,
-            responsavelId);
+            responsavelId,
+            dto.Orcamento);
 
         await compromissoRepository.AtualizarAsync(compromisso, ct);
 
@@ -243,6 +245,7 @@ public class CompromissoService(
             c.HorarioCompromisso,
             c.NomePrestadorServico,
             c.Detalhes,
+            c.Orcamento,
             c.Concluido,
             c.PredioId,
             predioNome,

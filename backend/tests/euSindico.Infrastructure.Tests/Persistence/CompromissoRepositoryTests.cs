@@ -288,11 +288,12 @@ public class CompromissoRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         var carregado = (await _sut.BuscarPorIdAsync(id))!;
-        carregado.AtualizarDados("Visita", Hoje, Agora, null, null, _predioB.Id, _sindicoA.Id);
+        carregado.AtualizarDados("Visita", Hoje, Agora, null, null, _predioB.Id, _sindicoA.Id, 1234.56m);
         await _sut.AtualizarAsync(carregado);
         _context.ChangeTracker.Clear();
 
         var recarregado = (await _sut.BuscarPorIdAsync(id))!;
+        Assert.Equal(1234.56m, recarregado.Orcamento);
         Assert.Equal(_predioB.Id, recarregado.PredioId);
         Assert.Equal(_sindicoA.Id, recarregado.ResponsavelUsuarioId);
         Assert.Equal("Predio B", recarregado.Predio!.Nome);

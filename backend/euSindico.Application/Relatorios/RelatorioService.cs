@@ -58,7 +58,8 @@ public class RelatorioService(
                     c.Titulo,
                     c.NomePrestadorServico,
                     c.Detalhes,
-                    c.Responsavel?.Nome ?? string.Empty))
+                    c.Responsavel?.Nome ?? string.Empty,
+                    c.Orcamento))
                 .ToList());
 
         var pdf = pdfGenerator.Gerar(dados);

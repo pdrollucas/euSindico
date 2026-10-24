@@ -11,8 +11,9 @@ public class CompromissoTests
     public void Construtor_define_dados_iniciais_nao_concluido_e_responsavel()
     {
         var antes = DateTime.UtcNow;
-        var compromisso = new Compromisso("Visita técnica", Data, Horario, predioId: 10, responsavelUsuarioId: 2, "Atlas", "Revisar o elevador");
+        var compromisso = new Compromisso("Visita técnica", Data, Horario, predioId: 10, responsavelUsuarioId: 2, "Atlas", "Revisar o elevador", 1500.50m);
 
+        Assert.Equal(1500.50m, compromisso.Orcamento);
         Assert.Equal("Visita técnica", compromisso.Titulo);
         Assert.Equal(Data, compromisso.DataCompromisso);
         Assert.Equal(Horario, compromisso.HorarioCompromisso);
@@ -29,8 +30,9 @@ public class CompromissoTests
     {
         var compromisso = new Compromisso("Visita", Data, Horario, predioId: 10, responsavelUsuarioId: 2);
 
-        compromisso.AtualizarDados("Reunião", new DateOnly(2026, 11, 1), new TimeOnly(9, 0), "Maria", "Pauta", predioId: 20, responsavelUsuarioId: 3);
+        compromisso.AtualizarDados("Reunião", new DateOnly(2026, 11, 1), new TimeOnly(9, 0), "Maria", "Pauta", predioId: 20, responsavelUsuarioId: 3, orcamento: 250m);
 
+        Assert.Equal(250m, compromisso.Orcamento);
         Assert.Equal("Reunião", compromisso.Titulo);
         Assert.Equal(new DateOnly(2026, 11, 1), compromisso.DataCompromisso);
         Assert.Equal(new TimeOnly(9, 0), compromisso.HorarioCompromisso);
@@ -38,6 +40,17 @@ public class CompromissoTests
         Assert.Equal("Pauta", compromisso.Detalhes);
         Assert.Equal(20, compromisso.PredioId);
         Assert.Equal(3, compromisso.ResponsavelUsuarioId);
+    }
+
+    [Fact]
+    public void Orcamento_e_opcional_e_pode_ser_removido_na_edicao()
+    {
+        var compromisso = new Compromisso("Visita", Data, Horario, predioId: 10, responsavelUsuarioId: 2, orcamento: 100m);
+
+        compromisso.AtualizarDados("Visita", Data, Horario, null, null, predioId: 10, responsavelUsuarioId: 2, orcamento: null);
+
+        Assert.Null(compromisso.Orcamento);
+        Assert.Null(new Compromisso("Visita", Data, Horario, predioId: 10, responsavelUsuarioId: 2).Orcamento);
     }
 
     [Fact]

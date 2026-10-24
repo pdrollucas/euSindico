@@ -7,6 +7,7 @@ public record CompromissoDto(
     TimeOnly HorarioCompromisso,
     string? NomePrestadorServico,
     string? Detalhes,
+    decimal? Orcamento,
     bool Concluido,
     int PredioId,
     string PredioNome,

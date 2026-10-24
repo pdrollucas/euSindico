@@ -61,6 +61,7 @@ public class Compromisso
     public DateOnly DataCompromisso { get; private set; }
     public TimeOnly HorarioCompromisso { get; private set; }
     public string? NomePrestadorServico { get; private set; }
+    public decimal? Orcamento { get; private set; }         // opcional — alimenta o total do relatório mensal
     public string? Detalhes { get; private set; }
     public bool Concluido { get; private set; }
     public int PredioId { get; private set; }
@@ -75,6 +76,8 @@ public class Compromisso
 Migration `AddResponsavelAoCompromisso`: coluna `responsavel_usuario_id INT NOT NULL`, FK para `usuarios` com `Restrict` (RN22 — remover um funcionário não apaga os compromissos dele) e índice `(predio_id, responsavel_usuario_id)` (filtro "meus", RF34).
 
 > ⚠️ A coluna é criada com `DEFAULT 0`, que violaria a FK se já houvesse linhas em `compromissos`. Não havia nenhuma (o módulo não existia), então a migration aplica limpa. **Num banco com compromissos de teste inseridos à mão, limpe a tabela antes de aplicar.**
+
+Migration `AddOrcamentoAoCompromisso`: coluna `orcamento DECIMAL(10,2) NULL` (mesmo tipo de `orcamento_previsto` em planejamentos). Linhas existentes ficam com `NULL` ("não informado").
 
 ## Regras de negócio aplicadas
 
@@ -112,12 +115,13 @@ Corpo de `POST`/`PUT` (`CompromissoFormDto`):
   "dataCompromisso": "2026-10-20",
   "horarioCompromisso": "14:30:00",
   "nomePrestadorServico": "Elevadores Atlas Ltda.",
+  "orcamento": 1500.50,
   "detalhes": "Levar o relatório da última revisão.",
   "responsavelUsuarioId": 5
 }
 ```
 
-`nomePrestadorServico`, `detalhes` e `responsavelUsuarioId` são opcionais. Resposta (`CompromissoDto`): os mesmos campos mais `id`, `concluido`, `predioNome`, `responsavelNome` e `criadoEm` — o front não precisa de uma segunda chamada para exibir os nomes.
+`nomePrestadorServico`, `orcamento`, `detalhes` e `responsavelUsuarioId` são opcionais. No `PUT`, omitir `orcamento` (ou enviar `null`) **o limpa**, como nos demais campos opcionais. Resposta (`CompromissoDto`): os mesmos campos mais `id`, `concluido`, `predioNome`, `responsavelNome` e `criadoEm` — o front não precisa de uma segunda chamada para exibir os nomes.
 
 **Por que `PATCH` e não `PUT` para concluir:** o checkbox da lista só informa o estado desejado. Com `PUT` teria que reenviar o compromisso inteiro, e um clique no celular poderia sobrescrever uma edição feita por outra pessoa no intervalo. `PATCH` é parcial e idempotente (marcar duas vezes é a mesma coisa). As permissões são idênticas às de editar, então não há motivo de autorização para um endpoint de "ação" separado — por isso é `PATCH /compromissos/{id}`, não `POST /compromissos/{id}/concluir`. O campo é `bool?` no DTO e obrigatório: um `{}` não reabre o compromisso por engano.
 
@@ -219,6 +223,7 @@ Mesma estratégia de duas camadas de [SECURITY.md](SECURITY.md) (seção 3): all
 | `Titulo` | `TituloValidator` | Obrigatório, máx. 150, `^[\p{L}\p{N}\s.,:;'\-()/ºª&%#!?+@$°]+$` |
 | `NomePrestadorServico` | `PrestadorServicoValidator` | Opcional; quando preenchido, máx. 150 e a mesma allowlist. |
 | `Detalhes` | `DetalhesValidator` | Opcional; máx. 2000, rejeita `<` e `>`. **Sem allowlist** — texto livre legítimo ("R$ 1.200,00", "e-mail@x.com", quebras de linha) seria bloqueado. |
+| `Orcamento` | `CompromissoFormDtoValidator` | Opcional; quando informado, `>= 0` (zero aceito), `<= 99.999.999,99` e no máximo 2 casas decimais (mesmas regras de `OrcamentoPrevisto` do planejamento). |
 | `DataCompromisso`, `HorarioCompromisso` | `CompromissoFormDtoValidator` | Obrigatórios (RN10). |
 | `PredioId` | idem | `> 0`. |
 | `ResponsavelUsuarioId` | idem | Quando informado, `> 0`. |
