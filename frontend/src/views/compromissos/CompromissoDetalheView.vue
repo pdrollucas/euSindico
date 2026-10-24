@@ -12,6 +12,7 @@ import { usePredioStore } from '@/stores/predioStore'
 import { PAPEL_PREDIO } from '@/types/predio.types'
 import type { CompromissoFormValues } from '@/types/compromisso.types'
 import { formatarHorario } from '@/utils/dataHora'
+import { numeroParaMoedaMascarada } from '@/utils/moeda'
 import { lerPredioIdDaQuery, rotaListaCompromissos } from '@/utils/rotasCompromisso'
 
 // Uma tela só para criar (/compromissos/novo) e para ver/editar (/compromissos/:id) — RFC 4.2,
@@ -60,6 +61,7 @@ function tirarFotoInicial() {
     dataCompromisso: atual.dataCompromisso,
     horarioCompromisso: formatarHorario(atual.horarioCompromisso),
     nomePrestadorServico: atual.nomePrestadorServico ?? '',
+    orcamento: atual.orcamento !== null ? numeroParaMoedaMascarada(atual.orcamento) : '',
     detalhes: atual.detalhes ?? '',
     responsavelUsuarioId: atual.responsavelUsuarioId,
   }

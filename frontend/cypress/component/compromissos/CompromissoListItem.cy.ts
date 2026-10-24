@@ -8,6 +8,7 @@ const compromisso = {
   horarioCompromisso: '18:30:00',
   nomePrestadorServico: null,
   detalhes: null,
+  orcamento: null,
   concluido: false,
   predioId: 1,
   predioNome: 'Edifício Solar',

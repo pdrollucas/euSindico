@@ -4,6 +4,7 @@ import {
   compromissoSchema,
   compromissosPaginadosSchema,
 } from '@/schemas/compromisso.schema'
+import { moedaParaNumero } from '@/utils/moeda'
 import type {
   Compromisso,
   CompromissoFiltros,
@@ -23,6 +24,8 @@ function montarCorpo(payload: CompromissoFormValues) {
         : valores.horarioCompromisso,
     nomePrestadorServico: valores.nomePrestadorServico?.trim() || null,
     detalhes: valores.detalhes?.trim() || null,
+    // Orçamento mascarado ("1.500,50") vira número; vazio vira null.
+    orcamento: moedaParaNumero(valores.orcamento),
     responsavelUsuarioId: valores.responsavelUsuarioId ?? null,
   }
 }

@@ -11,4 +11,5 @@ public record CompromissoFormDto(
     TimeOnly? HorarioCompromisso,
     string? NomePrestadorServico,
     string? Detalhes,
-    int? ResponsavelUsuarioId);
+    int? ResponsavelUsuarioId,
+    decimal? Orcamento = null);

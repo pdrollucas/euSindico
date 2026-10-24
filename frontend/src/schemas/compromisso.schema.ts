@@ -1,5 +1,24 @@
 import { z } from 'zod'
 import { tituloEhValido, prestadorEhValido, detalhesEhValido } from '@/utils/compromissoValidator'
+import { moedaParaNumero } from '@/utils/moeda'
+
+// Mesmo teto do backend (decimal(10,2)). Compartilhado com o orçamento previsto do planejamento.
+export const ORCAMENTO_MAXIMO = 99_999_999.99
+
+// Valor mascarado do campo ("1.500,50"), ou vazio. A máscara (`mascararMoeda`) já garante o formato
+// e as 2 casas; o schema confere o formato por defesa e o teto do banco. Zero é válido.
+export const orcamentoSchema = z
+  .string()
+  .trim()
+  .refine(
+    (valor) => valor === '' || /^\d{1,3}(\.\d{3})*,\d{2}$/.test(valor),
+    'Informe um valor válido, como 1.500,00',
+  )
+  .refine(
+    (valor) => valor === '' || (moedaParaNumero(valor) ?? 0) <= ORCAMENTO_MAXIMO,
+    'O valor excede o máximo permitido',
+  )
+  .nullish()
 
 export const tituloSchema = z
   .string({ required_error: 'Título obrigatório' })
@@ -42,6 +61,8 @@ export const compromissoFormSchema = z.object({
   dataCompromisso: dataSchema,
   horarioCompromisso: horarioSchema,
   nomePrestadorServico: prestadorSchema.optional(),
+  // Opcional. Fica como texto mascarado no formulário e vira número em `compromissoService`.
+  orcamento: orcamentoSchema,
   detalhes: detalhesSchema.optional(),
   // Omitido = o backend usa o próprio autor (criar) ou mantém o atual (editar), RN20.
   responsavelUsuarioId: z.number().int().positive().nullish(),
@@ -55,6 +76,7 @@ export const compromissoSchema = z.object({
   horarioCompromisso: z.string(),
   nomePrestadorServico: z.string().nullable(),
   detalhes: z.string().nullable(),
+  orcamento: z.number().nullable(),
   concluido: z.boolean(),
   predioId: z.number(),
   predioNome: z.string(),

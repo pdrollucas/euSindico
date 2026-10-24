@@ -29,6 +29,10 @@ public class CompromissoConfiguration : IEntityTypeConfiguration<Compromisso>
             .HasColumnName("nome_prestador_servico")
             .HasMaxLength(150);
 
+        builder.Property(c => c.Orcamento)
+            .HasColumnName("orcamento")
+            .HasColumnType("decimal(10,2)");
+
         builder.Property(c => c.Detalhes)
             .HasColumnName("detalhes")
             .HasColumnType("text");

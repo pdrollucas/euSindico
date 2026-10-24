@@ -1,10 +1,14 @@
 import { z } from 'zod'
-import { detalhesSchema, prestadorSchema, tituloSchema } from '@/schemas/compromisso.schema'
+import {
+  detalhesSchema,
+  ORCAMENTO_MAXIMO,
+  orcamentoSchema,
+  prestadorSchema,
+  tituloSchema,
+} from '@/schemas/compromisso.schema'
 import { hojeIso } from '@/utils/dataHora'
-import { moedaParaNumero } from '@/utils/moeda'
 
-// Mesmo teto do backend (decimal(10,2)).
-export const ORCAMENTO_MAXIMO = 99_999_999.99
+export { ORCAMENTO_MAXIMO }
 
 // Valor cru do <input type="date"> ("2026-10-20"), ou vazio: a data é opcional (RN11). Quando
 // preenchida, hoje ou futura (RN30) — o backend repete a regra no fuso da aplicação e é a fonte
@@ -13,21 +17,6 @@ const dataSchema = z
   .string()
   .refine((valor) => valor === '' || /^\d{4}-\d{2}-\d{2}$/.test(valor), 'Data inválida')
   .refine((valor) => valor === '' || valor >= hojeIso(), 'A data não pode estar no passado')
-  .nullish()
-
-// Valor mascarado do campo ("1.500,50"), ou vazio. A máscara (`mascararMoeda`) já garante o formato
-// e as 2 casas; o schema confere o formato por defesa e o teto do banco. Zero é válido.
-const orcamentoSchema = z
-  .string()
-  .trim()
-  .refine(
-    (valor) => valor === '' || /^\d{1,3}(\.\d{3})*,\d{2}$/.test(valor),
-    'Informe um valor válido, como 1.500,00',
-  )
-  .refine(
-    (valor) => valor === '' || (moedaParaNumero(valor) ?? 0) <= ORCAMENTO_MAXIMO,
-    'O valor excede o máximo permitido',
-  )
   .nullish()
 
 // Espelha PlanejamentoFormDto — mesmo DTO em POST e PUT. O prédio vai na rota, não no corpo. O

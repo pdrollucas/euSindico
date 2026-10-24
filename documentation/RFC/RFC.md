@@ -969,6 +969,7 @@ erDiagram
         date dataCompromisso
         time horarioCompromisso
         string nomePrestadorServico
+        decimal orcamento
         string detalhes
         boolean concluido
         int predioId FK
@@ -1133,6 +1134,7 @@ Mesmo princípio de `codigos_redefinicao_senha`: o token em texto puro nunca é 
 | data_compromisso | DATE | NOT NULL |
 | horario_compromisso | TIME | NOT NULL |
 | nome_prestador_servico | VARCHAR(150) | NULL |
+| orcamento | DECIMAL(10,2) | NULL |
 | detalhes | TEXT | NULL |
 | concluido | BOOLEAN | NOT NULL |
 | predio_id | INT | FK |

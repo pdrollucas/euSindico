@@ -96,6 +96,10 @@ namespace euSindico.Infrastructure.Migrations
                         .HasColumnType("varchar(150)")
                         .HasColumnName("nome_prestador_servico");
 
+                    b.Property<decimal?>("Orcamento")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("orcamento");
+
                     b.Property<int>("PredioId")
                         .HasColumnType("int")
                         .HasColumnName("predio_id");

@@ -63,8 +63,28 @@ public class RelatorioPdfGenerator : IRelatorioPdfGenerator
                         c.Item().Element(e => Campo(e, "Gerado em", $"{dados.GeradoEm:dd/MM/yyyy HH:mm}"));
                     });
 
-                    coluna.Item().PaddingTop(14).Element(e =>
-                        Campo(e, "Total de compromissos concluídos", dados.Compromissos.Count.ToString(Cultura)));
+                    var comOrcamento = dados.Compromissos.Where(i => i.Orcamento is not null).ToList();
+                    var semOrcamento = dados.Compromissos.Count - comOrcamento.Count;
+
+                    coluna.Item().PaddingTop(14).Column(c =>
+                    {
+                        c.Item().Element(e =>
+                            Campo(e, "Total de compromissos concluídos", dados.Compromissos.Count.ToString(Cultura)));
+
+                        // O total soma só quem tem orçamento informado; a contagem dos demais evita que
+                        // o valor seja lido como o gasto completo do mês.
+                        if (comOrcamento.Count > 0)
+                        {
+                            c.Item().Element(e =>
+                                Campo(e, "Orçamento total do mês", Moeda(comOrcamento.Sum(i => i.Orcamento!.Value))));
+                        }
+
+                        if (semOrcamento > 0)
+                        {
+                            c.Item().Element(e =>
+                                Campo(e, "Compromissos sem orçamento informado", semOrcamento.ToString(Cultura)));
+                        }
+                    });
 
                     coluna.Item().PaddingTop(16).Element(Divisor);
 
@@ -80,6 +100,11 @@ public class RelatorioPdfGenerator : IRelatorioPdfGenerator
                             if (item.NomePrestadorServico is not null)
                             {
                                 c.Item().Element(e => Campo(e, "Prestador de serviço", item.NomePrestadorServico));
+                            }
+
+                            if (item.Orcamento is not null)
+                            {
+                                c.Item().Element(e => Campo(e, "Orçamento", Moeda(item.Orcamento.Value)));
                             }
 
                             if (item.Detalhes is not null)
@@ -111,6 +136,9 @@ public class RelatorioPdfGenerator : IRelatorioPdfGenerator
             texto.Span($"{rotulo}: ").Bold();
             texto.Span(valor);
         });
+
+    // "R$ 1.500,50" — sempre pt-BR, independente da cultura do servidor.
+    private static string Moeda(decimal valor) => valor.ToString("C2", Cultura);
 
     private static void Divisor(IContainer container) =>
         container.LineHorizontal(1).LineColor(AzulMarca);

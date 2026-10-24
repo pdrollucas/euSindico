@@ -7,6 +7,7 @@ public class Compromisso
     public DateOnly DataCompromisso { get; private set; }
     public TimeOnly HorarioCompromisso { get; private set; }
     public string? NomePrestadorServico { get; private set; }
+    public decimal? Orcamento { get; private set; }
     public string? Detalhes { get; private set; }
     public bool Concluido { get; private set; }
     public int PredioId { get; private set; }
@@ -25,7 +26,8 @@ public class Compromisso
         int predioId,
         int responsavelUsuarioId,
         string? nomePrestadorServico = null,
-        string? detalhes = null)
+        string? detalhes = null,
+        decimal? orcamento = null)
     {
         Titulo = titulo;
         DataCompromisso = dataCompromisso;
@@ -34,6 +36,7 @@ public class Compromisso
         ResponsavelUsuarioId = responsavelUsuarioId;
         NomePrestadorServico = nomePrestadorServico;
         Detalhes = detalhes;
+        Orcamento = orcamento;
         Concluido = false;
         CriadoEm = DateTime.UtcNow;
     }
@@ -45,13 +48,15 @@ public class Compromisso
         string? nomePrestadorServico,
         string? detalhes,
         int predioId,
-        int responsavelUsuarioId)
+        int responsavelUsuarioId,
+        decimal? orcamento)
     {
         Titulo = titulo;
         DataCompromisso = dataCompromisso;
         HorarioCompromisso = horarioCompromisso;
         NomePrestadorServico = nomePrestadorServico;
         Detalhes = detalhes;
+        Orcamento = orcamento;
         PredioId = predioId;
         ResponsavelUsuarioId = responsavelUsuarioId;
     }

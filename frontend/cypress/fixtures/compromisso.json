@@ -5,6 +5,7 @@
   "horarioCompromisso": "18:00:00",
   "nomePrestadorServico": "Portões Silva",
   "detalhes": "Trocar o motor",
+  "orcamento": null,
   "concluido": false,
   "predioId": 2,
   "predioNome": "Edifício Nuvem",

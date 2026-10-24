@@ -4,6 +4,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { compromissoFormSchema } from '@/schemas/compromisso.schema'
 import { mascararHorario } from '@/utils/dataHora'
+import { mascararMoedaDigitada } from '@/utils/moeda'
 import { PAPEL_PREDIO } from '@/types/predio.types'
 import type { Predio } from '@/types/predio.types'
 import type { EquipeMembro } from '@/types/equipe.types'
@@ -38,6 +39,7 @@ const [dataCompromisso, dataAttrs] = defineField('dataCompromisso')
 const [horarioCompromisso, horarioAttrs] = defineField('horarioCompromisso')
 const [responsavelUsuarioId, responsavelAttrs] = defineField('responsavelUsuarioId')
 const [nomePrestadorServico, prestadorAttrs] = defineField('nomePrestadorServico')
+const [orcamento, orcamentoAttrs] = defineField('orcamento')
 const [detalhes, detalhesAttrs] = defineField('detalhes')
 
 // Os valores iniciais só chegam depois de um GET assíncrono (modo edição) — o form já existe
@@ -142,6 +144,20 @@ function onHorarioDigitado(valor: string | null) {
   })
 }
 
+// Mesma máscara de moeda do orçamento previsto do planejamento (PlanejamentoForm), com o mesmo
+// cuidado de devolver o valor mascarado ao <input>.
+const orcamentoCampo = ref<{ $el: HTMLElement } | null>(null)
+function onOrcamentoDigitado(valor: string | null) {
+  const mascarado = mascararMoedaDigitada(valor, orcamento.value ?? '')
+  orcamento.value = mascarado
+  nextTick(() => {
+    const input = orcamentoCampo.value?.$el.querySelector('input')
+    if (input && input.value !== mascarado) {
+      input.value = mascarado
+    }
+  })
+}
+
 // O ícone nativo do <input type="date"> fica escondido (já existe o `prepend-inner-icon`, e os dois
 // apareciam juntos). Sem ele o único ponto clicável seria o texto do campo, então o clique em
 // qualquer parte do campo abre o seletor. `showPicker` pode lançar (sem gesto do usuário, navegador
@@ -235,6 +251,22 @@ const onSubmit = handleSubmit((values) => {
       autocomplete="off"
       prepend-inner-icon="mdi-account-hard-hat-outline"
       :error-messages="errors.nomePrestadorServico"
+    />
+    <v-text-field
+      ref="orcamentoCampo"
+      v-bind="orcamentoAttrs"
+      :model-value="orcamento"
+      data-cy="orcamento"
+      inputmode="numeric"
+      maxlength="14"
+      label="Orçamento"
+      placeholder="0,00 (opcional)"
+      persistent-placeholder
+      autocomplete="off"
+      prefix="R$"
+      prepend-inner-icon="mdi-cash"
+      :error-messages="errors.orcamento"
+      @update:model-value="onOrcamentoDigitado"
     />
     <v-textarea
       v-model="detalhes"

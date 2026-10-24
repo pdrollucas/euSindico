@@ -65,6 +65,19 @@ public class CompromissoServiceTests
             Times.Once);
     }
 
+    [Fact]
+    public async Task CriarAsync_persiste_o_orcamento_informado()
+    {
+        ConfigurarVinculo(PapelPredio.Sindico);
+
+        var resultado = await _sut.CriarAsync(UsuarioId, Form(orcamento: 1500.50m));
+
+        Assert.Equal(1500.50m, resultado.Orcamento);
+        _compromissoRepository.Verify(
+            r => r.AdicionarAsync(It.Is<Compromisso>(c => c.Orcamento == 1500.50m), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
     [Theory]
     [InlineData(PapelPredio.Sindico)]
     [InlineData(PapelPredio.Gestor)]
@@ -305,6 +318,21 @@ public class CompromissoServiceTests
         Assert.Equal(OutroUsuarioId, resultado.ResponsavelUsuarioId);
         Assert.Equal("Usuario 2", resultado.ResponsavelNome);
         _compromissoRepository.Verify(r => r.AtualizarAsync(compromisso, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AtualizarAsync_altera_e_remove_o_orcamento()
+    {
+        ConfigurarVinculo(PapelPredio.Sindico);
+        var compromisso = ConfigurarCompromisso(responsavelId: UsuarioId);
+
+        var comValor = await _sut.AtualizarAsync(UsuarioId, CompromissoId, Form(orcamento: 320.75m));
+        Assert.Equal(320.75m, compromisso.Orcamento);
+        Assert.Equal(320.75m, comValor.Orcamento);
+
+        var semValor = await _sut.AtualizarAsync(UsuarioId, CompromissoId, Form(orcamento: null));
+        Assert.Null(compromisso.Orcamento);
+        Assert.Null(semValor.Orcamento);
     }
 
     [Fact]
@@ -619,8 +647,9 @@ public class CompromissoServiceTests
         TimeOnly? horario = null,
         string? prestador = null,
         string? detalhes = null,
-        int? responsavel = null) =>
-        new(predioId, titulo, data ?? Data, horario ?? Horario, prestador, detalhes, responsavel);
+        int? responsavel = null,
+        decimal? orcamento = null) =>
+        new(predioId, titulo, data ?? Data, horario ?? Horario, prestador, detalhes, responsavel, orcamento);
 
     private void ConfigurarVinculo(PapelPredio papel, int predioId = PredioId, int usuarioId = UsuarioId, bool predioExcluido = false)
     {

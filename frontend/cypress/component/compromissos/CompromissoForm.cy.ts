@@ -62,6 +62,32 @@ describe('CompromissoForm', () => {
     })
   })
 
+  it('aplica a máscara de moeda no orçamento e o envia mascarado no submit', () => {
+    cy.mount(CompromissoForm, {
+      props: { ...props, valoresIniciais: { predioId: 1 }, onSubmit: cy.spy().as('onSubmit') },
+    })
+    cy.get('[data-cy=titulo]').type('Conserto do portão')
+    cy.get('[data-cy=data]').type('2099-02-18')
+    cy.get('[data-cy=horario]').type('18:30')
+    cy.get('[data-cy=orcamento]').type('150050')
+    cy.get('[data-cy=orcamento] input').should('have.value', '1.500,50')
+    cy.get('[data-cy=btn-salvar-compromisso]').click()
+
+    cy.get('@onSubmit').should('have.been.calledWithMatch', { orcamento: '1.500,50' })
+  })
+
+  it('aceita o orçamento vazio (campo opcional)', () => {
+    cy.mount(CompromissoForm, {
+      props: { ...props, valoresIniciais: { predioId: 1 }, onSubmit: cy.spy().as('onSubmit') },
+    })
+    cy.get('[data-cy=titulo]').type('Visita')
+    cy.get('[data-cy=data]').type('2099-02-18')
+    cy.get('[data-cy=horario]').type('18:30')
+    cy.get('[data-cy=btn-salvar-compromisso]').click()
+
+    cy.get('@onSubmit').should('have.been.called')
+  })
+
   it('mostra só o ícone da esquerda na data, sem o indicador nativo do navegador', () => {
     cy.mount(CompromissoForm, { props })
     // O indicador é shadow DOM: getComputedStyle com o pseudo-elemento devolve o padrão do
