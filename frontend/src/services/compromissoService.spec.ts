@@ -11,6 +11,7 @@ const dto = {
   horarioCompromisso: '18:30:00',
   nomePrestadorServico: null,
   detalhes: null,
+  orcamento: null,
   concluido: false,
   predioId: 1,
   predioNome: 'Edifício Solar',
@@ -80,8 +81,39 @@ describe('compromissoService', () => {
       horarioCompromisso: '18:30:00',
       nomePrestadorServico: null,
       detalhes: null,
+      orcamento: null,
       responsavelUsuarioId: null,
     })
+  })
+
+  it('criar converte o orçamento mascarado em número', async () => {
+    mock.onPost('/compromissos').reply(201, dto)
+
+    await compromissoService.criar({
+      predioId: 1,
+      titulo: 'Reunião',
+      dataCompromisso: '2026-10-20',
+      horarioCompromisso: '18:30',
+      orcamento: '1.500,50',
+    })
+
+    expect(JSON.parse(mock.history.post[0]?.data as string)).toMatchObject({ orcamento: 1500.5 })
+  })
+
+  it('atualizar envia orçamento null quando o campo está vazio e 0 quando é zero', async () => {
+    mock.onPut('/compromissos/5').reply(200, dto)
+    const base = {
+      predioId: 1,
+      titulo: 'Reunião',
+      dataCompromisso: '2026-10-20',
+      horarioCompromisso: '18:30',
+    }
+
+    await compromissoService.atualizar(5, { ...base, orcamento: '' })
+    await compromissoService.atualizar(5, { ...base, orcamento: '0,00' })
+
+    expect(JSON.parse(mock.history.put[0]?.data as string).orcamento).toBeNull()
+    expect(JSON.parse(mock.history.put[1]?.data as string).orcamento).toBe(0)
   })
 
   it('criar não envia nada se o formulário for inválido', async () => {

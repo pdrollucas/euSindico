@@ -20,6 +20,7 @@ const compromissoDto = {
   horarioCompromisso: '14:30:00',
   nomePrestadorServico: null,
   detalhes: null,
+  orcamento: null,
   concluido: false,
   predioId: 1,
   predioNome: 'Edifício Solar',
@@ -37,6 +38,22 @@ describe('compromissoFormSchema', () => {
     expect(() =>
       compromissoFormSchema.parse({ ...formValido, nomePrestadorServico: '', detalhes: '' }),
     ).not.toThrow()
+  })
+
+  it.each(['', '0,00', '1.500,50', '99.999.999,99'])('aceita o orçamento %s', (orcamento) => {
+    expect(() => compromissoFormSchema.parse({ ...formValido, orcamento })).not.toThrow()
+  })
+
+  it.each(['1500', '1,5', '1.50,00', 'abc'])('rejeita o orçamento de formato inválido %s', (orcamento) => {
+    expect(() => compromissoFormSchema.parse({ ...formValido, orcamento })).toThrow(
+      'Informe um valor válido',
+    )
+  })
+
+  it('rejeita o orçamento acima do máximo', () => {
+    expect(() =>
+      compromissoFormSchema.parse({ ...formValido, orcamento: '100.000.000,00' }),
+    ).toThrow('O valor excede o máximo permitido')
   })
 
   it('aceita horário com segundos', () => {

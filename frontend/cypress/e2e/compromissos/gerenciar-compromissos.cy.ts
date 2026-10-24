@@ -115,7 +115,7 @@ describe('Compromissos (RF12-RF17, RF34)', () => {
       req.reply({
         statusCode: 200,
         body: { ...req.body, id: 11, titulo: 'Reunião', dataCompromisso: '2099-02-18', horarioCompromisso: '18:30:00',
-          nomePrestadorServico: null, detalhes: null, predioId: 1, predioNome: 'Edifício Solar',
+          nomePrestadorServico: null, detalhes: null, orcamento: null, predioId: 1, predioNome: 'Edifício Solar',
           responsavelUsuarioId: 1, responsavelNome: 'Luciano Souza', criadoEm: '2026-01-01T12:00:00Z' },
       })
     }).as('concluir')
