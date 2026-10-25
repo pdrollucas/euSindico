@@ -168,6 +168,52 @@ public class CompromissoRepositoryTests : IDisposable
         Assert.Equal(alvo.Id, Assert.Single(itens).Id);
     }
 
+    // ---------- Mês e ano ----------
+
+    [Fact]
+    public async Task Filtro_por_ano_e_mes_devolve_so_os_compromissos_daquele_mes_incluindo_as_bordas()
+    {
+        var primeiroDia = AdicionarEm("Primeiro dia", new DateOnly(2026, 11, 1));
+        var ultimoDia = AdicionarEm("Ultimo dia", new DateOnly(2026, 11, 30));
+        AdicionarEm("Mes anterior", new DateOnly(2026, 10, 31));
+        AdicionarEm("Mes seguinte", new DateOnly(2026, 12, 1));
+        AdicionarEm("Mesmo mes, outro ano", new DateOnly(2027, 11, 15));
+
+        var (itens, total) = await _sut.ListarAsync(Filtro(_sindicoA, ano: 2026, mes: 11), 1, 10);
+
+        Assert.Equal(new[] { primeiroDia.Id, ultimoDia.Id }, itens.Select(c => c.Id));
+        Assert.Equal(2, total);
+    }
+
+    [Fact]
+    public async Task Filtro_por_mes_combina_com_a_situacao()
+    {
+        var pendente = AdicionarEm("Pendente", new DateOnly(2026, 11, 5));
+        var concluido = AdicionarEm("Concluido", new DateOnly(2026, 11, 6), concluido: true);
+
+        var (proximos, _) = await _sut.ListarAsync(Filtro(_sindicoA, ano: 2026, mes: 11), 1, 10);
+        var (concluidos, _) = await _sut.ListarAsync(
+            Filtro(_sindicoA, situacao: SituacaoCompromissos.Concluidos, ano: 2026, mes: 11), 1, 10);
+
+        Assert.Equal(pendente.Id, Assert.Single(proximos).Id);
+        Assert.Equal(concluido.Id, Assert.Single(concluidos).Id);
+    }
+
+    [Fact]
+    public async Task Situacao_todos_devolve_concluidos_e_pendentes_de_qualquer_data_e_respeita_o_periodo()
+    {
+        var pendente = AdicionarEm("Pendente", new DateOnly(2026, 9, 5));
+        var concluido = AdicionarEm("Concluido", new DateOnly(2026, 9, 20), concluido: true);
+        var outroMes = AdicionarEm("Outro mes", new DateOnly(2026, 11, 2));
+
+        var (semPeriodo, _) = await _sut.ListarAsync(Filtro(_sindicoA, situacao: SituacaoCompromissos.Todos), 1, 10);
+        var (setembro, _) = await _sut.ListarAsync(
+            Filtro(_sindicoA, situacao: SituacaoCompromissos.Todos, ano: 2026, mes: 9), 1, 10);
+
+        Assert.Equal(new[] { pendente.Id, concluido.Id, outroMes.Id }, semPeriodo.Select(c => c.Id));
+        Assert.Equal(new[] { pendente.Id, concluido.Id }, setembro.Select(c => c.Id));
+    }
+
     // ---------- Situação (hoje = 17/10/2026, agora = 15:00) ----------
 
     [Fact]
@@ -389,9 +435,17 @@ public class CompromissoRepositoryTests : IDisposable
     // ---------- Helpers ----------
 
     private Compromisso Adicionar(
-        string titulo, int dia, Predio predio, Usuario responsavel, TimeOnly? hora = null, bool concluido = false)
+        string titulo, int dia, Predio predio, Usuario responsavel, TimeOnly? hora = null, bool concluido = false) =>
+        Adicionar(titulo, new DateOnly(2026, 10, dia), predio, responsavel, hora, concluido);
+
+    // Do _sindicoA no _predioA, para os testes de mês/ano que precisam de datas fora de outubro/2026.
+    private Compromisso AdicionarEm(string titulo, DateOnly data, bool concluido = false) =>
+        Adicionar(titulo, data, _predioA, _sindicoA, null, concluido);
+
+    private Compromisso Adicionar(
+        string titulo, DateOnly data, Predio predio, Usuario responsavel, TimeOnly? hora, bool concluido)
     {
-        var compromisso = new Compromisso(titulo, new DateOnly(2026, 10, dia), hora ?? new TimeOnly(9, 0), predio.Id, responsavel.Id);
+        var compromisso = new Compromisso(titulo, data, hora ?? new TimeOnly(9, 0), predio.Id, responsavel.Id);
         if (concluido)
         {
             compromisso.Concluir();
@@ -407,6 +461,8 @@ public class CompromissoRepositoryTests : IDisposable
         EscopoCompromissos escopo = EscopoCompromissos.Meus,
         SituacaoCompromissos situacao = SituacaoCompromissos.Proximos,
         int? predioId = null,
-        string? titulo = null) =>
-        new(usuario.Id, titulo, predioId, escopo, situacao, Hoje, Agora);
+        string? titulo = null,
+        int? ano = null,
+        int? mes = null) =>
+        new(usuario.Id, titulo, predioId, escopo, situacao, Hoje, Agora, ano, mes);
 }

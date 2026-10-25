@@ -17,4 +17,7 @@ public enum SituacaoCompromissos
 
     /// <summary>Todos os concluídos, em qualquer data.</summary>
     Concluidos,
+
+    /// <summary>Sem filtro de situação: concluídos ou não, em qualquer data (o período, se houver, ainda vale).</summary>
+    Todos,
 }
