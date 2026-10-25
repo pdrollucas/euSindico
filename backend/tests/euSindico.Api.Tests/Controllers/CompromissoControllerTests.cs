@@ -93,7 +93,7 @@ public class CompromissoControllerTests
             .Callback((CompromissoFiltro f, int _, int _, CancellationToken _) => capturado = f)
             .ReturnsAsync((new List<Compromisso>(), 0));
 
-        var resultado = await _sut.Listar();
+        var resultado = await _sut.Listar(ano: 2026, mes: 11);
 
         var ok = Assert.IsType<OkObjectResult>(resultado);
         Assert.IsType<PagedResultDto<CompromissoDto>>(ok.Value);
@@ -109,7 +109,7 @@ public class CompromissoControllerTests
     [InlineData(1, 21)]
     public async Task Listar_com_paginacao_fora_da_faixa_retorna_400(int page, int pageSize)
     {
-        var resultado = await _sut.Listar(page: page, pageSize: pageSize);
+        var resultado = await _sut.Listar(page: page, pageSize: pageSize, ano: 2026, mes: 11);
 
         var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
         Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
@@ -122,7 +122,7 @@ public class CompromissoControllerTests
             .Setup(r => r.ListarAsync(It.IsAny<CompromissoFiltro>(), 1, 20, It.IsAny<CancellationToken>()))
             .ReturnsAsync((new List<Compromisso>(), 0));
 
-        var resultado = await _sut.Listar(pageSize: 20);
+        var resultado = await _sut.Listar(pageSize: 20, ano: 2026, mes: 11);
 
         Assert.IsType<OkObjectResult>(resultado);
     }
@@ -130,18 +130,74 @@ public class CompromissoControllerTests
     [Fact]
     public async Task Listar_com_enum_numerico_fora_do_intervalo_retorna_400()
     {
-        var escopo = await _sut.Listar(escopo: (EscopoCompromissos)9);
-        var situacao = await _sut.Listar(situacao: (SituacaoCompromissos)9);
+        var escopo = await _sut.Listar(escopo: (EscopoCompromissos)9, ano: 2026, mes: 11);
+        var situacao = await _sut.Listar(situacao: (SituacaoCompromissos)9, ano: 2026, mes: 11);
 
         Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(escopo).StatusCode);
         Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(situacao).StatusCode);
     }
 
+    [Theory]
+    [InlineData(1999, 5)]
+    [InlineData(2101, 5)]
+    [InlineData(2026, 0)]
+    [InlineData(2026, 13)]
+    [InlineData(null, 5)]
+    [InlineData(2026, null)]
+    public async Task Listar_com_ano_ou_mes_invalido_ou_sozinho_retorna_400(int? ano, int? mes)
+    {
+        // Atrasados dispensa o período, então o 400 vem do par inválido e não da obrigatoriedade.
+        var resultado = await _sut.Listar(situacao: SituacaoCompromissos.Atrasados, ano: ano, mes: mes);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(resultado).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(SituacaoCompromissos.Proximos)]
+    [InlineData(SituacaoCompromissos.Concluidos)]
+    [InlineData(SituacaoCompromissos.Todos)]
+    public async Task Listar_sem_periodo_em_situacao_que_exige_retorna_400(SituacaoCompromissos situacao)
+    {
+        var resultado = await _sut.Listar(situacao: situacao);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(resultado).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(SituacaoCompromissos.Hoje)]
+    [InlineData(SituacaoCompromissos.Atrasados)]
+    public async Task Listar_sem_periodo_em_hoje_ou_atrasados_e_aceito(SituacaoCompromissos situacao)
+    {
+        _compromissoRepository
+            .Setup(r => r.ListarAsync(It.IsAny<CompromissoFiltro>(), 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Compromisso>(), 0));
+
+        var resultado = await _sut.Listar(situacao: situacao);
+
+        Assert.IsType<OkObjectResult>(resultado);
+    }
+
+    [Fact]
+    public async Task Listar_com_ano_e_mes_valido_repassa_ao_repositorio()
+    {
+        CompromissoFiltro? capturado = null;
+        _compromissoRepository
+            .Setup(r => r.ListarAsync(It.IsAny<CompromissoFiltro>(), 1, 10, It.IsAny<CancellationToken>()))
+            .Callback((CompromissoFiltro f, int _, int _, CancellationToken _) => capturado = f)
+            .ReturnsAsync((new List<Compromisso>(), 0));
+
+        var resultado = await _sut.Listar(ano: 2026, mes: 11);
+
+        Assert.IsType<OkObjectResult>(resultado);
+        Assert.Equal(2026, capturado!.Ano);
+        Assert.Equal(11, capturado.Mes);
+    }
+
     [Fact]
     public async Task Listar_com_titulo_muito_longo_ou_predio_invalido_retorna_400()
     {
-        var titulo = await _sut.Listar(titulo: new string('a', 151));
-        var predio = await _sut.Listar(predioId: 0);
+        var titulo = await _sut.Listar(titulo: new string('a', 151), ano: 2026, mes: 11);
+        var predio = await _sut.Listar(predioId: 0, ano: 2026, mes: 11);
 
         Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(titulo).StatusCode);
         Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(predio).StatusCode);

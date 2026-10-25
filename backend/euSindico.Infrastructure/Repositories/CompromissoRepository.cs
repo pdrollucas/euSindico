@@ -44,6 +44,13 @@ public class CompromissoRepository(AppDbContext context) : ICompromissoRepositor
             query = query.Where(c => c.Titulo.Contains(titulo));
         }
 
+        if (filtro.Ano is { } ano && filtro.Mes is { } mes)
+        {
+            var inicio = new DateOnly(ano, mes, 1);
+            var fim = inicio.AddMonths(1);
+            query = query.Where(c => c.DataCompromisso >= inicio && c.DataCompromisso < fim);
+        }
+
         query = filtro.Situacao switch
         {
             SituacaoCompromissos.Proximos => query.Where(c => !c.Concluido && c.DataCompromisso >= hoje),

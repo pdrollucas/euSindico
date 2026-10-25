@@ -12,6 +12,12 @@ import { PAPEL_PREDIO } from '@/types/predio.types'
 import { SITUACOES_COMPROMISSO } from '@/types/compromisso.types'
 import type { Compromisso, CompromissoFiltros } from '@/types/compromisso.types'
 import { SAIDA_CONCLUIR_MS, SAIDA_REABRIR_MS, reduzirMovimento } from '@/utils/animacao'
+import {
+  formatarPeriodo,
+  periodoAoTrocarSituacao,
+  periodoAtual,
+  periodoObrigatorio,
+} from '@/utils/periodo'
 import { lerPredioIdDaQuery } from '@/utils/rotasCompromisso'
 
 const route = useRoute()
@@ -58,12 +64,30 @@ const rotuloSituacao = computed(
   () => SITUACOES_COMPROMISSO.find((s) => s.valor === filtros.value.situacao)?.rotulo ?? '',
 )
 
+// O período conta como filtro "ativo" quando foge do padrão: opcional (Atrasados) e escolhido, ou
+// obrigatório e diferente do mês atual.
+const periodoFiltrado = computed(() => {
+  const { ano, mes, situacao } = filtros.value
+  if (ano === null || mes === null) {
+    return false
+  }
+  const atual = periodoAtual()
+  return !periodoObrigatorio(situacao) || ano !== atual.ano || mes !== atual.mes
+})
+
 const filtrosAtivos = computed(
   () =>
     Number(filtros.value.situacao !== 'proximos') +
     Number(filtros.value.predioId !== null) +
-    Number(filtros.value.escopo !== 'meus'),
+    Number(filtros.value.escopo !== 'meus') +
+    Number(periodoFiltrado.value),
 )
+
+// "Novembro de 2026".
+const rotuloPeriodo = computed(() => {
+  const { ano, mes } = filtros.value
+  return ano === null || mes === null ? '' : formatarPeriodo(mes, ano)
+})
 
 const mostrarResponsavel = computed(() => filtros.value.escopo === 'todos')
 
@@ -153,6 +177,13 @@ async function carregarMais() {
 function aplicarFiltros(parcial: Partial<CompromissoFiltros>) {
   const { predioId, ...resto } = parcial
   Object.assign(compromissoStore.filtros, resto)
+  if (parcial.situacao && !('ano' in parcial)) {
+    // Cada situação tem a sua regra de período (obrigatório, opcional ou nenhum).
+    Object.assign(
+      compromissoStore.filtros,
+      periodoAoTrocarSituacao(parcial.situacao, compromissoStore.filtros),
+    )
+  }
   if ('predioId' in parcial) {
     // A URL manda: o watcher de `predioIdRota` aplica na store e recarrega.
     router.replace({ query: predioId ? { predioId: String(predioId) } : {} })
@@ -268,7 +299,12 @@ function criar() {
     <!-- Um chip por filtro fora do padrão; fechar volta o filtro ao padrão (situação "próximos",
          escopo "meus", todos os prédios). -->
     <div
-      v-if="predioFiltrado || filtros.situacao !== 'proximos' || filtros.escopo !== 'meus'"
+      v-if="
+        predioFiltrado ||
+        filtros.situacao !== 'proximos' ||
+        filtros.escopo !== 'meus' ||
+        filtros.ano !== null
+      "
       class="d-flex flex-wrap ga-2 mb-3"
     >
       <v-chip
@@ -290,6 +326,16 @@ function criar() {
         @click:close="aplicarFiltros({ situacao: 'proximos' })"
       >
         {{ rotuloSituacao }}
+      </v-chip>
+      <v-chip
+        v-if="filtros.ano !== null"
+        :closable="!periodoObrigatorio(filtros.situacao)"
+        color="primary"
+        variant="tonal"
+        data-cy="chip-periodo"
+        @click:close="aplicarFiltros({ ano: null, mes: null })"
+      >
+        {{ rotuloPeriodo }}
       </v-chip>
       <v-chip
         v-if="filtros.escopo !== 'meus'"

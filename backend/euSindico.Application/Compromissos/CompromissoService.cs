@@ -66,6 +66,8 @@ public class CompromissoService(
         SituacaoCompromissos situacao,
         int page,
         int pageSize,
+        int? ano = null,
+        int? mes = null,
         CancellationToken ct = default)
     {
         if (predioId is not null)
@@ -81,7 +83,10 @@ public class CompromissoService(
             escopo,
             situacao,
             DateOnly.FromDateTime(agora),
-            TimeOnly.FromDateTime(agora));
+            TimeOnly.FromDateTime(agora),
+            // "Hoje" já é um dia só; um período junto com ele só poderia zerar a lista.
+            situacao == SituacaoCompromissos.Hoje ? null : ano,
+            situacao == SituacaoCompromissos.Hoje ? null : mes);
 
         var (itens, total) = await compromissoRepository.ListarAsync(filtro, page, pageSize, ct);
 

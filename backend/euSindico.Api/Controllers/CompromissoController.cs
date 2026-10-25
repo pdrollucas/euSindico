@@ -18,6 +18,8 @@ public class CompromissoController(
 {
     private const int PageSizeMaximo = 20;
     private const int TituloFiltroMaximo = 150;
+    private const int AnoFiltroMinimo = 2000;
+    private const int AnoFiltroMaximo = 2100;
 
     // O id do usuário vem sempre da claim do token (sub), nunca de um parâmetro de rota/query (RN02).
     private int UsuarioId => int.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -36,6 +38,11 @@ public class CompromissoController(
         return CreatedAtAction(nameof(Obter), new { id = compromisso.Id }, compromisso);
     }
 
+    // Sem período a lista cresce sem limite com o tempo de uso. Hoje já é um dia só e Atrasados é
+    // o que o usuário precisa ver por inteiro, então só nelas o período é dispensável.
+    private static bool PeriodoObrigatorio(SituacaoCompromissos situacao) =>
+        situacao is SituacaoCompromissos.Proximos or SituacaoCompromissos.Concluidos or SituacaoCompromissos.Todos;
+
     [HttpGet]
     public async Task<IActionResult> Listar(
         string? titulo = null,
@@ -44,6 +51,8 @@ public class CompromissoController(
         SituacaoCompromissos situacao = SituacaoCompromissos.Proximos,
         int page = 1,
         int pageSize = 10,
+        int? ano = null,
+        int? mes = null,
         CancellationToken ct = default)
     {
         var erros = new Dictionary<string, string[]>();
@@ -68,6 +77,25 @@ public class CompromissoController(
             erros[nameof(predioId)] = ["O prédio informado é inválido."];
         }
 
+        if (ano is { } a && (a < AnoFiltroMinimo || a > AnoFiltroMaximo))
+        {
+            erros[nameof(ano)] = [$"O ano deve estar entre {AnoFiltroMinimo} e {AnoFiltroMaximo}."];
+        }
+
+        if (mes is { } m && (m < 1 || m > 12))
+        {
+            erros[nameof(mes)] = ["O mês deve estar entre 1 e 12."];
+        }
+        else if ((ano is null) != (mes is null))
+        {
+            // Ano e mês andam juntos: não existe "o mês de setembro" sem dizer de qual ano, nem "o ano todo".
+            erros[nameof(mes)] = ["Informe ano e mês juntos."];
+        }
+        else if (ano is null && PeriodoObrigatorio(situacao))
+        {
+            erros[nameof(mes)] = ["Informe ano e mês para esta situação."];
+        }
+
         // O binder aceita números fora do enum (ex: situacao=9) — sem isso cairia no `_ => query` do repositório.
         if (!Enum.IsDefined(escopo))
         {
@@ -76,7 +104,7 @@ public class CompromissoController(
 
         if (!Enum.IsDefined(situacao))
         {
-            erros[nameof(situacao)] = ["Situação inválida. Use 'proximos', 'hoje', 'atrasados' ou 'concluidos'."];
+            erros[nameof(situacao)] = ["Situação inválida. Use 'proximos', 'hoje', 'atrasados', 'concluidos' ou 'todos'."];
         }
 
         if (erros.Count > 0)
@@ -84,7 +112,7 @@ public class CompromissoController(
             return ValidationProblem(new ValidationProblemDetails(erros));
         }
 
-        var resultado = await compromissoService.ListarAsync(UsuarioId, titulo, predioId, escopo, situacao, page, pageSize, ct);
+        var resultado = await compromissoService.ListarAsync(UsuarioId, titulo, predioId, escopo, situacao, page, pageSize, ano, mes, ct);
         return Ok(resultado);
     }
 

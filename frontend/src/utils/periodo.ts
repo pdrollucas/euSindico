@@ -1,3 +1,5 @@
+import type { SituacaoCompromissos } from '@/types/compromisso.types'
+
 // Mês/ano de referência dos relatórios (RN34). "Hoje" é o do navegador; o backend valida o mês
 // futuro no fuso America/Sao_Paulo e é a fonte da verdade — aqui só evita um 400 previsível.
 
@@ -47,10 +49,43 @@ export function anosDisponiveis(hoje: Date = new Date()): number[] {
   return anos
 }
 
+// Como `anosDisponiveis`, mas começando `adiante` anos no futuro: compromissos podem ser agendados
+// para depois, ao contrário dos relatórios.
+export function anosComFuturo(adiante: number, hoje: Date = new Date()): number[] {
+  const anos: number[] = []
+  for (let ano = hoje.getFullYear() + adiante; ano >= ANO_MINIMO; ano--) {
+    anos.push(ano)
+  }
+  return anos
+}
+
 // Os 12 meses do ano escolhido, com os futuros desabilitados.
 export function mesesDoAno(ano: number, hoje: Date = new Date()): OpcaoMes[] {
   return Array.from({ length: 12 }, (_, indice) => {
     const mes = indice + 1
     return { title: nomeMes(mes), value: mes, props: { disabled: periodoEhFuturo(mes, ano, hoje) } }
   })
+}
+
+// Situações em que o período é sempre um mês (a lista cresce sem limite com o tempo de uso).
+// "Hoje" não usa período; "Atrasados" o aceita, mas parte sem ele.
+export function periodoObrigatorio(situacao: SituacaoCompromissos): boolean {
+  return situacao === 'proximos' || situacao === 'concluidos' || situacao === 'todos'
+}
+
+// Período a usar ao trocar de situação: Hoje e Atrasados partem sem período; nas demais mantém o
+// que o usuário já escolheu, ou cai no mês atual.
+export function periodoAoTrocarSituacao(
+  situacao: SituacaoCompromissos,
+  atual: { ano: number | null; mes: number | null },
+  hoje: Date = new Date(),
+): { ano: number | null; mes: number | null } {
+  if (!periodoObrigatorio(situacao)) {
+    return { ano: null, mes: null }
+  }
+  if (atual.ano !== null && atual.mes !== null) {
+    return { ano: atual.ano, mes: atual.mes }
+  }
+  const { ano, mes } = periodoAtual(hoje)
+  return { ano, mes }
 }

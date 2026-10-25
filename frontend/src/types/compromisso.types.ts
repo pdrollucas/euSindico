@@ -18,6 +18,9 @@ export interface CompromissoFiltros {
   situacao: SituacaoCompromissos
   escopo: EscopoCompromissos
   predioId: number | null
+  // Período pela data do compromisso. `mes` só vale com `ano` (sem mês = o ano todo).
+  ano: number | null
+  mes: number | null
 }
 
 export const SITUACOES_COMPROMISSO: { valor: SituacaoCompromissos; rotulo: string }[] = [
@@ -25,4 +28,5 @@ export const SITUACOES_COMPROMISSO: { valor: SituacaoCompromissos; rotulo: strin
   { valor: 'hoje', rotulo: 'Hoje' },
   { valor: 'atrasados', rotulo: 'Atrasados' },
   { valor: 'concluidos', rotulo: 'Concluídos' },
+  { valor: 'todos', rotulo: 'Todos' },
 ]

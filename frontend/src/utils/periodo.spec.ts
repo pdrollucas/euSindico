@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import {
   ANO_MINIMO,
+  anosComFuturo,
   anosDisponiveis,
   formatarPeriodo,
   mesesDoAno,
   nomeMes,
+  periodoAoTrocarSituacao,
   periodoAtual,
   periodoEhFuturo,
+  periodoObrigatorio,
 } from './periodo'
 
 // 20/10/2026, horário local.
@@ -56,6 +59,16 @@ describe('anosDisponiveis', () => {
   })
 })
 
+describe('anosComFuturo', () => {
+  it('começa `adiante` anos depois do corrente e desce até o piso', () => {
+    const anos = anosComFuturo(2, hoje)
+
+    expect(anos[0]).toBe(2028)
+    expect(anos.at(-1)).toBe(ANO_MINIMO)
+    expect(anos).toHaveLength(2028 - ANO_MINIMO + 1)
+  })
+})
+
 describe('mesesDoAno', () => {
   it('lista os 12 meses', () => {
     const meses = mesesDoAno(2025, hoje)
@@ -75,5 +88,35 @@ describe('mesesDoAno', () => {
       .map((m) => m.value)
 
     expect(desabilitados).toEqual([11, 12])
+  })
+})
+
+describe('periodoObrigatorio', () => {
+  it('é obrigatório em próximos, concluídos e todos', () => {
+    expect(periodoObrigatorio('proximos')).toBe(true)
+    expect(periodoObrigatorio('concluidos')).toBe(true)
+    expect(periodoObrigatorio('todos')).toBe(true)
+    expect(periodoObrigatorio('hoje')).toBe(false)
+    expect(periodoObrigatorio('atrasados')).toBe(false)
+  })
+})
+
+describe('periodoAoTrocarSituacao', () => {
+  const vazio = { ano: null, mes: null }
+
+  it('hoje e atrasados partem sem período, mesmo que houvesse um', () => {
+    expect(periodoAoTrocarSituacao('hoje', { ano: 2026, mes: 9 }, hoje)).toEqual(vazio)
+    expect(periodoAoTrocarSituacao('atrasados', { ano: 2026, mes: 9 }, hoje)).toEqual(vazio)
+  })
+
+  it('nas obrigatórias cai no mês atual quando não há período', () => {
+    expect(periodoAoTrocarSituacao('proximos', vazio, hoje)).toEqual({ ano: 2026, mes: 10 })
+  })
+
+  it('nas obrigatórias mantém o período já escolhido', () => {
+    expect(periodoAoTrocarSituacao('concluidos', { ano: 2025, mes: 3 }, hoje)).toEqual({
+      ano: 2025,
+      mes: 3,
+    })
   })
 })

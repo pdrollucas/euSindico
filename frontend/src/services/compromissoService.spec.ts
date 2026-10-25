@@ -34,10 +34,12 @@ describe('compromissoService', () => {
   })
 
   it('listar envia situação/escopo e só inclui titulo e predioId quando preenchidos', async () => {
-    mock.onGet('/compromissos').reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
+    mock
+      .onGet('/compromissos')
+      .reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
 
     await compromissoService.listar(
-      { titulo: '  ', situacao: 'hoje', escopo: 'todos', predioId: null },
+      { titulo: '  ', situacao: 'hoje', escopo: 'todos', predioId: null, ano: null, mes: null },
       2,
       20,
     )
@@ -51,15 +53,41 @@ describe('compromissoService', () => {
   })
 
   it('listar inclui titulo (sem espaços nas pontas) e predioId quando informados', async () => {
-    mock.onGet('/compromissos').reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
+    mock
+      .onGet('/compromissos')
+      .reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
 
     await compromissoService.listar(
-      { titulo: ' portão ', situacao: 'proximos', escopo: 'meus', predioId: 4 },
+      {
+        titulo: ' portão ',
+        situacao: 'proximos',
+        escopo: 'meus',
+        predioId: 4,
+        ano: null,
+        mes: null,
+      },
       1,
       20,
     )
 
     expect(mock.history.get[0]?.params).toMatchObject({ titulo: 'portão', predioId: 4 })
+  })
+
+  it('listar envia ano e mês juntos, e nenhum dos dois quando falta um', async () => {
+    mock
+      .onGet('/compromissos')
+      .reply(200, { items: [], page: 1, pageSize: 20, totalCount: 0, totalPages: 0 })
+    const base = { titulo: '', situacao: 'proximos', escopo: 'meus', predioId: null } as const
+
+    await compromissoService.listar({ ...base, ano: 2026, mes: 11 }, 1, 20)
+    await compromissoService.listar({ ...base, ano: 2026, mes: null }, 1, 20)
+    await compromissoService.listar({ ...base, ano: null, mes: 11 }, 1, 20)
+
+    expect(mock.history.get[0]?.params).toMatchObject({ ano: 2026, mes: 11 })
+    for (const indice of [1, 2]) {
+      expect(mock.history.get[indice]?.params).not.toHaveProperty('ano')
+      expect(mock.history.get[indice]?.params).not.toHaveProperty('mes')
+    }
   })
 
   it('criar completa o horário com segundos e troca opcionais vazios por null', async () => {

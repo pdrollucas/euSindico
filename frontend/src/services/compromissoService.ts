@@ -44,6 +44,8 @@ async function listar(
       escopo: filtros.escopo,
       ...(titulo ? { titulo } : {}),
       ...(filtros.predioId ? { predioId: filtros.predioId } : {}),
+      // Ano e mês andam juntos: o backend rejeita um sem o outro.
+      ...(filtros.ano && filtros.mes ? { ano: filtros.ano, mes: filtros.mes } : {}),
     },
   })
   return compromissosPaginadosSchema.parse(data)

@@ -180,6 +180,36 @@ public class CompromissoServiceTests
     }
 
     [Fact]
+    public async Task ListarAsync_repassa_ano_e_mes_ao_filtro()
+    {
+        CompromissoFiltro? capturado = null;
+        _compromissoRepository
+            .Setup(r => r.ListarAsync(It.IsAny<CompromissoFiltro>(), 1, 10, It.IsAny<CancellationToken>()))
+            .Callback((CompromissoFiltro f, int _, int _, CancellationToken _) => capturado = f)
+            .ReturnsAsync((new List<Compromisso>(), 0));
+
+        await _sut.ListarAsync(UsuarioId, null, null, EscopoCompromissos.Meus, SituacaoCompromissos.Concluidos, 1, 10, 2026, 9);
+
+        Assert.Equal(2026, capturado!.Ano);
+        Assert.Equal(9, capturado.Mes);
+    }
+
+    [Fact]
+    public async Task ListarAsync_em_hoje_descarta_o_periodo()
+    {
+        CompromissoFiltro? capturado = null;
+        _compromissoRepository
+            .Setup(r => r.ListarAsync(It.IsAny<CompromissoFiltro>(), 1, 10, It.IsAny<CancellationToken>()))
+            .Callback((CompromissoFiltro f, int _, int _, CancellationToken _) => capturado = f)
+            .ReturnsAsync((new List<Compromisso>(), 0));
+
+        await _sut.ListarAsync(UsuarioId, null, null, EscopoCompromissos.Meus, SituacaoCompromissos.Hoje, 1, 10, 2026, 9);
+
+        Assert.Null(capturado!.Ano);
+        Assert.Null(capturado.Mes);
+    }
+
+    [Fact]
     public async Task ListarAsync_com_titulo_em_branco_nao_filtra_por_titulo()
     {
         CompromissoFiltro? capturado = null;

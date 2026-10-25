@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useCompromissoStore } from './compromissoStore'
 import { compromissoService } from '@/services/compromissoService'
+import { periodoAtual } from '@/utils/periodo'
 
 vi.mock('@/services/compromissoService', () => ({
   compromissoService: {
@@ -41,11 +42,18 @@ describe('useCompromissoStore', () => {
     vi.clearAllMocks()
   })
 
-  it('começa vazio, com os filtros padrão do backend (próximos, meus)', () => {
+  it('começa com os filtros padrão (próximos, meus, mês atual)', () => {
     const store = useCompromissoStore()
     expect(store.compromissos).toEqual([])
     expect(store.compromissoAtual).toBeNull()
-    expect(store.filtros).toEqual({ titulo: '', situacao: 'proximos', escopo: 'meus', predioId: null })
+    expect(store.filtros).toEqual({
+      titulo: '',
+      situacao: 'proximos',
+      escopo: 'meus',
+      predioId: null,
+      ano: periodoAtual().ano,
+      mes: periodoAtual().mes,
+    })
   })
 
   it('listarPrimeiraPagina envia os filtros atuais e popula a lista', async () => {
@@ -191,9 +199,18 @@ describe('useCompromissoStore', () => {
     store.filtros.escopo = 'todos'
     store.filtros.predioId = 3
     store.filtros.titulo = 'portão'
+    store.filtros.ano = 2026
+    store.filtros.mes = 11
 
     store.resetarFiltros()
 
-    expect(store.filtros).toEqual({ titulo: '', situacao: 'proximos', escopo: 'meus', predioId: null })
+    expect(store.filtros).toEqual({
+      titulo: '',
+      situacao: 'proximos',
+      escopo: 'meus',
+      predioId: null,
+      ano: periodoAtual().ano,
+      mes: periodoAtual().mes,
+    })
   })
 })

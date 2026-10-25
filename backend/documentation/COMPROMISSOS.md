@@ -134,7 +134,8 @@ Corpo de `POST`/`PUT` (`CompromissoFormDto`):
 | `titulo` | texto (máx. 150) | — | Busca por trecho no título. |
 | `predioId` | id | todos os prédios do usuário | Exige vínculo (senão `404`, mesma resposta de "não existe"). É o que a tela do prédio envia. |
 | `escopo` | `meus` \| `todos` | `meus` | RF34. Ver abaixo. |
-| `situacao` | `proximos` \| `hoje` \| `atrasados` \| `concluidos` | `proximos` | Ver abaixo. |
+| `situacao` | `proximos` \| `hoje` \| `atrasados` \| `concluidos` \| `todos` | `proximos` | Ver abaixo. |
+| `ano`, `mes` | `2000..2100`, `1..12` | — | Restringem pela **data do compromisso** a um mês de um ano. Andam juntos (um sem o outro é `400`). **Obrigatórios** em `proximos`, `concluidos` e `todos` (`400` sem eles); opcionais em `atrasados`; ignorados em `hoje`. |
 | `page`, `pageSize` | `>= 1`, `1..20` | `1`, `10` | RNF10. |
 
 **`escopo`** — `meus` devolve só os compromissos em que o usuário é o responsável (o caso "abro a tela e vejo o que é meu"). `todos` devolve tudo dos prédios onde o papel dele **não** é Colaborador, mais os próprios. **Colaborador ignora `escopo`:** sempre vê só os dele, mesmo enviando `todos` (RN21 é restrição, não preferência de tela). Como o papel é por prédio (RN18), a regra vale por prédio: quem é Síndico em A e Colaborador em B, com `escopo=todos`, vê tudo de A e só o próprio de B.
@@ -147,6 +148,7 @@ Corpo de `POST`/`PUT` (`CompromissoFormDto`):
 | `hoje` | **Não concluídos** com data `=` hoje. |
 | `atrasados` | **Não concluídos** com data `<` hoje, ou data `=` hoje e horário `<` agora. |
 | `concluidos` | **Todos os concluídos**, em qualquer data. |
+| `todos` | Concluídos e não concluídos, em qualquer data. |
 
 Um compromisso de hoje cujo horário já passou e que não foi concluído aparece em `proximos`, `hoje` **e** `atrasados`. Concluídos só aparecem em `concluidos`. Compromisso exatamente no horário atual ainda não é atrasado.
 
