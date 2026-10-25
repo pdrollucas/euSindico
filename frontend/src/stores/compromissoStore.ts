@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { compromissoService } from '@/services/compromissoService'
+import { periodoAtual } from '@/utils/periodo'
 import type {
   Compromisso,
   CompromissoFiltros,
@@ -11,7 +12,9 @@ import type {
 const TAMANHO_PAGINA = 20
 
 function filtrosPadrao(): CompromissoFiltros {
-  return { titulo: '', situacao: 'proximos', escopo: 'meus', predioId: null }
+  // Próximos exige período; o padrão é o mês atual.
+  const { ano, mes } = periodoAtual()
+  return { titulo: '', situacao: 'proximos', escopo: 'meus', predioId: null, ano, mes }
 }
 
 export const useCompromissoStore = defineStore('compromisso', () => {
@@ -43,7 +46,11 @@ export const useCompromissoStore = defineStore('compromisso', () => {
       return
     }
     const requisicao = ultimaRequisicao
-    const resultado = await compromissoService.listar(filtros.value, pagina.value + 1, TAMANHO_PAGINA)
+    const resultado = await compromissoService.listar(
+      filtros.value,
+      pagina.value + 1,
+      TAMANHO_PAGINA,
+    )
     if (requisicao !== ultimaRequisicao) {
       return
     }

@@ -96,4 +96,4 @@ export const compromissosPaginadosSchema = z.object({
 
 // Filtros da listagem — valores aceitos por `escopo`/`situacao` em GET /compromissos.
 export const escopoCompromissosSchema = z.enum(['meus', 'todos'])
-export const situacaoCompromissosSchema = z.enum(['proximos', 'hoje', 'atrasados', 'concluidos'])
+export const situacaoCompromissosSchema = z.enum(['proximos', 'hoje', 'atrasados', 'concluidos', 'todos'])

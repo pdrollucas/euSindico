@@ -7,6 +7,7 @@ import {
   type EscopoCompromissos,
   type SituacaoCompromissos,
 } from '@/types/compromisso.types'
+import { anosComFuturo, nomeMes, periodoAtual, periodoObrigatorio } from '@/utils/periodo'
 
 // Folha de filtros (RFC 3.1: prédio, atrasados, hoje, concluídos, meus/todos). Componente "burro":
 // recebe os filtros atuais e emite o que mudou — quem aplica (store/rota) é a view.
@@ -25,6 +26,30 @@ const emit = defineEmits<{
 }>()
 
 const itensPredio = computed(() => props.predios.map((p) => ({ title: p.nome, value: p.id })))
+
+const itensAno = anosComFuturo(2)
+const itensMes = Array.from({ length: 12 }, (_, indice) => ({
+  title: nomeMes(indice + 1),
+  value: indice + 1,
+}))
+
+// Ano e mês andam juntos: escolher um sem o outro completa com o atual, e limpar (só possível onde o
+// período é opcional) limpa os dois.
+const obrigatorio = computed(() => periodoObrigatorio(props.filtros.situacao))
+
+function onAno(valor: number | null) {
+  emit(
+    'alterar',
+    valor ? { ano: valor, mes: props.filtros.mes ?? periodoAtual().mes } : { ano: null, mes: null },
+  )
+}
+
+function onMes(valor: number | null) {
+  emit(
+    'alterar',
+    valor ? { mes: valor, ano: props.filtros.ano ?? periodoAtual().ano } : { ano: null, mes: null },
+  )
+}
 
 function onSituacao(valor: SituacaoCompromissos | undefined) {
   // v-chip-group sem `mandatory` devolve undefined ao desmarcar — volta ao padrão.
@@ -78,6 +103,30 @@ function onEscopo(valor: EscopoCompromissos | undefined) {
           @update:model-value="emit('alterar', { predioId: $event ?? null })"
         />
 
+        <template v-if="filtros.situacao !== 'hoje'">
+          <p class="text-subtitle-2 mb-2">Período</p>
+          <div class="d-flex ga-2 mb-2">
+            <v-select
+              :model-value="filtros.ano"
+              :items="itensAno"
+              label="Ano"
+              placeholder="Qualquer"
+              :clearable="!obrigatorio"
+              data-cy="filtro-ano"
+              @update:model-value="onAno"
+            />
+            <v-select
+              :model-value="filtros.mes"
+              :items="itensMes"
+              label="Mês"
+              placeholder="Qualquer"
+              :clearable="!obrigatorio"
+              data-cy="filtro-mes"
+              @update:model-value="onMes"
+            />
+          </div>
+        </template>
+
         <template v-if="mostrarEscopo">
           <p class="text-subtitle-2 mb-2">Mostrar</p>
           <v-btn-toggle
@@ -98,7 +147,9 @@ function onEscopo(valor: EscopoCompromissos | undefined) {
       </v-card-text>
 
       <v-card-actions class="pa-4 pt-0">
-        <v-btn variant="text" data-cy="filtros-limpar" @click="emit('limpar')">Limpar filtros</v-btn>
+        <v-btn variant="text" data-cy="filtros-limpar" @click="emit('limpar')"
+          >Limpar filtros</v-btn
+        >
         <v-spacer />
         <v-btn
           color="primary"
