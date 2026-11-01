@@ -5,6 +5,7 @@ import axios from 'axios'
 import AppHeader from '@/components/common/AppHeader.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ConvidarFuncionarioForm from '@/components/equipe/ConvidarFuncionarioForm.vue'
+import PerfisAjudaDialog from '@/components/equipe/PerfisAjudaDialog.vue'
 import { useEquipeStore } from '@/stores/equipeStore'
 import { usePerfilStore } from '@/stores/perfilStore'
 import { PAPEL_PREDIO } from '@/types/predio.types'
@@ -19,6 +20,7 @@ const predioId = computed(() => Number(route.params.id))
 const carregando = ref(true)
 const erro = ref<string | null>(null)
 const mostrarFormConvite = ref(false)
+const mostrarAjudaPerfis = ref(false)
 const convidando = ref(false)
 const erroConvite = ref<string | null>(null)
 const membroParaRemover = ref<EquipeMembro | null>(null)
@@ -83,6 +85,19 @@ async function confirmarRemocao() {
 <template>
   <v-container class="equipe d-flex flex-column">
     <AppHeader titulo="Equipe" />
+
+    <div class="d-flex justify-end mb-2">
+      <v-btn
+        prepend-icon="mdi-help-circle-outline"
+        variant="text"
+        color="primary"
+        size="small"
+        data-cy="btn-ajuda-perfis"
+        @click="mostrarAjudaPerfis = true"
+      >
+        Entenda os perfis
+      </v-btn>
+    </div>
 
     <v-alert
       v-if="erro"
@@ -170,6 +185,8 @@ async function confirmarRemocao() {
         </v-card-text>
       </v-card>
     </v-dialog>
+
+    <PerfisAjudaDialog v-model="mostrarAjudaPerfis" />
 
     <ConfirmDialog
       :model-value="membroParaRemover !== null"
