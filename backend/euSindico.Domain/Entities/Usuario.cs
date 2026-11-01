@@ -21,10 +21,14 @@ public class Usuario
         CriadoEm = DateTime.UtcNow;
     }
 
-    public void AtualizarPerfil(string nome, string email)
+    public void AtualizarNome(string nome)
     {
         Nome = nome;
-        Email = email;
+    }
+
+    public void AlterarEmail(string novoEmail)
+    {
+        Email = novoEmail;
     }
 
     public void AlterarSenha(string novaSenhaHash)

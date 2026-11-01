@@ -30,10 +30,12 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
         services.Configure<FrontendOptions>(configuration.GetSection(FrontendOptions.SectionName));
+        services.Configure<SuporteOptions>(configuration.GetSection(SuporteOptions.SectionName));
 
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ICodigoRedefinicaoSenhaRepository, CodigoRedefinicaoSenhaRepository>();
+        services.AddScoped<ICodigoTrocaEmailRepository, CodigoTrocaEmailRepository>();
         services.AddScoped<IPredioRepository, PredioRepository>();
         services.AddScoped<IPredioUsuarioRepository, PredioUsuarioRepository>();
         services.AddScoped<IConviteFuncionarioRepository, ConviteFuncionarioRepository>();
@@ -55,6 +57,7 @@ public static class DependencyInjection
         services.AddSingleton<ITokenService, TokenService>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
         services.AddSingleton<IConviteLinkBuilder, ConviteLinkBuilder>();
+        services.AddSingleton<ISuporteDestino, SuporteDestino>();
 
         return services;
     }

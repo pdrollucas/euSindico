@@ -6,6 +6,7 @@ using euSindico.Application.Equipe;
 using euSindico.Application.Planejamentos;
 using euSindico.Application.Predios;
 using euSindico.Application.Relatorios;
+using euSindico.Application.Suporte;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace euSindico.Application;
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddSingleton<IRelatorioPdfGenerator, RelatorioPdfGenerator>();
         services.AddScoped<RelatorioService>();
         services.AddScoped<DocumentoService>();
+        services.AddScoped<SuporteService>();
 
         return services;
     }
