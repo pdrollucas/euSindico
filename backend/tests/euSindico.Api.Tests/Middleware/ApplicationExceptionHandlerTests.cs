@@ -168,6 +168,63 @@ public class ApplicationExceptionHandlerTests
     }
 
     [Fact]
+    public async Task DocumentoNaoEncontradoException_retorna_404()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new DocumentoNaoEncontradoException(), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status404NotFound, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BadHttpRequestException_de_corpo_grande_demais_retorna_413_e_nao_500()
+    {
+        var httpContext = CriarHttpContext();
+        var excecao = new BadHttpRequestException("Request body too large.", StatusCodes.Status413PayloadTooLarge);
+
+        var tratado = await _sut.TryHandleAsync(httpContext, excecao, CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status413PayloadTooLarge, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LimiteNormasAtingidoException_retorna_409()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new LimiteNormasAtingidoException(10), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status409Conflict, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LimiteAtasMensalAtingidoException_retorna_409()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(httpContext, new LimiteAtasMensalAtingidoException(5), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status409Conflict, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ArquivoDocumentoInvalidoException_retorna_400()
+    {
+        var httpContext = CriarHttpContext();
+
+        var tratado = await _sut.TryHandleAsync(
+            httpContext, new ArquivoDocumentoInvalidoException("Formato de arquivo não aceito."), CancellationToken.None);
+
+        Assert.True(tratado);
+        Assert.Equal(StatusCodes.Status400BadRequest, httpContext.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task RelatorioSemCompromissosException_retorna_422()
     {
         var httpContext = CriarHttpContext();

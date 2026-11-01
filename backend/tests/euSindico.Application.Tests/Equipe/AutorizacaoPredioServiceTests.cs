@@ -227,6 +227,53 @@ public class AutorizacaoPredioServiceTests
             () => _sut.VerificarAcessoAsync(20, 1, AcaoPredio.ExcluirRelatorios));
     }
 
+    [Theory]
+    [InlineData(PapelPredio.Sindico)]
+    [InlineData(PapelPredio.Gestor)]
+    [InlineData(PapelPredio.Colaborador)]
+    public async Task VerificarAcessoAsync_permite_visualizar_documentos_a_qualquer_papel_vinculado(PapelPredio papel)
+    {
+        ConfigurarVinculo(papel);
+
+        var resultado = await _sut.VerificarAcessoAsync(20, 1, AcaoPredio.VisualizarDocumentos);
+
+        Assert.Equal(papel, resultado.Papel);
+    }
+
+    [Theory]
+    [InlineData(PapelPredio.Sindico)]
+    [InlineData(PapelPredio.Gestor)]
+    public async Task VerificarAcessoAsync_permite_enviar_documentos_a_sindico_e_gestor(PapelPredio papel)
+    {
+        ConfigurarVinculo(papel);
+
+        var resultado = await _sut.VerificarAcessoAsync(20, 1, AcaoPredio.GerenciarDocumentos);
+
+        Assert.Equal(papel, resultado.Papel);
+    }
+
+    [Fact]
+    public async Task VerificarAcessoAsync_nega_enviar_documentos_ao_colaborador()
+    {
+        ConfigurarVinculo(PapelPredio.Colaborador);
+
+        await Assert.ThrowsAsync<AcaoNaoPermitidaException>(
+            () => _sut.VerificarAcessoAsync(20, 1, AcaoPredio.GerenciarDocumentos));
+    }
+
+    [Theory]
+    [InlineData(PapelPredio.Gestor)]
+    [InlineData(PapelPredio.Colaborador)]
+    public async Task VerificarAcessoAsync_permite_excluir_documentos_so_ao_sindico(PapelPredio papel)
+    {
+        ConfigurarVinculo(PapelPredio.Sindico);
+        Assert.Equal(PapelPredio.Sindico, (await _sut.VerificarAcessoAsync(20, 1, AcaoPredio.ExcluirDocumentos)).Papel);
+
+        ConfigurarVinculo(papel);
+        await Assert.ThrowsAsync<AcaoNaoPermitidaException>(
+            () => _sut.VerificarAcessoAsync(20, 1, AcaoPredio.ExcluirDocumentos));
+    }
+
     private void ConfigurarVinculo(PapelPredio papel)
     {
         var vinculo = papel == PapelPredio.Sindico

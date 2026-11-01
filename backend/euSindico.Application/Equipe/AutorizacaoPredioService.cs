@@ -26,6 +26,9 @@ public class AutorizacaoPredioService(IPredioUsuarioRepository predioUsuarioRepo
         [AcaoPredio.VisualizarRelatorios] = [PapelPredio.Sindico, PapelPredio.Gestor, PapelPredio.Colaborador],
         [AcaoPredio.GerenciarRelatorios] = [PapelPredio.Sindico, PapelPredio.Gestor],
         [AcaoPredio.ExcluirRelatorios] = [PapelPredio.Sindico],
+        [AcaoPredio.VisualizarDocumentos] = [PapelPredio.Sindico, PapelPredio.Gestor, PapelPredio.Colaborador],
+        [AcaoPredio.GerenciarDocumentos] = [PapelPredio.Sindico, PapelPredio.Gestor],
+        [AcaoPredio.ExcluirDocumentos] = [PapelPredio.Sindico],
     };
 
     /// <summary>

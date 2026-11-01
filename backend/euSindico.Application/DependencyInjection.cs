@@ -1,6 +1,7 @@
 using euSindico.Application.Auth;
 using euSindico.Application.Common.Interfaces;
 using euSindico.Application.Compromissos;
+using euSindico.Application.Documentos;
 using euSindico.Application.Equipe;
 using euSindico.Application.Planejamentos;
 using euSindico.Application.Predios;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<PlanejamentoService>();
         services.AddSingleton<IRelatorioPdfGenerator, RelatorioPdfGenerator>();
         services.AddScoped<RelatorioService>();
+        services.AddScoped<DocumentoService>();
 
         return services;
     }

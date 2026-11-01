@@ -144,6 +144,8 @@ public class PerfilServiceTests
 
         _fileStorage.Verify(s => s.RemoverPrefixoAsync("relatorios/10/", It.IsAny<CancellationToken>()), Times.Once);
         _fileStorage.Verify(s => s.RemoverPrefixoAsync("relatorios/20/", It.IsAny<CancellationToken>()), Times.Once);
+        _fileStorage.Verify(s => s.RemoverPrefixoAsync("documentos/10/", It.IsAny<CancellationToken>()), Times.Once);
+        _fileStorage.Verify(s => s.RemoverPrefixoAsync("documentos/20/", It.IsAny<CancellationToken>()), Times.Once);
         _fileStorage.VerifyNoOtherCalls();
     }
 
@@ -187,6 +189,23 @@ public class PerfilServiceTests
         await _sut.ExcluirContaAsync(1);
 
         _fileStorage.Verify(s => s.RemoverPrefixoAsync("relatorios/20/", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExcluirContaAsync_se_a_limpeza_dos_relatorios_falha_ainda_limpa_os_documentos_do_mesmo_predio()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash-fake");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(usuario);
+        _usuarioRepository
+            .Setup(r => r.ExcluirUsuarioEDadosRelacionadosAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([10]);
+        _fileStorage
+            .Setup(s => s.RemoverPrefixoAsync("relatorios/10/", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("s3 fora"));
+
+        await _sut.ExcluirContaAsync(1);
+
+        _fileStorage.Verify(s => s.RemoverPrefixoAsync("documentos/10/", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
