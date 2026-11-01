@@ -37,7 +37,10 @@ async function sair() {
   <v-container class="home d-flex flex-column fill-height">
     <!-- Cabeçalho: marca à esquerda, nome do usuário à direita -->
     <header class="d-flex align-center justify-space-between py-2">
-      <img :src="logoIconUrl" alt="euSíndico" class="home-logo" />
+      <div class="d-flex align-center ga-2">
+        <img :src="logoIconUrl" alt="euSíndico" class="home-logo" />
+        <span class="text-h6 font-weight-bold home-marca">euSíndico</span>
+      </div>
       <span v-if="perfilStore.primeiroNome" class="text-subtitle-1" data-cy="home-usuario">
         {{ perfilStore.primeiroNome }}
       </span>
@@ -81,9 +84,13 @@ async function sair() {
 }
 
 .home-logo {
-  height: 30px;
+  height: 18px;
   width: auto;
   display: block;
+}
+
+.home-marca {
+  color: rgb(var(--v-theme-primary));
 }
 
 .home-menu {
