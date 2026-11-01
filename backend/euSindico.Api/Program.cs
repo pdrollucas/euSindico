@@ -125,6 +125,19 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));
+
+    // Mensagens ao suporte (cada uma vira um e-mail na caixa da equipe): 3 por hora por usuário, mesma
+    // partição por claim sub do envio de documentos. Sem fila.
+    options.AddPolicy(SuporteController.PoliticaRateLimitEnvio, httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "anonimo",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 3,
+            Window = TimeSpan.FromHours(1),
+            QueueLimit = 0,
+        }));
 });
 
 // Observabilidade via OpenTelemetry, exportando para o backend OTLP configurado (ex: Grafana Cloud).

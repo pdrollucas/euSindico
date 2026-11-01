@@ -8,7 +8,7 @@
 - <strong>Linha de projeto: </strong> Web mobile-first
 - <strong>Autor: </strong>Pedro Lucas Luckow
 - <strong>Data da proposta: </strong>09/04/2026
-- <strong>Versão: </strong>2.7.0 — detalha o módulo de documentos, atas de reunião e normas internas (RF22–RF25, RN37–RN42 e rotas aninhadas em `/predios/{predioId}/atas` e `/predios/{predioId}/normas`), definido na implementação do backend; anterior, 2.6.0 — detalha o módulo de relatórios mensais (RF26–RF28, RN33–RN36 e rotas aninhadas em `/predios/{predioId}/relatorios`), definido na implementação do backend; anterior, 2.5.0 — detalha o módulo de planejamentos futuros (RF18–RF21, RN29–RN32 e rotas aninhadas em `/predios/{predioId}/planejamentos`), definido na implementação do backend; anterior, 2.4.0 — o Gestor passa a visualizar a equipe do prédio (RF31, RN19), necessário para escolher o responsável de um compromisso na interface; anterior, 2.3.0 — detalha o módulo de compromissos (RF15, RF17, RN23–RN28 e rota única `/compromissos`), definido na implementação do backend; anterior, 2.2.0 — adiciona RF06-A (recuperação de senha esquecida) e RF29–RF34 (gestão de equipe/funcionários, com perfis de acesso), não previstos na proposta original
+- <strong>Versão: </strong>2.8.0 — detalha a tela de Configurações: a troca de e-mail passa a exigir senha e um código enviado ao novo endereço (RF05, RN43), a exclusão de conta passa a exigir a senha (RF07, RN44), os avisos de segurança por e-mail (RN45) e o contato com o suporte (RF35, RN46); anterior, 2.7.0 — detalha o módulo de documentos, atas de reunião e normas internas (RF22–RF25, RN37–RN42 e rotas aninhadas em `/predios/{predioId}/atas` e `/predios/{predioId}/normas`), definido na implementação do backend; anterior, 2.6.0 — detalha o módulo de relatórios mensais (RF26–RF28, RN33–RN36 e rotas aninhadas em `/predios/{predioId}/relatorios`), definido na implementação do backend; anterior, 2.5.0 — detalha o módulo de planejamentos futuros (RF18–RF21, RN29–RN32 e rotas aninhadas em `/predios/{predioId}/planejamentos`), definido na implementação do backend; anterior, 2.4.0 — o Gestor passa a visualizar a equipe do prédio (RF31, RN19), necessário para escolher o responsável de um compromisso na interface; anterior, 2.3.0 — detalha o módulo de compromissos (RF15, RF17, RN23–RN28 e rota única `/compromissos`), definido na implementação do backend; anterior, 2.2.0 — adiciona RF06-A (recuperação de senha esquecida) e RF29–RF34 (gestão de equipe/funcionários, com perfis de acesso), não previstos na proposta original
 - <strong>Disponível em PDF: </strong>[RFC.pdf](https://github.com/user-attachments/files/29358895/RFC.pdf)
 
 
@@ -418,10 +418,10 @@ flowchart LR
 - RF02 — O sistema deve permitir que o usuário realize login.
 - RF03 — O sistema deve permitir que o usuário realize logout.
 - RF04 — O sistema deve permitir que o usuário visualize suas informações de perfil.
-- RF05 — O sistema deve permitir que o usuário edite suas informações de perfil.
+- RF05 — O sistema deve permitir que o usuário edite suas informações de perfil. *(O nome é editado diretamente; a troca de e-mail exige a senha atual e a confirmação por um código enviado ao novo endereço, RN43. Detalhado na v2.8.0.)*
 - RF06 — O sistema deve permitir que o usuário altere sua senha.
 - RF06-A — O sistema deve permitir que o usuário redefina sua senha caso a tenha esquecido, mediante verificação de um código de 6 caracteres enviado por e-mail. *(Requisito adicionado na v2.1.0, após a proposta original — não previsto em RF01–RF28 nem nos marcos da seção 7.1.)*
-- RF07 — O sistema deve permitir que o usuário exclua sua conta.
+- RF07 — O sistema deve permitir que o usuário exclua sua conta. *(Exige a confirmação com a senha, RN44. Detalhado na v2.8.0.)*
 - RF08 — O sistema deve permitir que o usuário cadastre prédios.
 - RF09 — O sistema deve permitir que o usuário visualize prédios cadastrados.
 - RF10 — O sistema deve permitir que o usuário edite prédios cadastrados.
@@ -449,6 +449,7 @@ flowchart LR
 - RF32 — O sistema deve permitir que o síndico remova o acesso de um funcionário a um prédio. *(v2.2.0)*
 - RF33 — O sistema deve restringir as ações disponíveis a cada usuário conforme o seu perfil de acesso (Síndico, Gestor ou Colaborador) no prédio em questão. *(v2.2.0)*
 - RF34 — O sistema deve permitir que o usuário alterne, na tela de compromissos, entre visualizar apenas os compromissos sob sua própria responsabilidade e todos os compromissos do prédio, respeitando as restrições de perfil (RN20). *(v2.2.0)*
+- RF35 — O sistema deve permitir que o usuário autenticado envie uma mensagem (assunto e texto) à equipe de suporte, que a recebe por e-mail com o contato do usuário para resposta. *(RN46; v2.8.0)*
 
 ### 2.4 Requisitos Não Funcionais (RNFs)
 
@@ -511,6 +512,10 @@ flowchart LR
 - RN40 — Cada prédio pode ter no máximo 10 normas guardadas ao mesmo tempo; ao atingir o limite, novos envios de norma são recusados com a mensagem de limite atingido. O limite conta as normas existentes, então excluir uma norma libera uma vaga. *(v2.7.0)*
 - RN41 — Cada prédio pode enviar no máximo 5 atas por mês; ao atingir o limite, novos envios de ata no mês são recusados com a mensagem de limite atingido. O mês é o do envio, no fuso America/Sao_Paulo (o sistema não registra a data da reunião), e o limite conta as atas existentes enviadas naquele mês, então excluir uma ata do mês libera uma vaga. A contagem recomeça no dia 1º de cada mês. *(v2.7.0)*
 - RN42 — O envio de documentos é limitado a 10 requisições por minuto por usuário, somando atas e normas, para conter rajadas; excedido o limite, o sistema responde que há tentativas demais e o usuário deve aguardar. Diferente de RN40 e RN41, que limitam o que fica armazenado. *(v2.7.0)*
+- RN43 — A troca de e-mail (RF05) exige a senha atual e só vale depois de o usuário informar um código de 6 caracteres enviado ao **novo** endereço, o que comprova que ele existe e é do usuário. O endereço não pode estar cadastrado em outra conta (nem ser o atual). O código expira em 15 minutos, só pode ser usado uma vez, e um novo pedido invalida o anterior ainda válido; um novo pedido só é atendido depois de 2 minutos do último (mesma lógica de RN15, mas com aviso explícito ao usuário, que está autenticado). Até a confirmação, o e-mail da conta não muda. *(v2.8.0)*
+- RN44 — A exclusão de conta (RF07), por ser irreversível, exige a senha do usuário no momento do pedido; com a senha incorreta nada é apagado. *(v2.8.0)*
+- RN45 — Operações sensíveis na conta geram um aviso por e-mail ao endereço do usuário: troca de senha, troca de e-mail (enviado ao endereço **antigo**) e exclusão de conta. Uma falha no envio do aviso não desfaz nem impede a operação, já concluída. *(v2.8.0)*
+- RN46 — O envio de mensagens ao suporte (RF35) é limitado a 3 por hora por usuário; o assunto tem de 3 a 100 caracteres, sem quebras de linha, e a mensagem de 10 a 2000. A mensagem não é armazenada pelo sistema: vai por e-mail para a caixa do suporte (configurada na aplicação), com o nome, o e-mail e o identificador do usuário, e com o e-mail dele como endereço de resposta. *(v2.8.0)*
 
 ### 2.6 Fora do escopo
 
@@ -1079,6 +1084,20 @@ O token em texto puro nunca é armazenado — apenas seu hash. `revogado_em` nul
 
 Suporta o RF06-A (recuperação de senha esquecida). O código em texto puro nunca é armazenado — apenas seu hash, mesmo princípio do `refresh_tokens`. `usado_em` nulo indica código ainda válido (RN15); é preenchido ao ser consumido numa redefinição bem-sucedida ou invalidado por uma nova solicitação. Detalhamento do fluxo em [AUTHENTICATION.md](../../backend/documentation/AUTHENTICATION.md).
 
+##### Tabela: codigos_troca_email *(nova na v2.8.0 — RF05, RN43)*
+
+| Campo | Tipo | Restrição |
+| --- | --- | --- |
+| id | INT | PK |
+| usuario_id | INT | FK |
+| novo_email | VARCHAR(150) | NOT NULL |
+| codigo_hash | VARCHAR(255) | NOT NULL |
+| criado_em | DATETIME | NOT NULL |
+| expira_em | DATETIME | NOT NULL |
+| usado_em | DATETIME | NULL |
+
+Suporta a troca de e-mail com verificação (RF05). Mesmo princípio de `codigos_redefinicao_senha`: o código em texto puro nunca é armazenado, só seu hash; `usado_em` nulo indica pedido ainda válido (RN43). `novo_email` guarda o endereço que está sendo confirmado — o `usuarios.email` só muda quando o código é aceito. Apagada junto com a conta (RF07). Detalhamento em [AUTHENTICATION.md](../../backend/documentation/AUTHENTICATION.md).
+
 ---
 
 ##### Tabela: predios
@@ -1224,7 +1243,7 @@ Não há unicidade nesse índice: cada geração é um registro novo (RN33). `ur
 O sistema **euSíndico** é estruturado em torno de sete módulos funcionais, todos expostos por uma API RESTful desenvolvida em ASP.NET Core, seguindo a arquitetura em camadas **Controller → Service → Repository**.
 
 * **Módulo de Autenticação e Conta**<br/>
-  Responsável pelo cadastro de novos usuários (RF01), autenticação (RF02), encerramento da sessão (RF03), visualização e edição das informações de perfil (RF04–RF06), recuperação de senha esquecida via código enviado por e-mail (RF06-A) e exclusão da conta (RF07). É composto pelo **AuthController** e **PerfilController**, que delegam as regras de negócio aos serviços **AuthService** e **PerfilService**. A autenticação é baseada em tokens JWT, as senhas são armazenadas utilizando BCrypt, e o envio de e-mails (código de recuperação) é feito via SMTP.
+  Responsável pelo cadastro de novos usuários (RF01), autenticação (RF02), encerramento da sessão (RF03), visualização e edição das informações de perfil (RF04–RF06, incluindo a troca de e-mail confirmada por código), recuperação de senha esquecida via código enviado por e-mail (RF06-A), exclusão da conta (RF07) e contato com o suporte (RF35). É composto pelo **AuthController**, **PerfilController** e **SuporteController**, que delegam as regras de negócio aos serviços **AuthService**, **PerfilService** e **SuporteService**. A autenticação é baseada em tokens JWT, as senhas são armazenadas utilizando BCrypt, e o envio de e-mails (código de recuperação) é feito via SMTP.
 
 * **Módulo de Gerenciamento de Prédios**<br/>
   Responsável pelo cadastro, visualização, edição e remoção de prédios (RF08–RF11). O **PredioController** encaminha as requisições ao **PredioService**, responsável por validar as regras de negócio e persistir os dados no banco de dados relacional.
@@ -1406,7 +1425,9 @@ Durante o desenvolvimento serão adotadas medidas para reduzir as principais vul
 - proteção contra Cross-Site Scripting (XSS) por meio da renderização segura do Vue.js;
 - utilização de HTTPS para comunicação entre cliente e servidor;
 - tratamento adequado de erros sem exposição de informações sensíveis;
-- recuperação de senha (RF06-A) por código temporário de uso único enviado por e-mail, sem revelar ao solicitante se o e-mail informado está ou não cadastrado no sistema.
+- recuperação de senha (RF06-A) por código temporário de uso único enviado por e-mail, sem revelar ao solicitante se o e-mail informado está ou não cadastrado no sistema;
+- troca de e-mail (RF05) só após confirmar a senha e um código enviado ao novo endereço, com aviso ao endereço antigo; exclusão de conta (RF07) só com a senha; avisos de segurança por e-mail nas operações sensíveis (RN43–RN45);
+- envio de mensagens ao suporte (RF35) limitado por usuário, com o conteúdo codificado antes de entrar no e-mail (RN46).
 
 ### 6.2 Privacidade e LGPD
 
@@ -1420,6 +1441,7 @@ Serão armazenados os seguintes dados:
 - endereço de e-mail;
 - senha (armazenada em formato criptografado por hash);
 - código temporário de verificação para redefinição de senha (RF06-A), armazenado apenas como hash, com validade de 15 minutos e uso único;
+- código temporário de confirmação de troca de e-mail (RF05), também só como hash e com validade de 15 minutos e uso único, junto do novo endereço enquanto aguarda confirmação; apagado com a conta (RF07);
 - informações dos prédios cadastrados;
 - compromissos;
 - planejamentos;

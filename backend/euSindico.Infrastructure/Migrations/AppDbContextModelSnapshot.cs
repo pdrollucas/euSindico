@@ -63,6 +63,53 @@ namespace euSindico.Infrastructure.Migrations
                     b.ToTable("codigos_redefinicao_senha", (string)null);
                 });
 
+            modelBuilder.Entity("euSindico.Domain.Entities.CodigoTrocaEmail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CodigoHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("codigo_hash");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("criado_em");
+
+                    b.Property<DateTime>("ExpiraEm")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("expira_em");
+
+                    b.Property<string>("NovoEmail")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("novo_email");
+
+                    b.Property<DateTime?>("UsadoEm")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("usado_em");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "CodigoHash");
+
+                    b.HasIndex("UsuarioId", "CriadoEm");
+
+                    b.HasIndex("UsuarioId", "UsadoEm");
+
+                    b.ToTable("codigos_troca_email", (string)null);
+                });
+
             modelBuilder.Entity("euSindico.Domain.Entities.Compromisso", b =>
                 {
                     b.Property<int>("Id")
@@ -504,6 +551,17 @@ namespace euSindico.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("euSindico.Domain.Entities.CodigoRedefinicaoSenha", b =>
+                {
+                    b.HasOne("euSindico.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("euSindico.Domain.Entities.CodigoTrocaEmail", b =>
                 {
                     b.HasOne("euSindico.Domain.Entities.Usuario", "Usuario")
                         .WithMany()

@@ -6,7 +6,10 @@ import type { VerificarCodigoFormValues } from '@/types/auth.types'
 
 // Componente "burro": valida só o código (6 caracteres) e emite. O e-mail do fluxo vive na store
 // e é adicionado pela view na chamada ao service.
-withDefaults(defineProps<{ carregando?: boolean }>(), { carregando: false })
+withDefaults(defineProps<{ carregando?: boolean; textoBotao?: string }>(), {
+  carregando: false,
+  textoBotao: 'Prosseguir',
+})
 const emit = defineEmits<{ submit: [payload: VerificarCodigoFormValues] }>()
 
 const { defineField, handleSubmit, errors } = useForm({
@@ -39,7 +42,7 @@ const onSubmit = handleSubmit((values) => emit('submit', values))
       :loading="carregando"
       data-cy="btn-verificar"
     >
-      Prosseguir
+      {{ textoBotao }}
     </v-btn>
   </v-form>
 </template>

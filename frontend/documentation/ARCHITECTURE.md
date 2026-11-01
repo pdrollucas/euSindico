@@ -98,7 +98,8 @@ Espelhando os módulos do backend ([ARCHITECTURE.md](../../backend/documentation
 | Módulo | Views | Store | Service | Endpoints consumidos |
 |---|---|---|---|---|
 | **Landing** *(novo, ver nota no topo)* | `LandingView` | — (página estática/institucional) | — | nenhum |
-| **Autenticação e Conta** | `LoginView`, `RegistrarView`, `EsqueciSenhaView`, `VerificarCodigoView`, `RedefinirSenhaView`, `PerfilView` | `authStore`, `recuperacaoSenhaStore`, `perfilStore` | `authService`, `perfilService` | `/auth/*`, `/perfil` |
+| **Autenticação e Conta** | `LoginView`, `RegistrarView`, `EsqueciSenhaView`, `VerificarCodigoView`, `RedefinirSenhaView` | `authStore`, `recuperacaoSenhaStore`, `perfilStore` | `authService`, `perfilService` | `/auth/*`, `/perfil` |
+| **Configurações** | `ConfiguracoesView` (hub), `PerfilConfigView`, `SegurancaConfigView`, `SuporteConfigView`, `ContaConfigView` | `perfilStore`, `suporteStore` (sem estado; só mantém o fluxo view → store → service) | `perfilService`, `suporteService` | `/perfil`, `/perfil/email/*`, `/perfil/senha`, `/suporte` |
 | **Prédios** | `PrediosListView`, `PredioDetalheView` | `predioStore` | `predioService` | `/predios/*` |
 | **Equipe e Acesso** *(novo — RF29–RF34)* | `EquipePredioView` (aba/seção do `PredioDetalheView`, só para quem é Síndico do prédio), `AceitarConviteView` (pública) | `equipeStore` | `equipeService` | `/predios/{id}/convites`, `/predios/{id}/equipe`, `/convites/{token}` |
 | **Compromissos** | `CompromissosListView`, `CompromissoDetalheView` (uma view só para `/compromissos/novo` e `/compromissos/:id`) | `compromissoStore` (+ `equipeStore` e `predioStore` para os seletores) | `compromissoService` | `/compromissos` — rota única, sem `/predios/{id}/compromissos` ([COMPROMISSOS.md](../../backend/documentation/COMPROMISSOS.md)) |

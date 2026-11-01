@@ -9,8 +9,5 @@ public class AtualizarPerfilDtoValidator : AbstractValidator<AtualizarPerfilDto>
     {
         RuleFor(x => x.Nome)
             .SetValidator(new NomeValidator());
-
-        RuleFor(x => x.Email)
-            .SetValidator(new EmailValidator());
     }
 }

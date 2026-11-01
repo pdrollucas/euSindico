@@ -15,7 +15,7 @@ public class AtualizarPerfilDtoValidatorTests
     [Fact]
     public void Dto_valido_nao_gera_erro()
     {
-        var dto = new AtualizarPerfilDto("João Silva", "joao@eusindico.com");
+        var dto = new AtualizarPerfilDto("João Silva");
 
         _sut.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
     }
@@ -23,16 +23,8 @@ public class AtualizarPerfilDtoValidatorTests
     [Fact]
     public void Nome_invalido_gera_erro()
     {
-        var dto = new AtualizarPerfilDto("<script>alert('Pedro')</script>", "joao@eusindico.com");
+        var dto = new AtualizarPerfilDto("<script>alert('Pedro')</script>");
 
         _sut.TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Nome);
-    }
-
-    [Fact]
-    public void Email_invalido_gera_erro()
-    {
-        var dto = new AtualizarPerfilDto("João Silva", "<script>alert('Pedro')</script>@hot");
-
-        _sut.TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Email);
     }
 }

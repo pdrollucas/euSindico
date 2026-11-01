@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Relatorio> Relatorios => Set<Relatorio>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<CodigoRedefinicaoSenha> CodigosRedefinicaoSenha => Set<CodigoRedefinicaoSenha>();
+    public DbSet<CodigoTrocaEmail> CodigosTrocaEmail => Set<CodigoTrocaEmail>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

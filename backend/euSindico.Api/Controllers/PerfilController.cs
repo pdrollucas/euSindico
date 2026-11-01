@@ -5,6 +5,7 @@ using euSindico.Application.Auth.Dtos;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace euSindico.Api.Controllers;
 
@@ -14,7 +15,10 @@ namespace euSindico.Api.Controllers;
 public class PerfilController(
     PerfilService perfilService,
     IValidator<AtualizarPerfilDto> atualizarValidator,
-    IValidator<AlterarSenhaDto> alterarSenhaValidator) : ControllerBase
+    IValidator<AlterarSenhaDto> alterarSenhaValidator,
+    IValidator<SolicitarTrocaEmailDto> solicitarTrocaEmailValidator,
+    IValidator<ConfirmarTrocaEmailDto> confirmarTrocaEmailValidator,
+    IValidator<ExcluirContaDto> excluirContaValidator) : ControllerBase
 {
     // O id do usuário vem sempre da claim do token (sub), nunca de um parâmetro de rota/query —
     // do contrário um usuário poderia acessar dados de outro só trocando um id na URL (RN02).
@@ -40,6 +44,36 @@ public class PerfilController(
         return Ok(usuario);
     }
 
+    // Cada pedido manda um e-mail para um endereço informado pelo cliente, então usa a mesma política
+    // restritiva dos endpoints de autenticação (5 por minuto) além do cooldown do serviço.
+    [HttpPost("email/solicitar")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> SolicitarTrocaEmail(SolicitarTrocaEmailDto dto, CancellationToken ct)
+    {
+        var validationResult = await solicitarTrocaEmailValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        await perfilService.SolicitarTrocaEmailAsync(UsuarioId, dto, ct);
+        return NoContent();
+    }
+
+    [HttpPost("email/confirmar")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ConfirmarTrocaEmail(ConfirmarTrocaEmailDto dto, CancellationToken ct)
+    {
+        var validationResult = await confirmarTrocaEmailValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        var usuario = await perfilService.ConfirmarTrocaEmailAsync(UsuarioId, dto, ct);
+        return Ok(usuario);
+    }
+
     [HttpPut("senha")]
     public async Task<IActionResult> AlterarSenha(AlterarSenhaDto dto, CancellationToken ct)
     {
@@ -54,9 +88,15 @@ public class PerfilController(
     }
 
     [HttpDelete]
-    public async Task<IActionResult> ExcluirConta(CancellationToken ct)
+    public async Task<IActionResult> ExcluirConta(ExcluirContaDto dto, CancellationToken ct)
     {
-        await perfilService.ExcluirContaAsync(UsuarioId, ct);
+        var validationResult = await excluirContaValidator.ValidateAsync(dto, ct);
+        if (!validationResult.IsValid)
+        {
+            return ValidationProblem(new ValidationProblemDetails(validationResult.ToDictionary()));
+        }
+
+        await perfilService.ExcluirContaAsync(UsuarioId, dto, ct);
         return NoContent();
     }
 }

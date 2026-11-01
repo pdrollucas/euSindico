@@ -71,6 +71,7 @@ public class UsuarioRepository(AppDbContext context) : IUsuarioRepository
         await context.Predios.Where(p => p.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
         await context.RefreshTokens.Where(rt => rt.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
         await context.CodigosRedefinicaoSenha.Where(c => c.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
+        await context.CodigosTrocaEmail.Where(c => c.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
         await context.Usuarios.Where(u => u.Id == usuarioId).ExecuteDeleteAsync(ct);
 
         await transaction.CommitAsync(ct);

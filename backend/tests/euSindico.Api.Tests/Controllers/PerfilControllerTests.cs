@@ -24,7 +24,9 @@ public class PerfilControllerTests
 
     private readonly Mock<IUsuarioRepository> _usuarioRepository = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepository = new();
+    private readonly Mock<ICodigoTrocaEmailRepository> _codigoTrocaEmailRepository = new();
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
+    private readonly Mock<ITokenService> _tokenService = new();
     private readonly PerfilController _sut;
 
     public PerfilControllerTests()
@@ -36,7 +38,10 @@ public class PerfilControllerTests
         var perfilService = new PerfilService(
             _usuarioRepository.Object,
             _refreshTokenRepository.Object,
+            _codigoTrocaEmailRepository.Object,
             _passwordHasher.Object,
+            _tokenService.Object,
+            new Mock<IEmailSender>().Object,
             new Mock<IFileStorageService>().Object,
             NullLogger<PerfilService>.Instance);
 
@@ -44,7 +49,10 @@ public class PerfilControllerTests
         _sut = new PerfilController(
             perfilService,
             new AtualizarPerfilDtoValidator(),
-            new AlterarSenhaDtoValidator())
+            new AlterarSenhaDtoValidator(),
+            new SolicitarTrocaEmailDtoValidator(),
+            new ConfirmarTrocaEmailDtoValidator(),
+            new ExcluirContaDtoValidator())
         {
             ControllerContext = new ControllerContext
             {
@@ -77,8 +85,7 @@ public class PerfilControllerTests
         _usuarioRepository.Setup(r => r.BuscarPorIdAsync(UsuarioIdAutenticado, It.IsAny<CancellationToken>()))
             .ReturnsAsync(usuario);
 
-        var resultado = await _sut.AtualizarPerfil(
-            new AtualizarPerfilDto("João Souza", "joao.souza@eusindico.com"), CancellationToken.None);
+        var resultado = await _sut.AtualizarPerfil(new AtualizarPerfilDto("João Souza"), CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(resultado);
         Assert.IsType<UsuarioDto>(ok.Value);
@@ -86,10 +93,9 @@ public class PerfilControllerTests
     }
 
     [Fact]
-    public async Task AtualizarPerfil_com_email_invalido_retorna_400()
+    public async Task AtualizarPerfil_com_nome_invalido_retorna_400()
     {
-        var resultado = await _sut.AtualizarPerfil(
-            new AtualizarPerfilDto("João Souza", "email-invalido"), CancellationToken.None);
+        var resultado = await _sut.AtualizarPerfil(new AtualizarPerfilDto("<script>"), CancellationToken.None);
 
         var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
         Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
@@ -123,17 +129,82 @@ public class PerfilControllerTests
     }
 
     [Fact]
-    public async Task ExcluirConta_retorna_204_e_remove_usuario_e_dados_relacionados()
+    public async Task ExcluirConta_com_senha_correta_retorna_204_e_remove_usuario_e_dados_relacionados()
     {
         var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash");
         _usuarioRepository.Setup(r => r.BuscarPorIdAsync(UsuarioIdAutenticado, It.IsAny<CancellationToken>()))
             .ReturnsAsync(usuario);
+        _passwordHasher.Setup(h => h.Verificar("Senha@123", "hash")).Returns(true);
 
-        var resultado = await _sut.ExcluirConta(CancellationToken.None);
+        var resultado = await _sut.ExcluirConta(new ExcluirContaDto("Senha@123"), CancellationToken.None);
 
         Assert.IsType<NoContentResult>(resultado);
         _usuarioRepository.Verify(
             r => r.ExcluirUsuarioEDadosRelacionadosAsync(UsuarioIdAutenticado, It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task ExcluirConta_sem_senha_retorna_400_e_nao_exclui()
+    {
+        var resultado = await _sut.ExcluirConta(new ExcluirContaDto(""), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
+        _usuarioRepository.Verify(
+            r => r.ExcluirUsuarioEDadosRelacionadosAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SolicitarTrocaEmail_com_dados_validos_retorna_204()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(UsuarioIdAutenticado, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(usuario);
+        _passwordHasher.Setup(h => h.Verificar("Senha@123", "hash")).Returns(true);
+        _tokenService.Setup(t => t.GerarCodigoRedefinicaoSenha()).Returns(new CodigoRedefinicaoSenhaGerado("ABC234", "hash-codigo"));
+
+        var resultado = await _sut.SolicitarTrocaEmail(
+            new SolicitarTrocaEmailDto("novo@eusindico.com", "Senha@123"), CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(resultado);
+        _codigoTrocaEmailRepository.Verify(
+            r => r.AdicionarAsync(It.IsAny<CodigoTrocaEmail>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SolicitarTrocaEmail_com_email_invalido_retorna_400()
+    {
+        var resultado = await _sut.SolicitarTrocaEmail(
+            new SolicitarTrocaEmailDto("invalido", "Senha@123"), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
+    }
+
+    [Fact]
+    public async Task ConfirmarTrocaEmail_com_codigo_valido_retorna_200_com_o_novo_email()
+    {
+        var usuario = new Usuario("João Silva", "joao@eusindico.com", "hash");
+        _usuarioRepository.Setup(r => r.BuscarPorIdAsync(UsuarioIdAutenticado, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(usuario);
+        _tokenService.Setup(t => t.HashCodigoRedefinicaoSenha("ABC234")).Returns("hash-codigo");
+        _codigoTrocaEmailRepository
+            .Setup(r => r.BuscarPorUsuarioIdEHashAsync(UsuarioIdAutenticado, "hash-codigo", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CodigoTrocaEmail(UsuarioIdAutenticado, "novo@eusindico.com", "hash-codigo", DateTime.UtcNow.AddMinutes(10)));
+
+        var resultado = await _sut.ConfirmarTrocaEmail(new ConfirmarTrocaEmailDto("ABC234"), CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(resultado);
+        Assert.Equal("novo@eusindico.com", Assert.IsType<UsuarioDto>(ok.Value).Email);
+    }
+
+    [Fact]
+    public async Task ConfirmarTrocaEmail_com_codigo_de_tamanho_errado_retorna_400()
+    {
+        var resultado = await _sut.ConfirmarTrocaEmail(new ConfirmarTrocaEmailDto("AB"), CancellationToken.None);
+
+        var objeto = Assert.IsAssignableFrom<ObjectResult>(resultado);
+        Assert.Equal(StatusCodes.Status400BadRequest, objeto.StatusCode);
     }
 }

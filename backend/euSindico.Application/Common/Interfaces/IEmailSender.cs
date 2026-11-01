@@ -9,4 +9,13 @@ public interface IEmailSender
     /// todas as chamadas existentes (só texto) sem precisar de argumento nomeado.
     /// </summary>
     Task EnviarAsync(string destinatario, string assunto, string corpoTexto, CancellationToken ct = default, string? corpoHtml = null);
+
+    /// <summary>
+    /// Igual a <see cref="EnviarAsync"/>, mas com <c>Reply-To</c> — usado quando a mensagem é de um usuário
+    /// para a equipe (suporte): o remetente continua sendo o fixo do sistema, e responder vai para o usuário.
+    /// Método separado para não alterar a assinatura (e os mocks) do envio comum.
+    /// </summary>
+    Task EnviarComRespostaParaAsync(
+        string destinatario, string replyToEmail, string replyToNome,
+        string assunto, string corpoTexto, string corpoHtml, CancellationToken ct);
 }

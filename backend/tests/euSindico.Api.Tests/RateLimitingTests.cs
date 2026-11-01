@@ -71,6 +71,27 @@ public class RateLimitingTests(WebApplicationFactory<Program> factory) : IClassF
         Assert.NotEqual(HttpStatusCode.TooManyRequests, (await EnviarSemArquivoAsync(segundo, "atas")).StatusCode);
     }
 
+    [Fact]
+    public async Task Suporte_apos_3_mensagens_do_mesmo_usuario_retorna_429_e_nao_afeta_outro_usuario()
+    {
+        var client = ClienteAutenticado(usuarioId: 511);
+
+        // Corpo inválido de propósito: o controller responde 400 antes de qualquer acesso a banco ou e-mail;
+        // só interessa quantas requisições o rate limiter deixa passar.
+        var corpoInvalido = new Application.Suporte.EnviarSuporteDto(string.Empty, string.Empty);
+
+        for (var i = 0; i < 3; i++)
+        {
+            var resposta = await client.PostAsJsonAsync("/suporte", corpoInvalido);
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, resposta.StatusCode);
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsJsonAsync("/suporte", corpoInvalido)).StatusCode);
+
+        var outro = ClienteAutenticado(usuarioId: 512);
+        Assert.NotEqual(HttpStatusCode.TooManyRequests, (await outro.PostAsJsonAsync("/suporte", corpoInvalido)).StatusCode);
+    }
+
     private HttpClient ClienteAutenticado(int usuarioId)
     {
         var usuario = new Usuario("Teste", $"u{usuarioId}@x.com", "hash");
