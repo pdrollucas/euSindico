@@ -91,8 +91,6 @@ const router = createRouter({
           meta: { voltarPara: (route) => rotaListaCompromissos(route.query.predioId) },
           component: () => import('@/views/compromissos/CompromissoDetalheView.vue'),
         },
-        // Placeholder "em construção" — a tela real substitui o EmConstrucaoView no marco
-        // correspondente.
         {
           path: 'predios',
           name: 'predios',
@@ -169,7 +167,31 @@ const router = createRouter({
           path: 'configuracoes',
           name: 'configuracoes',
           meta: { titulo: 'Configurações' },
-          component: () => import('@/views/EmConstrucaoView.vue'),
+          component: () => import('@/views/configuracoes/ConfiguracoesView.vue'),
+        },
+        {
+          path: 'configuracoes/perfil',
+          name: 'configuracoes-perfil',
+          meta: { titulo: 'Perfil', voltarPara: () => '/configuracoes' },
+          component: () => import('@/views/configuracoes/PerfilConfigView.vue'),
+        },
+        {
+          path: 'configuracoes/seguranca',
+          name: 'configuracoes-seguranca',
+          meta: { titulo: 'Segurança', voltarPara: () => '/configuracoes' },
+          component: () => import('@/views/configuracoes/SegurancaConfigView.vue'),
+        },
+        {
+          path: 'configuracoes/suporte',
+          name: 'configuracoes-suporte',
+          meta: { titulo: 'Suporte', voltarPara: () => '/configuracoes' },
+          component: () => import('@/views/configuracoes/SuporteConfigView.vue'),
+        },
+        {
+          path: 'configuracoes/conta',
+          name: 'configuracoes-conta',
+          meta: { titulo: 'Conta', voltarPara: () => '/configuracoes' },
+          component: () => import('@/views/configuracoes/ContaConfigView.vue'),
         },
       ],
     },

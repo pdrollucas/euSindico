@@ -9,16 +9,16 @@ import { nomeEhValido } from '@/utils/nomeValidator'
 // como `undefined` (não `''`) ao schema, e o Zod dispara sua mensagem genérica padrão ("Required")
 // *antes* de qualquer `.min()`/`.length()` rodar — a mensagem customizada nunca seria usada.
 
-const emailSchema = z
+export const emailSchema = z
   .string({ required_error: 'E-mail obrigatório' })
   .email('E-mail inválido')
 
-const senhaForteSchema = z
+export const senhaForteSchema = z
   .string({ required_error: 'Senha obrigatória' })
   .min(8, 'A senha deve ter no mínimo 8 caracteres')
   .refine(senhaEhForte, 'A senha deve conter maiúscula, minúscula, número e caractere especial')
 
-const nomeSchema = z
+export const nomeSchema = z
   .string({ required_error: 'Nome obrigatório' })
   .min(1, 'Nome obrigatório')
   .refine(nomeEhValido, 'Nome deve conter apenas letras, espaços, hífen e apóstrofo')
@@ -42,7 +42,7 @@ export const esqueciSenhaRequestSchema = z.object({
   email: emailSchema,
 })
 
-const codigoSchema = z
+export const codigoSchema = z
   .string({ required_error: 'Código obrigatório' })
   .length(6, 'O código tem 6 caracteres')
 

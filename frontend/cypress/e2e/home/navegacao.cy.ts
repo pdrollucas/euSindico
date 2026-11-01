@@ -19,12 +19,15 @@ describe('Home (hub da área logada)', () => {
     cy.get('[data-cy=card-configuracoes]').should('be.visible')
   })
 
-  it('navega para o placeholder "em construção" ao clicar num card ainda não implementado e volta para a Home', () => {
+  it('navega para o hub de Configurações ao clicar no card e volta para a Home', () => {
     cy.get('[data-cy=card-configuracoes]').click()
     cy.url().should('include', '/configuracoes')
-    cy.get('[data-cy=em-construcao-titulo]').should('contain', 'Configurações')
+    cy.get('[data-cy=card-config-perfil]').should('be.visible')
+    cy.get('[data-cy=card-config-seguranca]').should('be.visible')
+    cy.get('[data-cy=card-config-suporte]').should('be.visible')
+    cy.get('[data-cy=card-config-conta]').should('be.visible')
 
-    cy.get('[data-cy=link-home]').click()
+    cy.get('[data-cy=btn-home]').click()
     cy.url().should('include', '/home')
   })
 
