@@ -1,5 +1,7 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
+using euSindico.Api.Controllers;
 using euSindico.Api.Middleware;
 using euSindico.Api.OpenApi;
 using euSindico.Application;
@@ -105,6 +107,21 @@ builder.Services.AddRateLimiter(options =>
         factory: _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        }));
+
+    // Envio de atas/normas (ver DOCUMENTOS.md): rajada de uploads é cara (até 20 MB cada, em memória e S3).
+    // Partição por usuário (claim sub), não por IP — independe do ForwardedHeaders do App Runner e não
+    // pune quem divide o mesmo IP. O UseRateLimiter roda depois da autenticação, então o sub já existe;
+    // o IP é só reserva. 10 por minuto, sem fila.
+    options.AddPolicy(DocumentoControllerBase.PoliticaRateLimitEnvio, httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "anonimo",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0,
         }));

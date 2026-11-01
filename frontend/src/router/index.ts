@@ -5,6 +5,7 @@ import {
   type RouteLocationRaw,
 } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import type { TipoDocumento } from '@/types/documento.types'
 import { rotaListaCompromissos } from '@/utils/rotasCompromisso'
 
 // `voltarPara`: destino do botão "voltar" do AppHeader — nunca o histórico do navegador (ver
@@ -13,6 +14,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     titulo?: string
+    // Qual das telas de documentos a rota representa (atas ou normas) — ver DocumentosListView.
+    tipoDocumento?: TipoDocumento
     voltarPara?: (route: RouteLocationNormalizedLoaded) => RouteLocationRaw
   }
 }
@@ -138,6 +141,29 @@ const router = createRouter({
           name: 'relatorios',
           meta: { titulo: 'Relatórios', voltarPara: (route) => `/predios/${route.params.id}` },
           component: () => import('@/views/relatorios/RelatoriosListView.vue'),
+        },
+        // Atas e normas: duas telas, duas rotas (como no backend, DOCUMENTOS.md), a mesma view — o
+        // `tipoDocumento` da rota diz qual é. Só a lista: o arquivo abre numa nova aba ou baixa
+        // direto dos cards, sem tela de detalhe.
+        {
+          path: 'predios/:id/atas',
+          name: 'atas',
+          meta: {
+            titulo: 'Atas',
+            tipoDocumento: 'atas',
+            voltarPara: (route) => `/predios/${route.params.id}`,
+          },
+          component: () => import('@/views/documentos/DocumentosListView.vue'),
+        },
+        {
+          path: 'predios/:id/normas',
+          name: 'normas',
+          meta: {
+            titulo: 'Normas',
+            tipoDocumento: 'normas',
+            voltarPara: (route) => `/predios/${route.params.id}`,
+          },
+          component: () => import('@/views/documentos/DocumentosListView.vue'),
         },
         {
           path: 'configuracoes',

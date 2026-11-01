@@ -1,6 +1,7 @@
 using euSindico.Application.Auth.Dtos;
 using euSindico.Application.Common.Exceptions;
 using euSindico.Application.Common.Interfaces;
+using euSindico.Application.Documentos;
 using euSindico.Application.Relatorios;
 using euSindico.Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -68,16 +69,17 @@ public class PerfilService(
     // para o log, para limpeza manual.
     private async Task LimparArquivosDoPredioAsync(int predioId)
     {
-        try
+        // Cada prefixo é tentado de forma independente: falhar nos relatórios não impede limpar os documentos.
+        foreach (var prefixo in new[] { ChaveRelatorio.Prefixo(predioId), ChaveDocumento.Prefixo(predioId) })
         {
-            await fileStorage.RemoverPrefixoAsync(ChaveRelatorio.Prefixo(predioId), CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(
-                ex,
-                "Arquivos órfãos no armazenamento após exclusão de conta: {Prefixo}",
-                ChaveRelatorio.Prefixo(predioId));
+            try
+            {
+                await fileStorage.RemoverPrefixoAsync(prefixo, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Arquivos órfãos no armazenamento após exclusão de conta: {Prefixo}", prefixo);
+            }
         }
     }
 

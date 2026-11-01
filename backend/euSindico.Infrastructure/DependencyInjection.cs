@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<ICompromissoRepository, CompromissoRepository>();
         services.AddScoped<IPlanejamentoRepository, PlanejamentoRepository>();
         services.AddScoped<IRelatorioRepository, RelatorioRepository>();
+        services.AddScoped<IDocumentoRepository, DocumentoRepository>();
 
         // Credenciais pela cadeia padrão da AWS (variáveis de ambiente, perfil local ou role do App Runner) —
         // nunca em appsettings. O cliente é criado sem rede, então a aplicação sobe sem AWS configurada.

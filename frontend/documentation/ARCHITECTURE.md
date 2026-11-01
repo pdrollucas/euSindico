@@ -103,7 +103,7 @@ Espelhando os módulos do backend ([ARCHITECTURE.md](../../backend/documentation
 | **Equipe e Acesso** *(novo — RF29–RF34)* | `EquipePredioView` (aba/seção do `PredioDetalheView`, só para quem é Síndico do prédio), `AceitarConviteView` (pública) | `equipeStore` | `equipeService` | `/predios/{id}/convites`, `/predios/{id}/equipe`, `/convites/{token}` |
 | **Compromissos** | `CompromissosListView`, `CompromissoDetalheView` (uma view só para `/compromissos/novo` e `/compromissos/:id`) | `compromissoStore` (+ `equipeStore` e `predioStore` para os seletores) | `compromissoService` | `/compromissos` — rota única, sem `/predios/{id}/compromissos` ([COMPROMISSOS.md](../../backend/documentation/COMPROMISSOS.md)) |
 | **Planejamentos** | `PlanejamentosListView`, `PlanejamentoDetalheView` (uma view só para `/predios/:id/planejamentos/novo` e `/predios/:id/planejamentos/:planejamentoId`) | `planejamentoStore` (+ `predioStore` para o papel do usuário) | `planejamentoService` | `/predios/{id}/planejamentos` — rotas aninhadas, sem lista global ([PLANEJAMENTOS.md](../../backend/documentation/PLANEJAMENTOS.md)) |
-| **Documentos** (atas e normas) | `DocumentosListView`, `DocumentoDetalheView` | `documentoStore` | `documentoService` | `/predios/{id}/documentos` |
+| **Documentos** (atas e normas) | `DocumentosListView` (uma view para as duas telas, escolhida por `route.meta.tipoDocumento`; só a lista — sem tela de detalhe) | `documentoStore` (+ `predioStore` para o papel do usuário) | `documentoService` | `/predios/{id}/atas` e `/predios/{id}/normas` — rotas aninhadas e separadas por tipo, sem lista global ([DOCUMENTOS.md](../../backend/documentation/DOCUMENTOS.md)) |
 | **Relatórios** | `RelatoriosListView` (só a lista — sem tela de detalhe) | `relatorioStore` (+ `predioStore` para o papel do usuário) | `relatorioService` | `/predios/{id}/relatorios` — rotas aninhadas, sem lista global ([RELATORIOS.md](../../backend/documentation/RELATORIOS.md)) |
 
 O **`recuperacaoSenhaStore`** é atípico entre as stores: em vez de cachear uma lista já carregada, ele guarda o *estado do fluxo* de recuperação de senha (RF06-A) entre as três telas — e-mail informado, código verificado e o instante em que o cooldown de reenvio expira (ver [SECURITY.md](SECURITY.md), seção 4). O e-mail e o cooldown são espelhados em `sessionStorage` para o **timer sobreviver a um F5** — sem isso, recarregar zeraria a contagem e permitiria um reenvio que o backend aceitaria (204) sem enviar nada, uma UX enganosa. O **código verificado nunca é persistido** (é um segredo). Por isso, após um reload: `/verificar-codigo` sem e-mail volta para `/esqueci-senha`, e `/redefinir-senha` sem código volta para `/verificar-codigo`. Esses dados vivem na store (não em `query`/`params` de rota) para não expor e-mail/código na URL.
@@ -141,7 +141,16 @@ O **`recuperacaoSenhaStore`** é atípico entre as stores: em vez de cachear uma
 - **Item da lista** (`RelatorioListItem`): "Setembro de 2026" (do mês/ano de referência) e "Gerado em dd/mm/aaaa hh:mm". O `geradoEm` vem do servidor em UTC — às vezes sem o "Z", porque o EF devolve o `DateTime` lido do banco sem designador de fuso — e `formatarDataHoraUtc` o trata como UTC antes de converter para o fuso do navegador. Enquanto um PDF é buscado, o item fica desabilitado para evitar um segundo clique.
 - **Sem filtros**: com o limite de 3 por mês a lista cresce devagar, então só há "Carregar mais".
 
-`DocumentoDetalheView` inclui uma **pré-visualização do arquivo** antes do download (ex: visualizador de PDF embutido para PDFs, miniatura para JPG/PNG) — evita um download às cegas só para conferir se é o arquivo certo. Para tipos sem preview viável no navegador (DOCX, XLSX), a tela mostra os metadados (nome, tipo, data de envio) e o botão de download direto, sem tentar renderizar o conteúdo. *(Relatórios seguiram outro caminho — nova aba em vez de preview embutido — pelos motivos acima; ao implementar Documentos, vale reavaliar se o mesmo caminho serve.)*
+**Documentos (atas e normas) — decisões de tela (RF22–RF25):**
+- **Duas telas, duas rotas, uma view.** `/predios/:id/atas` e `/predios/:id/normas`, espelhando o backend. As duas rotas apontam para a mesma `DocumentosListView`; `route.meta.tipoDocumento` (`'atas' | 'normas'`) diz qual é, e os textos, o ícone e o limite mostrado vêm de `TIPOS_DOCUMENTO` (`utils/documentoTipo.ts`). O "voltar" é calculado do `:id` (`/predios/:id`). Os cards "Atas" e "Normas" do `PredioDetalheView` abrem as listas e aparecem para **todos os papéis**. Como ir de uma rota à outra reaproveita a instância da view, ela observa `tipo` e `predioId` e recomeça (busca zerada, lista recarregada).
+- **Store com uma lista por tipo.** O `documentoStore` guarda `listas.atas` e `listas.normas` (documentos, página, busca), cada uma com a sua guarda contra resposta antiga — mexer numa não apaga nem é sobrescrita pela outra. As ações recebem o tipo como primeiro argumento.
+- **Papéis (RN37).** O papel vem de `predioStore.predioAtual`, nunca inferido. Síndico e Gestor veem o FAB de enviar; **só o Síndico** vê a lixeira. O Colaborador lê, abre e baixa. Enquanto o papel não carrega, nada de escrita aparece; a restrição real continua sendo do backend (`403`).
+- **Nova aba em vez de pré-visualização embutida.** Decisão tomada ao implementar, como o ARCHITECTURE previa reavaliar: o mesmo caminho dos Relatórios serve. Clicar no card abre **PDF e imagem numa nova aba** (que já é a pré-visualização); **DOCX não abre no navegador**, então o clique baixa; um ícone baixa sempre. Não há tela de detalhe (o `DocumentoDetalheView` previsto foi descartado) nem iframe de PDF, que funciona mal no celular. A aba em branco nasce dentro do clique e o endereço temporário do Blob vale 60 s — tudo igual ao descrito para relatórios (`utils/arquivo.ts`).
+- **Enviar em diálogo, um arquivo por vez.** O FAB abre um `v-dialog` com o seletor (`v-file-input`, `accept` só filtra o diálogo do sistema), o formato/tamanho aceitos, o limite do tipo ("até 5 atas por mês, por prédio" / "até 10 normas por prédio") e o botão de enviar. O arquivo é validado antes de sair (`validarArquivoDocumento`, mesmas regras do backend — UX, ver [SECURITY.md](SECURITY.md), seção 5). Envia como `multipart/form-data` (campo `arquivo`), sem definir `Content-Type` à mão. Depois de enviar, o diálogo fecha, a lista recarrega a primeira página (a ordem e a paginação continuam as do backend, mais recente primeiro) e um snackbar confirma. O formulário volta vazio a cada abertura.
+- **Erros dentro do diálogo**, que continua aberto para escolher outro arquivo (`mensagemErroEnvio`, `utils/documentoErro.ts`). `400` (arquivo recusado pelo backend, ex: conteúdo que não bate com a extensão) e `409` (limite de normas ou de atas do mês, RN40/RN41) mostram o `title` do backend, que já é uma mensagem pronta (regra da seção 6). `403`, `413` e `429` (mais de 10 envios por minuto, RN42) têm mensagem própria; o resto é genérico.
+- **Busca pelo nome do arquivo**, com debounce de 500 ms, igual a Planejamentos (Enter e o X buscam na hora). Sem folha de filtros — não há outro filtro. Com a busca ativa e nenhum resultado, a tela diz "Nenhum arquivo encontrado.".
+- **Item da lista** (`DocumentoListItem`): ícone pelo tipo do arquivo (PDF, imagem, DOCX), nome e "Enviado em dd/mm/aaaa hh:mm" (`formatarDataHoraUtc`, pelo mesmo motivo do `geradoEm` dos relatórios). Enquanto o arquivo é buscado o item fica desabilitado.
+- **Só "Carregar mais"**, como nas demais listas (RNF10, páginas de 20).
 
 ## 5. Roteamento e guarda de rotas
 
@@ -164,8 +173,8 @@ flowchart TD
     I --> L[/predios/:id Detalhe do prédio/]
     L --> M[Compromissos do prédio]
     L --> N[/predios/:id/planejamentos Planejamentos/]
-    L --> O[Atas]
-    L --> P[Normas]
+    L --> O[/predios/:id/atas Atas/]
+    L --> P[/predios/:id/normas Normas/]
     L --> Q[/predios/:id/relatorios Relatórios/]
     L --> R[Equipe - só Síndico]
 
@@ -180,7 +189,7 @@ O nó "Link recebido por e-mail" é um ponto de entrada paralelo à Landing — 
 | `/` (Landing) | Sim | `LandingLayout` |
 | `/login`, `/registrar`, `/esqueci-senha`, `/verificar-codigo`, `/redefinir-senha` | Sim | `AuthLayout` |
 | `/convite/:token` *(novo — RF30)* | Sim | `AuthLayout` — mesma casca de login/cadastro, já que quem chega aqui também não tem sessão |
-| `/home`, `/predios/**`, `/compromissos/**`, `/configuracoes` | **Não** — exige sessão ativa | `AppLayout` |
+| `/home`, `/predios/**` (inclui `/predios/:id/atas` e `/predios/:id/normas`), `/compromissos/**`, `/configuracoes` | **Não** — exige sessão ativa | `AppLayout` |
 
 A guarda global de navegação (`router.beforeEach`) verifica se a rota de destino exige autenticação (`meta.requiresAuth`) e consulta o `authStore`. Sem sessão válida, o usuário é redirecionado para `/login` — nunca para `/`, já que quem tenta acessar uma rota protegida já demonstrou intenção de entrar no sistema, não de conhecer o produto. Esse comportamento é o equivalente, no frontend, ao fluxo "Acesso sem autenticação" descrito no [RFC](../../documentation/RFC/RFC.md#32-fluxos-alternativos) (seção 3.2) — lá o RFC previa redirecionamento "para a tela de autenticação", o que hoje significa `/login`, não a landing page.
 

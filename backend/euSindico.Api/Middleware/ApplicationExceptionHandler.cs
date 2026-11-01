@@ -43,6 +43,12 @@ public class ApplicationExceptionHandler(ILogger<ApplicationExceptionHandler> lo
             PeriodoRelatorioFuturoException => StatusCodes.Status400BadRequest,
             RelatorioSemCompromissosException => StatusCodes.Status422UnprocessableEntity,
             LimiteRelatoriosAtingidoException => StatusCodes.Status409Conflict,
+            DocumentoNaoEncontradoException => StatusCodes.Status404NotFound,
+            ArquivoDocumentoInvalidoException => StatusCodes.Status400BadRequest,
+            LimiteNormasAtingidoException => StatusCodes.Status409Conflict,
+            LimiteAtasMensalAtingidoException => StatusCodes.Status409Conflict,
+            // Erro do cliente já classificado pelo Kestrel (ex: corpo acima do RequestSizeLimit do upload → 413).
+            BadHttpRequestException bad => bad.StatusCode,
             _ => 0,
         };
 

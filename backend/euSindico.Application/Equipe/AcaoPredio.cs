@@ -38,4 +38,13 @@ public enum AcaoPredio
 
     /// <summary>Excluir relatórios gerados (RN36) — só o Síndico.</summary>
     ExcluirRelatorios,
+
+    /// <summary>Leitura e download de atas e normas (RF23, RF24) — todos os papéis, inclusive o Colaborador.</summary>
+    VisualizarDocumentos,
+
+    /// <summary>Enviar atas e normas (RF22) — Síndico e Gestor.</summary>
+    GerenciarDocumentos,
+
+    /// <summary>Excluir atas e normas (RF25) — só o Síndico.</summary>
+    ExcluirDocumentos,
 }

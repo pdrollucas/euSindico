@@ -67,7 +67,11 @@ Regras de validação (formato de e-mail, força de senha, caracteres aceitos no
 
 ## 5. Upload de arquivos (RN12)
 
-O RFC (RN12) exige arquivos PDF, DOCX, XLSX, JPG ou PNG, com no máximo 20 MB. O frontend valida extensão/tipo MIME e tamanho **antes** de iniciar o upload — evita gastar banda e dar feedback mais rápido ao síndico. Como na seção 4, essa é uma validação de UX: o backend ([SECURITY.md](../../backend/documentation/SECURITY.md), seção "Segurança dos Arquivos") é quem garante de fato que nada fora dessas regras chega a ser armazenado no AWS S3.
+O RFC (RN12) exige arquivos PDF, DOCX, JPG ou PNG, com no máximo 20 MB. O frontend valida o nome, a extensão e o tamanho **antes** de iniciar o upload (`utils/arquivoDocumento.ts`, usado pelo schema do formulário e pelo `documentoService`) — evita gastar banda e dar feedback mais rápido ao síndico. Como na seção 4, essa é uma validação de UX: o backend ([SECURITY.md](../../backend/documentation/SECURITY.md), seção "Segurança dos Arquivos", e [DOCUMENTOS.md](../../backend/documentation/DOCUMENTOS.md)) é quem garante de fato que nada fora dessas regras chega a ser armazenado no AWS S3 — inclusive a conferência do **conteúdo** do arquivo (assinatura), que o frontend não faz. O atributo `accept` do seletor só filtra o diálogo do sistema; não é validação.
+
+**Abrir arquivo numa nova aba (atas e normas):** o arquivo chega como Blob por uma requisição autenticada, e o **tipo do Blob vem da extensão do nome** (`contentTypeDe`), nunca do `Content-Type` da resposta. Só PDF e imagem (JPG/PNG) são abertos numa aba; DOCX e qualquer outro tipo são baixados, nunca renderizados — um Blob `text/html` aberto numa aba rodaria no origin do app. Como o backend só aceita esses três formatos e confere o conteúdo, e o tipo é forçado aqui, um arquivo disfarçado não vira página. O nome do arquivo é texto do usuário e é exibido sempre por interpolação (`{{ }}`), nunca `v-html` (seção 2).
+
+**Rate limiting e limites de quantidade:** o backend limita o envio a 10 por minuto por usuário (`429`) e a 10 normas por prédio / 5 atas por mês (`409`). O frontend não conta nada — mostra a regra no diálogo de envio e a mensagem do backend quando o limite é atingido; nenhuma contagem local substitui a do servidor.
 
 ## 6. HTTPS
 
