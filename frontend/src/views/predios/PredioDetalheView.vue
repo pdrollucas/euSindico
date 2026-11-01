@@ -9,6 +9,7 @@ import { usePredioStore } from '@/stores/predioStore'
 import { PAPEL_PREDIO } from '@/types/predio.types'
 import type { PredioFormValues } from '@/types/predio.types'
 import type { ErroApiDto } from '@/types/erroApi.types'
+import { TIPOS_DOCUMENTO } from '@/utils/documentoTipo'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,11 +32,13 @@ const valoresIniciaisEdicao = computed<PredioFormValues | undefined>(() =>
   predio.value ? { nome: predio.value.nome, endereco: predio.value.endereco } : undefined,
 )
 
-// Módulos ainda não implementados no backend — mostrados como roadmap, sem navegação.
-const modulosFuturos = [
-  { titulo: 'Atas', icone: 'mdi-file-document-outline' },
-  { titulo: 'Normas', icone: 'mdi-file-document-multiple-outline' },
-]
+// Atas e normas: duas telas, uma rota cada (DOCUMENTOS.md). Título e ícone vêm da mesma config
+// que a própria tela usa.
+const modulosDocumentos = (['atas', 'normas'] as const).map((rota) => ({
+  rota,
+  titulo: TIPOS_DOCUMENTO[rota].titulo,
+  icone: TIPOS_DOCUMENTO[rota].icone,
+}))
 
 onMounted(carregar)
 
@@ -171,20 +174,20 @@ async function onEditar(payload: PredioFormValues) {
         </v-card-text>
       </v-card>
 
+      <!-- Todos os papéis entram: o Colaborador lê, abre e baixa; a tela esconde enviar e excluir. -->
       <v-card
-        v-for="modulo in modulosFuturos"
-        :key="modulo.titulo"
+        v-for="documento in modulosDocumentos"
+        :key="documento.rota"
+        :to="`/predios/${predioId}/${documento.rota}`"
+        :data-cy="`card-${documento.rota}-predio`"
         variant="flat"
         border
         rounded="lg"
-        class="mb-3 predio-modulo-futuro"
+        class="mb-3"
       >
         <v-card-text class="d-flex align-center ga-3">
-          <v-icon :icon="modulo.icone" color="primary" />
-          <div class="d-flex flex-column">
-            <span class="text-subtitle-2 font-weight-medium">{{ modulo.titulo }}</span>
-            <span class="text-caption text-medium-emphasis">Em breve</span>
-          </div>
+          <v-icon :icon="documento.icone" color="primary" />
+          <span class="text-subtitle-2 font-weight-medium">{{ documento.titulo }}</span>
         </v-card-text>
       </v-card>
     </template>
@@ -260,10 +263,6 @@ async function onEditar(payload: PredioFormValues) {
 .predio-detalhe {
   max-width: 480px;
   margin-inline: auto;
-}
-
-.predio-modulo-futuro {
-  opacity: 0.6;
 }
 
 .predio-detalhe-fab {
