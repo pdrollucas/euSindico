@@ -239,9 +239,11 @@ public enum AcaoPredio
 | Excluir relatório (`AcaoPredio.ExcluirRelatorios`) | ✅ | ❌ | ❌ | ✅ ([RELATORIOS.md](RELATORIOS.md)) |
 | Listar/consultar/baixar relatório (`AcaoPredio.VisualizarRelatorios`) | ✅ | ✅ | ✅ | ✅ ([RELATORIOS.md](RELATORIOS.md)) |
 | Visualizar planejamentos (`AcaoPredio.VisualizarPlanejamentos`) | ✅ | ✅ | ✅ (somente leitura) | ✅ idem |
-| Documentos, relatórios (CRUD completo) | ✅ | ✅ | ❌ — só visualização/download de documentos | 🔲 módulos não existem |
+| Enviar ata/norma (`AcaoPredio.GerenciarDocumentos`) | ✅ | ✅ | ❌ | ✅ ([DOCUMENTOS.md](DOCUMENTOS.md)) |
+| Excluir ata/norma (`AcaoPredio.ExcluirDocumentos`) | ✅ | ❌ | ❌ | ✅ ([DOCUMENTOS.md](DOCUMENTOS.md)) |
+| Listar/consultar/baixar ata/norma (`AcaoPredio.VisualizarDocumentos`) | ✅ | ✅ | ✅ | ✅ ([DOCUMENTOS.md](DOCUMENTOS.md)) |
 
-Essa tabela é a fonte de verdade a manter atualizada conforme Documentos/Relatórios forem desenhados em detalhe — hoje têm código as linhas de equipe, prédio, compromissos e planejamentos.
+Essa tabela é a fonte de verdade a manter atualizada conforme novas ações forem criadas — hoje todas as linhas têm código.
 
 ## Compromissos e o campo responsável (RF34, RN20, RN21)
 

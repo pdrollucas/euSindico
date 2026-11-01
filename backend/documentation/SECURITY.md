@@ -126,7 +126,9 @@ Exemplo real que motivou essa camada: `{"nome": "<script>alert('Pedro')</script>
 
 ### O que ainda não está coberto
 
-Campos de texto livre dos módulos que ainda não existem (Documento) têm o mesmo risco em potencial e precisam da mesma atenção quando forem implementados — não há uma regra genérica de "todo campo de texto é validado assim" no projeto, cada campo precisa da sua própria regra de validação deliberada.
+Não há uma regra genérica de "todo campo de texto é validado assim" no projeto — cada campo precisa da sua própria regra de validação deliberada.
+
+**Documentos (implementado):** o único texto do usuário é o nome do arquivo, rejeitado (nunca sanitizado) se tiver `< > " \` { } | \ / : * ?`, caracteres de controle ou começar com ponto. Além do nome, o arquivo em si é validado — extensão em allowlist, 20 MB, e conteúdo conferido pela assinatura (magic bytes) em vez de confiar no `Content-Type` do cliente; o download sai sempre como anexo com `X-Content-Type-Options: nosniff`, e o nome do usuário nunca entra na chave do S3. Ver [DOCUMENTOS.md](DOCUMENTOS.md#segurança).
 
 **Compromissos (implementado):** `titulo` → `TituloValidator` e `nomePrestadorServico` → `PrestadorServicoValidator` usam allowlist (letras, números, espaço e `. , : ; ' - ( ) / º ª & % # ! ? + @ $ °`; máx. 150), sem `<`, `>`, aspas, crase e chaves. `detalhes` é texto livre: só limite de 2000 caracteres e rejeição de `<`/`>`, porque uma allowlist bloquearia anotações legítimas ("R$ 1.200,00", "e-mail@x.com", quebras de linha) — nesse campo a defesa primária é o escape do Vue ainda mais do que nos outros. `TituloValidator` e `DetalhesValidator` são reaproveitados por Planejamentos (mesmos campos no RFC; `orcamentoPrevisto` ganhou limite e no máximo 2 casas decimais). Ver [COMPROMISSOS.md](COMPROMISSOS.md) e [PLANEJAMENTOS.md](PLANEJAMENTOS.md).
 
@@ -194,6 +196,8 @@ Fica registrado como melhoria futura, não como pendência bloqueante.
 **⚠️ Bloqueante antes de produção:** `RemoteIpAddress` é o IP de quem conecta diretamente ao servidor. O backend será hospedado em **AWS App Runner** (ver [ARCHITECTURE.md](ARCHITECTURE.md), seção "Hospedagem"), que fica atrás de um proxy gerenciado — todo tráfego externo passa por ele antes de chegar no container. Sem correção, `RemoteIpAddress` passa a ser o IP interno do proxy do App Runner, **igual para todos os clientes**, não o IP de cada usuário. Isso não abre brecha de segurança (força bruta continua sendo bloqueada), mas degrada a experiência de uso normal: usuários legítimos e não-relacionados passam a compartilhar o mesmo limite de 5 requisições/minuto em `/auth/login` e `/auth/registrar` só por estarem atrás do mesmo proxy — o suficiente para vários síndicos tentando logar por perto do mesmo minuto começarem a receber `429` sem terem feito nada de errado.
 
 A correção é configurar `ForwardedHeadersMiddleware` para confiar no cabeçalho `X-Forwarded-For` que o App Runner injeta, restringindo a confiança à rede/proxy do próprio App Runner (`ForwardedHeadersOptions.KnownProxies`/`KnownNetworks`) — nunca aceitar esse cabeçalho de qualquer origem, senão um cliente externo poderia forjá-lo pra burlar o rate limiting inteiro fingindo IPs diferentes a cada requisição. Isso ainda não foi feito porque depende de conhecer a faixa de rede exata usada pelo App Runner, que só dá pra confirmar na documentação da AWS no momento de configurar o deploy — ver item bloqueante na seção 12.
+
+**Envio de documentos:** `POST /predios/{id}/atas` e `/normas` usam a política `upload` (10 por minuto, janela fixa), particionada por **usuário** (claim `sub`) em vez de IP — o usuário já está autenticado, então a partição é precisa e não depende do `ForwardedHeaders` abaixo. Complementada pelos limites de quantidade (10 normas por prédio, 5 atas por mês). Ver [DOCUMENTOS.md](DOCUMENTOS.md#segurança).
 
 ## 10. Recuperação de senha (esqueci minha senha)
 
