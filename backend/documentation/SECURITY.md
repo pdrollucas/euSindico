@@ -199,6 +199,8 @@ A correção é configurar `ForwardedHeadersMiddleware` para confiar no cabeçal
 
 **Envio de documentos:** `POST /predios/{id}/atas` e `/normas` usam a política `upload` (10 por minuto, janela fixa), particionada por **usuário** (claim `sub`) em vez de IP — o usuário já está autenticado, então a partição é precisa e não depende do `ForwardedHeaders` abaixo. Complementada pelos limites de quantidade (10 normas por prédio, 5 atas por mês). Ver [DOCUMENTOS.md](DOCUMENTOS.md#segurança).
 
+**Troca de e-mail e suporte:** `POST /perfil/email/solicitar` e `/confirmar` reaproveitam a política `auth` (5 por minuto, por IP + rota), porque cada pedido manda um e-mail a um endereço informado pelo cliente e o código de 6 caracteres tem de ser protegido contra tentativa e erro, como no Fluxo 8. `POST /suporte` usa a política `suporte` (3 por hora, janela fixa), particionada por **usuário** como a de documentos, já que cada mensagem vira um e-mail para a equipe. Ver [AUTHENTICATION.md](AUTHENTICATION.md), Fluxo 9.
+
 ## 10. Recuperação de senha (esqueci minha senha)
 
 Fluxo em 3 endpoints (RF06-A), sem exigir autenticação — detalhamento completo em [AUTHENTICATION.md](AUTHENTICATION.md), Fluxo 8. Resumo das decisões de segurança:

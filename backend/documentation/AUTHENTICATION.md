@@ -16,6 +16,8 @@ Este documento descreve o fluxo completo de autenticação e gerenciamento de co
 - [Fluxo 6 — Perfil: visualizar, editar, alterar senha](#fluxo-6--perfil-visualizar-editar-alterar-senha-rf04rf06--implementado)
 - [Fluxo 7 — Exclusão de conta](#fluxo-7--exclusão-de-conta-rf07--implementado)
 - [Fluxo 8 — Recuperação de senha esquecida](#fluxo-8--recuperação-de-senha-esquecida-rf06-a--implementado)
+- [Fluxo 9 — Troca de e-mail com verificação](#fluxo-9--troca-de-e-mail-com-verificação-rf05-rn43--implementado)
+- [Suporte](#suporte-rf35-rn46)
 - [Estrutura do access token (JWT)](#estrutura-do-access-token-jwt)
 - [Validações de entrada (RNF04, RNF05)](#validações-de-entrada-rnf04-rnf05)
 - [Próximos passos](#próximos-passos)
@@ -292,9 +294,9 @@ sequenceDiagram
     S-->>P: UsuarioDto
     P-->>C: 200 OK
 
-    C->>P: PUT /perfil { nome, email }
+    C->>P: PUT /perfil { nome }
     P->>S: AtualizarPerfil(usuarioId, dto)
-    S->>R: BuscarPorId + usuario.AtualizarPerfil(nome, email)
+    S->>R: BuscarPorId + usuario.AtualizarNome(nome)
     R->>DB: UPDATE usuarios
     DB-->>R: OK
     S-->>P: OK
@@ -321,7 +323,9 @@ sequenceDiagram
     P-->>C: 204 No Content ou erro
 ```
 
-Alterar a senha exige a senha atual — evita que alguém com uma sessão já aberta (token roubado, dispositivo desbloqueado) troque a senha do dono da conta sem confirmar que é ele. Além disso, trocar a senha **revoga todos os refresh tokens ativos do usuário** (todas as sessões, todos os dispositivos) — se a troca de senha foi motivada por suspeita de conta comprometida, isso derruba qualquer sessão que o invasor pudesse ter.
+Alterar a senha exige a senha atual — evita que alguém com uma sessão já aberta (token roubado, dispositivo desbloqueado) troque a senha do dono da conta sem confirmar que é ele. Além disso, trocar a senha **revoga todos os refresh tokens ativos do usuário** (todas as sessões, todos os dispositivos) — se a troca de senha foi motivada por suspeita de conta comprometida, isso derruba qualquer sessão que o invasor pudesse ter. Depois de concluída, a troca gera um **aviso por e-mail** ao usuário (RN45); uma falha nesse envio vai só para o log, sem desfazer a troca.
+
+`PUT /perfil` aceita **só o nome**: o e-mail não passa mais por ele e muda apenas pelo fluxo de confirmação do Fluxo 9.
 
 ## Fluxo 7 — Exclusão de conta (RF07) ✅ implementado
 
@@ -334,18 +338,20 @@ sequenceDiagram
     participant DB as MySQL
     participant FS as IFileStorageService (S3)
 
-    C->>P: DELETE /perfil (token)
-    P->>S: ExcluirConta(usuarioId do token)
+    C->>P: DELETE /perfil { senha } (token)
+    P->>S: ExcluirConta(usuarioId do token, senha)
     S->>R: BuscarPorId(usuarioId)
     alt Usuário não encontrado
         R-->>S: null
         S-->>P: erro (404 Not Found)
-    else Usuário existe
+    else Senha incorreta
+        S-->>P: erro (400 Bad Request) — nada é apagado
+    else Usuário existe e a senha confere
         S->>R: ExcluirUsuarioEDadosRelacionados(usuarioId)
         R->>DB: DELETE compromissos, planejamentos, documentos, relatórios e convites dos prédios do usuário
         R->>DB: UPDATE compromissos em prédios alheios onde ele é responsável (passam ao dono do prédio)
         R->>DB: DELETE predio_usuarios (equipe dos prédios dele + vínculos dele em prédios alheios)
-        R->>DB: DELETE prédios, refresh_tokens, códigos de redefinição e o usuário
+        R->>DB: DELETE prédios, refresh_tokens, códigos de redefinição e de troca de e-mail, e o usuário
         DB-->>R: OK (transação confirmada)
         R-->>S: ids dos prédios apagados (vazio para conta de funcionário)
         loop Cada prédio apagado
@@ -356,6 +362,8 @@ sequenceDiagram
     end
     P-->>C: 204 No Content ou erro
 ```
+
+**Confirmação com senha (RN44):** como a ação é irreversível, o corpo do `DELETE /perfil` leva a senha, conferida com `IPasswordHasher` antes de qualquer exclusão — uma sessão aberta (token roubado, dispositivo desbloqueado) não basta para apagar a conta. Concluída a exclusão, um **aviso por e-mail** é enviado ao endereço da conta (RN45), com o mesmo tratamento de falha do aviso de troca de senha (só log).
 
 **Arquivos no armazenamento:** depois que a transação confirma, o `PerfilService` apaga do S3 tudo sob `relatorios/{predioId}/` de cada prédio que era do usuário — inclusive prédios com exclusão lógica, já que a exclusão de conta é definitiva. Só acontece depois do commit (se o banco falhar, nada é apagado) e uma falha do S3 não faz o pedido falhar: a conta já não existe, então o prefixo vai para o log como arquivo órfão. Detalhes em [RELATORIOS.md](RELATORIOS.md).
 
@@ -444,6 +452,68 @@ sequenceDiagram
 
 As decisões de segurança por trás desse fluxo (anti-enumeração, formato/validade do código, cooldown de 2 minutos, reaproveitamento do rate limiting, revogação de sessões) estão detalhadas em [SECURITY.md](SECURITY.md), seção 10 — aqui fica só o que é específico da sequência entre os 3 endpoints: `verificar-codigo` existe só para a experiência do usuário, evitando que ele preencha a tela de nova senha só pra descobrir depois que o código estava errado. A validação de verdade acontece de novo em `redefinir-senha`, que nunca confia que o front só chega até ali depois de uma verificação bem-sucedida no passo anterior.
 
+## Fluxo 9 — Troca de e-mail com verificação (RF05, RN43) ✅ implementado
+
+Dois endpoints, ambos autenticados e com a política de rate limiting `auth` (5 por minuto, por IP + rota — cada pedido dispara um e-mail para um endereço informado pelo cliente).
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant P as PerfilController
+    participant S as PerfilService
+    participant R as IUsuarioRepository
+    participant CT as ICodigoTrocaEmailRepository
+    participant E as IEmailSender
+
+    C->>P: POST /perfil/email/solicitar { novoEmail, senhaAtual }
+    P->>S: SolicitarTrocaEmail(usuarioId do token, dto)
+    alt Senha incorreta
+        S-->>P: erro (400)
+    else E-mail já cadastrado (inclui o próprio)
+        S-->>P: erro (409)
+    else Último código com menos de 2 min
+        S-->>P: erro (429)
+    else Pedido aceito
+        S->>CT: InvalidarTodosDoUsuario + Adicionar(código com hash, novoEmail, 15 min)
+        S->>E: Enviar código para o NOVO e-mail
+        S-->>P: OK
+    end
+    P-->>C: 204 No Content ou erro
+
+    C->>P: POST /perfil/email/confirmar { codigo }
+    P->>S: ConfirmarTrocaEmail(usuarioId do token, dto)
+    S->>CT: BuscarPorUsuarioIdEHash(usuarioId, hash(codigo))
+    alt Inexistente, expirado ou já usado
+        S-->>P: erro (400)
+    else E-mail ocupado desde a solicitação
+        S-->>P: erro (409)
+    else Código válido
+        S->>CT: MarcarComoUsado
+        S->>R: usuario.AlterarEmail(novoEmail) + Salvar
+        S->>E: Aviso ao e-mail ANTIGO (falha só vai para o log)
+        S-->>P: UsuarioDto
+    end
+    P-->>C: 200 OK ou erro
+```
+
+- **Por que a senha:** sem ela, uma sessão aberta poderia redirecionar a conta para um e-mail do invasor — e o e-mail é o canal da recuperação de senha (Fluxo 8).
+- **Por que o código vai ao novo e-mail:** só quem controla o endereço consegue confirmá-lo; evita e-mail digitado errado (o usuário perderia a recuperação de senha) e o uso do e-mail de terceiros.
+- **Código:** o mesmo gerador e hash do Fluxo 8 (6 caracteres sem ambíguos, só o hash é persistido). O código é buscado sempre com o `usuarioId` do token, então não é possível confirmar um código de outra conta.
+- **Cooldown com feedback:** diferente do Fluxo 8 (anônimo, resposta silenciosa por anti-enumeração), aqui o usuário está autenticado e provou a senha, então o cooldown responde `429` com uma mensagem — não revela nada sobre outras contas. O `409` de "e-mail já cadastrado" também só é visto por quem passou na checagem da senha.
+- **Sessões:** o JWT identifica o usuário pelo `sub` (o claim `email` é só conveniência), então a troca não exige revogar refresh tokens.
+- **Aviso ao endereço antigo (RN45):** quem perdeu o acesso vê que o e-mail mudou e pode reagir (redefinir a senha, falar com o suporte).
+- **Tabela:** `codigos_troca_email` (`usuario_id`, `novo_email`, `codigo_hash`, `criado_em`, `expira_em`, `usado_em`); apagada junto com a conta (Fluxo 7).
+
+## Suporte (RF35, RN46)
+
+`POST /suporte` (autenticado) recebe `{ assunto, mensagem }` e o `SuporteService` envia um e-mail à caixa configurada em `Suporte:EmailDestino` (`appsettings.json`), pelo mesmo `SmtpEmailSender`.
+
+- **Remetente fixo, resposta ao usuário:** o `From` é o do sistema (SMTP exige remetente autorizado); o e-mail do usuário vai em `Reply-To` (`IEmailSender.EnviarComRespostaParaAsync`). O corpo leva nome, e-mail e id do usuário, vindos do banco pelo `sub` do token — não do que o cliente enviou.
+- **Validação:** assunto de 3 a 100 caracteres sem caracteres de controle (evita injeção de cabeçalho no `Subject`); mensagem de 10 a 2000.
+- **HTML:** nome, e-mail e mensagem são codificados (`HtmlEncode`) antes de entrar no corpo HTML.
+- **Rate limit:** política `suporte`, 3 por hora, por usuário (claim `sub`) — cada mensagem vira um e-mail para a equipe.
+- **Sem persistência:** a mensagem não é guardada no banco; o histórico fica na caixa do suporte.
+
 ## Estrutura do access token (JWT)
 
 | Claim | Conteúdo | Uso |
@@ -461,10 +531,10 @@ O refresh token **não** é um JWT — é uma string aleatória opaca de alta en
 Aplicadas na Api via FluentValidation, antes de qualquer chamada ao Service:
 
 - **Senha (RNF04):** mínimo 8 caracteres, com letra maiúscula, letra minúscula, número e caractere especial.
-- **E-mail (RNF05):** formato validado no cadastro e na atualização de perfil.
+- **E-mail (RNF05):** formato validado no cadastro e no pedido de troca de e-mail (Fluxo 9).
 
 ## Próximos passos
 
-Implementados até agora: `POST /auth/registrar`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /perfil`, `PUT /perfil`, `PUT /perfil/senha`, `DELETE /perfil`, `POST /auth/esqueci-senha`, `POST /auth/verificar-codigo` e `POST /auth/redefinir-senha` (Fluxos 1 a 8), com `AuthService`, `PerfilService`, `IUsuarioRepository`, `IRefreshTokenRepository`, `ICodigoRedefinicaoSenhaRepository`, `IPasswordHasher`, `ITokenService`, `IEmailSender`/`SmtpEmailSender` (MailKit), as entidades/migrations de `RefreshToken` e `CodigoRedefinicaoSenha`, e o middleware `UseAuthentication()`/`AddJwtBearer()` já registrados no `Program.cs`.
+Implementados até agora: `POST /auth/registrar`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /perfil`, `PUT /perfil`, `PUT /perfil/senha`, `DELETE /perfil`, `POST /auth/esqueci-senha`, `POST /auth/verificar-codigo`, `POST /auth/redefinir-senha` (Fluxos 1 a 8), `POST /perfil/email/solicitar`, `POST /perfil/email/confirmar` (Fluxo 9) e `POST /suporte`, com `AuthService`, `PerfilService`, `SuporteService`, `ICodigoTrocaEmailRepository`, `IUsuarioRepository`, `IRefreshTokenRepository`, `ICodigoRedefinicaoSenhaRepository`, `IPasswordHasher`, `ITokenService`, `IEmailSender`/`SmtpEmailSender` (MailKit), as entidades/migrations de `RefreshToken` e `CodigoRedefinicaoSenha`, e o middleware `UseAuthentication()`/`AddJwtBearer()` já registrados no `Program.cs`.
 
 Todo o fluxo de autenticação e gerenciamento de conta descrito neste documento está implementado, incluindo a migração do refresh token de corpo JSON para cookie `HttpOnly` (`AuthController`, ver [SECURITY.md](SECURITY.md), seção 1).
