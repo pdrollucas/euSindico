@@ -75,12 +75,20 @@ O RFC (RN12) exige arquivos PDF, DOCX, JPG ou PNG, com no máximo 20 MB. O front
 
 ## 6. HTTPS
 
-- **Produção:** AWS Amplify Hosting força HTTPS automaticamente (certificado gerenciado, redirecionamento de HTTP para HTTPS).
-- **Desenvolvimento local:** o backend roda em `https://localhost:7091` (ver [GETTING_STARTED.md do backend](../../backend/documentation/GETTING_STARTED.md)). O dev server do Vite roda em HTTP por padrão (`http://localhost:5173`) — isso é aceitável só em localhost (não é conteúdo misto real para o navegador, que trata `localhost` como *secure context*); em produção, frontend e backend estarão ambos em HTTPS.
+- **Produção:** o Caddy ([deploy/Caddyfile](../../deploy/Caddyfile)) emite e renova sozinho os certificados do Let's Encrypt e redireciona HTTP para HTTPS, com `Strict-Transport-Security` (HSTS) de 1 ano.
+- **Desenvolvimento local:** o backend roda em `https://localhost:7091` (ver [GETTING_STARTED.md do backend](../../backend/documentation/GETTING_STARTED.md)). O dev server do Vite roda em HTTP por padrão (`http://localhost:5173`) — isso é aceitável só em localhost (não é conteúdo misto real para o navegador, que trata `localhost` como *secure context*); em produção, frontend e backend estão ambos em HTTPS.
+
+### Security headers (produção)
+
+Definidos no [deploy/Caddyfile](../../deploy/Caddyfile):
+
+- **Content-Security-Policy:** `default-src 'self'`. Fontes e ícones (`@mdi/font`) vêm empacotados no bundle, então não há CDN externa; a única outra origem é a API (`connect-src https://api.eusindicogestao.com.br`). `style-src` aceita `'unsafe-inline'` porque o Vuetify injeta estilos inline. `blob:` é liberado em `img-src`, `frame-src` e `object-src` porque os PDFs abertos numa aba nova chegam como Blob ([src/utils/arquivo.ts](../src/utils/arquivo.ts)). `frame-ancestors 'none'` impede o site de ser embutido em iframe de terceiros (clickjacking).
+- **`X-Content-Type-Options: nosniff`**, **`Referrer-Policy: strict-origin-when-cross-origin`** e **`Permissions-Policy`** desligando câmera, microfone e geolocalização, que a aplicação não usa.
+- O cabeçalho `Server` é removido.
 
 ## 7. CORS
 
-O backend já tem CORS configurado (`Program.cs`, policy `"Frontend"`, alimentada por `Cors:AllowedOrigins` — nunca `AllowAnyOrigin`, ver [SECURITY.md do backend](../../backend/documentation/SECURITY.md), seção 8). Em desenvolvimento, `http://localhost:5173` (porta padrão do Vite) já está liberado por padrão. **Falta só a origem de produção** (domínio do AWS Amplify Hosting) — pendência registrada na seção 11, já que esse domínio só é conhecido no momento do primeiro deploy real. `AllowCredentials()` **já está habilitado** no backend — necessário para o cookie `HttpOnly` do refresh token trafegar cross-origin (seção 1); por isso o frontend precisa enviar `withCredentials: true` em toda chamada Axios, não só nas de `/auth/*`.
+O backend já tem CORS configurado (`Program.cs`, policy `"Frontend"`, alimentada por `Cors:AllowedOrigins` — nunca `AllowAnyOrigin`, ver [SECURITY.md do backend](../../backend/documentation/SECURITY.md), seção 8). Em desenvolvimento, `http://localhost:5173` (porta padrão do Vite) já está liberado por padrão. Em produção, a origem liberada é `https://eusindicogestao.com.br`, pela variável de ambiente `Cors__AllowedOrigins__0` (ver [deploy/README.md](../../deploy/README.md)). `AllowCredentials()` **já está habilitado** no backend — necessário para o cookie `HttpOnly` do refresh token trafegar cross-origin (seção 1); por isso o frontend precisa enviar `withCredentials: true` em toda chamada Axios, não só nas de `/auth/*`.
 
 ## 8. Variáveis de ambiente
 
@@ -100,16 +108,13 @@ O backend já tem CORS configurado (`Program.cs`, policy `"Frontend"`, alimentad
 | Proteção contra XSS | Escape padrão do Vue + proibição de `v-html` cru (seção 2) |
 | Autenticação segura | Access token em memória, refresh token com renovação automática — ver [AUTHENTICATION.md](AUTHENTICATION.md) e a análise de risco na seção 1 |
 | Validação de entrada de dados | Réplica das regras do backend, só como UX (seção 4) |
-| HTTPS | Amplify Hosting força HTTPS em produção (seção 6) |
+| HTTPS | Caddy força HTTPS em produção, com HSTS e CSP (seção 6) |
 | Tratamento de erros sem exposição de dados sensíveis | UI nunca expõe stack trace/detalhe técnico; erros mapeados por `status` HTTP (ver [ARCHITECTURE.md](ARCHITECTURE.md), seção 6) |
 
 ## 11. Pendências conhecidas
 
-**Bloqueante antes de produção:**
-- Adicionar a origem de produção do frontend (domínio do Amplify) a `Cors:AllowedOrigins` no backend — hoje só `http://localhost:5173` está liberado (seção 7). Em desenvolvimento local não bloqueia nada.
-- Se frontend (Amplify) e backend (App Runner) ficarem em domínios totalmente diferentes em produção (não subdomínios de um domínio próprio compartilhado), o cookie do refresh token depende de `SameSite=None` (já configurado, ver seção 1) para continuar funcionando cross-site — isso já é o caso hoje e não é uma pendência de código, só um lembrete de que um domínio próprio compartilhado (`app.eusindico.com.br` / `api.eusindico.com.br`) permitiria endurecer para `SameSite=Strict`/`Lax` no futuro, caso vire prioridade.
+Nenhuma pendência bloqueante para produção. Melhoria possível, sem gatilho definido:
 
-**Podem esperar o gatilho correspondente:**
-- Content-Security-Policy e demais security headers (`X-Frame-Options`/`frame-ancestors`, `X-Content-Type-Options`) configurados via AWS Amplify Hosting — relevante só a partir do primeiro deploy real, mesmo espírito da pendência de hospedagem já registrada no [ARCHITECTURE.md](ARCHITECTURE.md).
+- Como frontend e backend ficaram em subdomínios do mesmo domínio (mesmo site), o cookie do refresh token poderia ser endurecido de `SameSite=None` para `Lax` (ver [SECURITY.md do backend](../../backend/documentation/SECURITY.md), seção 1).
 
-*(Histórico: a migração do refresh token de `localStorage` para cookie `httpOnly` + `Secure` + `SameSite=None`, antes listada aqui como pendência futura, já foi implementada no backend — ver [AUTHENTICATION.md](AUTHENTICATION.md), seção 3, e [SECURITY.md do backend](../../backend/documentation/SECURITY.md), seção 1.)*
+*(Histórico: a migração do refresh token de `localStorage` para cookie `httpOnly` + `Secure` + `SameSite=None`, antes listada aqui como pendência futura, já foi implementada no backend — ver [AUTHENTICATION.md](AUTHENTICATION.md), seção 3, e [SECURITY.md do backend](../../backend/documentation/SECURITY.md), seção 1. A origem de produção no CORS e a Content-Security-Policy, antes bloqueantes, foram resolvidas no deploy — seções 6 e 7.)*

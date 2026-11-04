@@ -1,0 +1,135 @@
+# Produção do euSíndico numa única instância (ver deploy/README.md).
+# Todos os valores ${...} vêm do arquivo deploy/.env (fora do Git; modelo em deploy/.env.example).
+
+name: eusindico
+
+# Configuração da API, compartilhada entre o serviço "migrate" e o "api" (mesma imagem, mesmo ambiente).
+x-api-environment: &api-environment
+  ASPNETCORE_ENVIRONMENT: Production
+  ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=eusindico;User=eusindico;Password=${MYSQL_PASSWORD:?defina MYSQL_PASSWORD no .env}"
+  Jwt__SecretKey: ${JWT_SECRET_KEY:?defina JWT_SECRET_KEY no .env}
+  Cors__AllowedOrigins__0: https://${SITE_DOMAIN:?defina SITE_DOMAIN no .env}
+  Frontend__BaseUrl: https://${SITE_DOMAIN}
+  # Rede "borda" abaixo: só o Caddy e a API estão nela. Ver SECURITY.md do backend, seção 9.
+  ReverseProxy__KnownNetworks__0: 172.30.0.0/24
+  S3__BucketName: ${S3_BUCKET_NAME:-}
+  S3__Region: us-east-2
+  AWS_REGION: us-east-2
+  Smtp__Host: smtp.gmail.com
+  Smtp__Port: "587"
+  Smtp__Usuario: ${SMTP_USUARIO:-}
+  Smtp__Senha: ${SMTP_SENHA:-}
+  Smtp__RemetenteEmail: ${SMTP_USUARIO:-}
+  Smtp__RemetenteNome: euSíndico
+  Observability__OtlpEndpoint: ${OTLP_ENDPOINT:-}
+  Observability__OtlpHeaders: ${OTLP_HEADERS:-}
+
+x-logging: &logging
+  # Sem rotação, os logs do Docker crescem até encher o disco de 20 GB.
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: eusindico
+      MYSQL_USER: eusindico
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?defina MYSQL_ROOT_PASSWORD no .env}
+    # Ajustado para dividir 2 GB de RAM com a API e o Caddy: buffer pool menor e sem performance_schema
+    # (que sozinho reserva centenas de MB).
+    command:
+      - --innodb-buffer-pool-size=256M
+      - --performance-schema=OFF
+      - --max-connections=50
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - dados
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    mem_limit: 640m
+    logging: *logging
+
+  # Aplica as migrations pendentes e encerra (MigrationCommand). A API só sobe se ele terminar com sucesso.
+  migrate:
+    image: ${API_IMAGE:?defina API_IMAGE no .env}
+    command: ["--migrate"]
+    restart: "no"
+    environment:
+      <<: *api-environment
+      # Em Production o nível padrão é Warning; aqui interessa ver quais migrations rodaram.
+      Logging__LogLevel__euSindico: Information
+      Logging__LogLevel__Microsoft.EntityFrameworkCore.Migrations: Information
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - dados
+    mem_limit: 384m
+    logging: *logging
+
+  api:
+    image: ${API_IMAGE}
+    restart: unless-stopped
+    environment: *api-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - borda
+      - dados
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    mem_limit: 640m
+    logging: *logging
+
+  caddy:
+    image: ${WEB_IMAGE:?defina WEB_IMAGE no .env}
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL no .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificados do Let's Encrypt: precisam sobreviver a reinícios, senão o Caddy pede de novo
+      # a cada deploy e esbarra no limite de emissões.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+    networks:
+      - borda
+    mem_limit: 128m
+    logging: *logging
+
+networks:
+  # Caddy <-> API. Sub-rede fixa porque a API confia no X-Forwarded-For vindo só dela.
+  borda:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  # API/migrate <-> MySQL. "internal": o MySQL não tem saída para a internet nem porta exposta.
+  dados:
+    internal: true
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:

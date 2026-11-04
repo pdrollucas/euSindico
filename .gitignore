@@ -55,3 +55,11 @@ __screenshots__/
 *.sln
 *.sw?
 .DS_Store
+
+# =========================
+# Deploy (deploy/)
+# =========================
+# Segredos de produção — o modelo versionado é deploy/.env.example
+deploy/.env
+deploy/.env.*
+!deploy/.env.example

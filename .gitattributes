@@ -1,0 +1,5 @@
+# Arquivos que rodam ou são lidos no Linux (instância EC2, containers): sempre LF, mesmo com core.autocrlf no
+# Windows. Um .sh com CRLF quebra no bash ("$'\r': command not found").
+*.sh text eol=lf
+deploy/** text eol=lf
+**/Dockerfile text eol=lf

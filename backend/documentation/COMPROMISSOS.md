@@ -234,7 +234,7 @@ Mesma estratégia de duas camadas de [SECURITY.md](SECURITY.md) (seção 3): all
 
 ## Fuso horário
 
-`DataCompromisso` e `HorarioCompromisso` não têm fuso: são o horário de parede do síndico. Para "hoje" e "atrasados" a aplicação precisa saber que dia e hora são **agora no Brasil**, e o servidor (App Runner/Docker) roda em UTC — entre 21h e 24h em Brasília, "hoje" em UTC já seria o dia seguinte. O `CompromissoService` recebe um `TimeProvider`, e a Infrastructure registra o `FusoHorarioTimeProvider` com o fuso de `TimeZoneId` (padrão `America/Sao_Paulo`, [GETTING_STARTED.md](GETTING_STARTED.md)). O repositório não conhece fuso nem relógio: recebe `Hoje`/`Agora` já resolvidos no `CompromissoFiltro` — o que também deixa os testes determinísticos.
+`DataCompromisso` e `HorarioCompromisso` não têm fuso: são o horário de parede do síndico. Para "hoje" e "atrasados" a aplicação precisa saber que dia e hora são **agora no Brasil**, e o servidor (container Docker) roda em UTC — entre 21h e 24h em Brasília, "hoje" em UTC já seria o dia seguinte. O `CompromissoService` recebe um `TimeProvider`, e a Infrastructure registra o `FusoHorarioTimeProvider` com o fuso de `TimeZoneId` (padrão `America/Sao_Paulo`, [GETTING_STARTED.md](GETTING_STARTED.md)). O repositório não conhece fuso nem relógio: recebe `Hoje`/`Agora` já resolvidos no `CompromissoFiltro` — o que também deixa os testes determinísticos.
 
 ## Exclusão de conta e responsável
 

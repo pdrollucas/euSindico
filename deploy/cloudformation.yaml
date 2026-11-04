@@ -1,0 +1,513 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >-
+  euSindico (TCC) - uma unica EC2 ARM com Docker Compose (Caddy, API .NET, MySQL), Elastic IP, bucket S3
+  privado, ECR, snapshots diarios, teto de custo por acao de budget e role de deploy do GitHub via OIDC -
+  dimensionado para caber em ~US$ 20/mes e ser desmontado depois da apresentacao.
+
+# Contexto de projeto fica nos comentarios deste arquivo e em deploy/README.md (mesma convencao dos demais
+# arquivos de deploy/). Regiao fixa: us-east-2 (regiao do projeto na AWS).
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    ref:
+      - at: deploy/README.md
+        has: arquitetura, servicos do compose, variaveis do .env
+        scope: shared
+    must:
+      - so us-east-2 (regiao do projeto)
+      - nenhum segredo no template, em parametros ou Metadata; segredos so no deploy/.env da instancia
+      - mudar ImageId ou BlockDeviceMappings substitui a instancia = perde o disco com o MySQL; fazer dump no S3 antes
+
+Parameters:
+  ImageId:
+    Type: AWS::EC2::Image::Id
+    Description: >-
+      AMI arm64 do Amazon Linux 2023, fixada no momento do deploy. NAO usar o parametro SSM "latest" aqui:
+      cada update re-resolveria a AMI e substituiria a instancia (perdendo o banco).
+  InstanceType:
+    Type: String
+    Default: t4g.small
+    AllowedValues: [t4g.small, t4g.micro]
+    Description: t4g.small (2 GB) e o dimensionado; t4g.micro (1 GB) fica justo para .NET + MySQL.
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC padrao da conta em us-east-2 (sem NAT nem subnets proprias, por custo).
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: >-
+      Subnet publica da VPC padrao onde a instancia fica. Mudar depois SUBSTITUI a instancia (perde o banco).
+  GitHubRepository:
+    Type: String
+    Default: pdrollucas/euSindico
+    AllowedPattern: "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    Description: owner/repo autorizado a fazer deploy (so a branch main).
+  BudgetName:
+    Type: String
+    Default: eusindico-mensal-20usd
+    AllowedPattern: "^[A-Za-z0-9_.-]+$"
+    Description: Budget mensal ja existente (criado fora da stack) que dispara a parada da instancia.
+  StopThresholdPercent:
+    Type: Number
+    Default: 125
+    MinValue: 100
+    MaxValue: 200
+    Description: Percentual do budget (gasto real) que para a instancia. 125% de US$ 20 = US$ 25.
+  AlertEmail:
+    Type: String
+    AllowedPattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    Description: >-
+      E-mail avisado quando a acao do budget parar a instancia. Sem valor padrao para nao publicar o e-mail
+      no repositorio: informe na criacao; nos updates, use UsePreviousValue=true.
+
+Resources:
+  # ---------------------------------------------------------------------------------------------------------
+  # Rede
+  # ---------------------------------------------------------------------------------------------------------
+
+  # Site publico: 80 (desafio HTTP do Let's Encrypt + redirect) e 443 (HTTPS; UDP para HTTP/3) abertos para a
+  # internet por necessidade. Nenhuma outra porta: sem SSH (acesso por Session Manager) e MySQL so na rede
+  # Docker interna.
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: euSindico - HTTP/HTTPS publicos, sem SSH
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - Description: HTTP (ACME + redirect para HTTPS)
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - Description: HTTPS
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - Description: HTTPS sobre QUIC (HTTP/3)
+          IpProtocol: udp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-web"
+
+  # ---------------------------------------------------------------------------------------------------------
+  # Instancia
+  # ---------------------------------------------------------------------------------------------------------
+
+  # Role da instancia: e de onde o SDK da AWS na API tira as credenciais do S3 (sem chaves estaticas) e de
+  # onde o Docker tira o login no ECR. Session Manager substitui o SSH.
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: euSindico EC2 - S3 do app, pull do ECR e Session Manager
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+
+  # Politica gerenciada (nao inline) com o acesso da aplicacao: so este bucket e so os 2 repositorios ECR.
+  InstanceAppPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: euSindico EC2 - objetos do bucket do app e pull das imagens
+      Roles:
+        - !Ref InstanceRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ListarBucket
+            Effect: Allow
+            Action: s3:ListBucket
+            Resource: !GetAtt DataBucket.Arn
+          - Sid: ObjetosDoBucket
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+            Resource: !Sub "${DataBucket.Arn}/*"
+          # GetAuthorizationToken nao aceita restricao por recurso.
+          - Sid: LoginNoEcr
+            Effect: Allow
+            Action: ecr:GetAuthorizationToken
+            Resource: "*"
+          - Sid: PullDasImagens
+            Effect: Allow
+            Action:
+              - ecr:BatchCheckLayerAvailability
+              - ecr:BatchGetImage
+              - ecr:GetDownloadUrlForLayer
+            Resource:
+              - !GetAtt ApiRepository.Arn
+              - !GetAtt WebRepository.Arn
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  # Unica maquina: Caddy + API + MySQL em Docker Compose (deploy/docker-compose.yml). O disco guarda o banco:
+  # trocar ImageId ou o disco (BlockDeviceMappings, ex: tamanho) SUBSTITUI a instancia e perde os dados - por
+  # isso a AMI e fixada por parametro e o tamanho do disco e fixo aqui. Para crescer o disco, usar
+  # "aws ec2 modify-volume" fora da stack. InstanceType e UserData, em disco EBS, so param e religam a
+  # instancia. UserData roda so no primeiro boot.
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !GetAtt InstanceSecurityGroup.GroupId
+      # IMDSv2 obrigatorio; hop limit 2 porque as credenciais da role sao lidas de DENTRO dos containers
+      # (um salto a mais pela bridge do Docker) - com 1, a API nao consegue acessar o S3.
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpTokens: required
+        HttpPutResponseHopLimit: 2
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 20
+            Encrypted: true
+            DeleteOnTermination: true
+      PropagateTagsToVolumeOnCreation: true
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+        # Alvo da politica de snapshots diarios (SnapshotPolicy).
+        - Key: Backup
+          Value: !Sub "${AWS::StackName}-diario"
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          # Preparo do host no primeiro boot. O deploy da aplicacao (compose, Caddyfile, .env, imagens)
+          # e feito depois, pelo workflow do GitHub Actions via Session Manager.
+          set -euo pipefail
+
+          dnf install -y docker
+          systemctl enable --now docker
+
+          # Docker Compose v5.6.0 (o AL2023 nao empacota o plugin), conferido pelo SHA-256 da release oficial.
+          mkdir -p /usr/local/lib/docker/cli-plugins
+          curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
+            https://github.com/docker/compose/releases/download/v5.6.0/docker-compose-linux-aarch64
+          echo "733ec76717ceb59052a9609b9dadfb523b2df8eab57a54212872d10a58078ea2  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum -c -
+          chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+          # 1 GB de swap: folga para picos de memoria (build nao roda aqui, mas .NET + MySQL dividem 2 GB).
+          if [ ! -f /swapfile ]; then
+            dd if=/dev/zero of=/swapfile bs=1M count=1024
+            chmod 600 /swapfile
+            mkswap /swapfile
+            swapon /swapfile
+            echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+          fi
+
+          # Diretorio da aplicacao; o .env com os segredos fica aqui, legivel so pelo root.
+          install -d -m 700 /opt/eusindico
+
+  # IP fixo: os registros A do Registro.br (@, api, www) apontam para ele. Sem IP fixo, cada parada/religada
+  # trocaria o IP e o DNS quebraria. Custa o mesmo IPv4 publico (~US$ 3,65/mes) ligado ou parado.
+  ElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref Instance
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+  # Snapshot diario do disco da instancia (03:00 em Brasilia), guardando os 3 ultimos. Incremental: custa
+  # centavos. Complementa o dump do MySQL no S3 feito antes de cada parada.
+  SnapshotPolicy:
+    Type: AWS::DLM::LifecyclePolicy
+    Properties:
+      Description: euSindico snapshot diario do disco - 3 ultimos
+      State: ENABLED
+      ExecutionRoleArn: !GetAtt SnapshotRole.Arn
+      PolicyDetails:
+        PolicyType: EBS_SNAPSHOT_MANAGEMENT
+        ResourceTypes: [INSTANCE]
+        TargetTags:
+          - Key: Backup
+            Value: !Sub "${AWS::StackName}-diario"
+        Schedules:
+          - Name: diario
+            CopyTags: true
+            CreateRule:
+              Interval: 24
+              IntervalUnit: HOURS
+              Times: ["06:00"]
+            RetainRule:
+              Count: 3
+
+  SnapshotRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: euSindico - execucao da politica de snapshots (DLM)
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: dlm.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole"
+
+  # ---------------------------------------------------------------------------------------------------------
+  # Armazenamento
+  # ---------------------------------------------------------------------------------------------------------
+
+  # Documentos e relatorios da aplicacao (S3FileStorageService) e dumps do MySQL (prefixo backups/).
+  # Retain: apagar a stack (por engano ou na desmontagem) NAO apaga os arquivos; na desmontagem final o
+  # bucket e esvaziado e apagado a parte. Versionamento protege contra sobrescrita/exclusao acidental, com
+  # versoes antigas expirando em 30 dias para nao acumular custo.
+  DataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      guard:
+        SuppressedRules:
+          # Access logging exige um segundo bucket so para logs; desproporcional para o TCC (2 meses, um
+          # usuario). Acessos ja ficam no CloudTrail (eventos de gerenciamento) e nos logs da API.
+          - S3_BUCKET_LOGGING_ENABLED
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expirar-versoes-antigas
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+          - Id: expirar-dumps-antigos
+            Status: Enabled
+            Prefix: backups/
+            ExpirationInDays: 30
+          - Id: limpar-uploads-incompletos
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+
+  DataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Metadata:
+      guard:
+        SuppressedRules:
+          # Falso positivo: a regra compara o statement literal (Resource "*", false sem aspas, sem Sid). O
+          # statement abaixo nega o mesmo (todo s3:* sem HTTPS), restrito ao bucket e aos seus objetos.
+          - S3_BUCKET_SSL_REQUESTS_ONLY
+    Properties:
+      Bucket: !Ref DataBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: SomenteHttps
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt DataBucket.Arn
+              - !Sub "${DataBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  # Imagens publicadas pelo GitHub Actions. Tags imutaveis (cada deploy tem a sua), scan de vulnerabilidades
+  # no push e so as 5 ultimas imagens guardadas. EmptyOnDelete: imagens sao reconstruiveis a partir do Git.
+  ApiRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${AWS::StackName}-api"
+      ImageTagMutability: IMMUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EmptyOnDelete: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"manter as 5 ultimas","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}
+
+  WebRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${AWS::StackName}-web"
+      ImageTagMutability: IMMUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EmptyOnDelete: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"manter as 5 ultimas","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}
+
+  # ---------------------------------------------------------------------------------------------------------
+  # Deploy pelo GitHub Actions (OIDC, sem chaves de acesso)
+  # ---------------------------------------------------------------------------------------------------------
+
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+
+  # Repositorio publico: a confianca e restrita a branch main deste repositorio, entao forks e pull requests
+  # de terceiros nao conseguem assumir a role. Permissoes: push so nos 2 repositorios ECR e comandos do
+  # Session Manager so nesta instancia.
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: euSindico - deploy pelo GitHub Actions (branch main)
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubRepository}:ref:refs/heads/main"
+
+  GitHubDeployPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: euSindico - push no ECR e comandos de deploy so nesta instancia
+      Roles:
+        - !Ref GitHubDeployRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: LoginNoEcr
+            Effect: Allow
+            Action: ecr:GetAuthorizationToken
+            Resource: "*"
+          - Sid: PushDasImagens
+            Effect: Allow
+            Action:
+              - ecr:BatchCheckLayerAvailability
+              - ecr:BatchGetImage
+              - ecr:CompleteLayerUpload
+              - ecr:InitiateLayerUpload
+              - ecr:PutImage
+              - ecr:UploadLayerPart
+            Resource:
+              - !GetAtt ApiRepository.Arn
+              - !GetAtt WebRepository.Arn
+          - Sid: ComandoSoNestaInstancia
+            Effect: Allow
+            Action: ssm:SendCommand
+            Resource:
+              - !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${Instance}"
+              - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}::document/AWS-RunShellScript"
+          # Leitura do resultado do comando e do estado da instancia (o deploy recusa instancia parada);
+          # estas acoes nao aceitam restricao por recurso.
+          - Sid: ResultadoDoComando
+            Effect: Allow
+            Action:
+              - ssm:GetCommandInvocation
+              - ssm:ListCommandInvocations
+              - ec2:DescribeInstances
+            Resource: "*"
+          # O workflow le das saidas da stack o ID da instancia, o bucket e os repositorios ECR, para nao
+          # precisar deles em variaveis do GitHub (repositorio publico).
+          - Sid: SaidasDaStack
+            Effect: Allow
+            Action: cloudformation:DescribeStacks
+            Resource: !Ref AWS::StackId
+
+  # ---------------------------------------------------------------------------------------------------------
+  # Teto de custo
+  # ---------------------------------------------------------------------------------------------------------
+
+  # Sem spend limit (removido ao ativar os recursos avancados), esta e a protecao automatica: ao passar de
+  # StopThresholdPercent do budget em gasto real, a instancia e parada. Os dados de custo tem atraso de horas.
+  BudgetStopAction:
+    Type: AWS::Budgets::BudgetsAction
+    Properties:
+      BudgetName: !Ref BudgetName
+      NotificationType: ACTUAL
+      ActionType: RUN_SSM_DOCUMENTS
+      ActionThreshold:
+        Type: PERCENTAGE
+        Value: !Ref StopThresholdPercent
+      ExecutionRoleArn: !GetAtt BudgetActionRole.Arn
+      ApprovalModel: AUTOMATIC
+      Definition:
+        SsmActionDefinition:
+          Subtype: STOP_EC2_INSTANCES
+          Region: !Ref AWS::Region
+          InstanceIds:
+            - !Ref Instance
+      Subscribers:
+        - Type: EMAIL
+          Address: !Ref AlertEmail
+
+  BudgetActionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: euSindico - acao do budget que para a instancia
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AWSBudgetsActions_RolePolicyForResourceAdministrationWithSSM"
+
+Outputs:
+  InstanceId:
+    Description: Instancia (alvo do Session Manager e do workflow de deploy)
+    Value: !Ref Instance
+  PublicIp:
+    Description: IP fixo para os registros A do Registro.br (@, api, www)
+    Value: !Ref ElasticIp
+  DataBucketName:
+    Description: Valor de S3_BUCKET_NAME no deploy/.env
+    Value: !Ref DataBucket
+  ApiRepositoryUri:
+    Description: Base de API_IMAGE no deploy/.env
+    Value: !GetAtt ApiRepository.RepositoryUri
+  WebRepositoryUri:
+    Description: Base de WEB_IMAGE no deploy/.env
+    Value: !GetAtt WebRepository.RepositoryUri
+  GitHubDeployRoleArn:
+    Description: Role assumida pelo workflow de deploy (secret/variavel do GitHub Actions)
+    Value: !GetAtt GitHubDeployRole.Arn

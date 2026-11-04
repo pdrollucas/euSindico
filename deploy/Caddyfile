@@ -1,0 +1,63 @@
+# Proxy reverso e servidor do frontend (ver deploy/README.md).
+# SITE_DOMAIN e ACME_EMAIL vêm do .env (via docker-compose). Em produção, SITE_DOMAIN=eusindicogestao.com.br;
+# na validação local, SITE_DOMAIN=localhost (o Caddy usa uma CA interna própria para *.localhost).
+{
+	email {$ACME_EMAIL}
+}
+
+(seguranca_comum) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+# Frontend (SPA do Vite).
+{$SITE_DOMAIN} {
+	import seguranca_comum
+
+	root * /srv
+	encode zstd gzip
+
+	# Rotas do Vue Router (createWebHistory) não existem como arquivo: caem no index.html.
+	try_files {path} /index.html
+	file_server
+
+	# Ver frontend/documentation/SECURITY.md, seção 6 ("Security headers"). Tudo é servido daqui
+	# (fontes e ícones vêm no bundle); a única outra origem é a API. Vuetify injeta estilos inline.
+	# blob: em frame/object: os PDFs abertos numa aba nova chegam como Blob (src/utils/arquivo.ts).
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.{$SITE_DOMAIN}; frame-src 'self' blob:; object-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+
+	# Arquivos com hash no nome (gerados pelo Vite) podem ficar em cache para sempre; o resto
+	# (index.html) é sempre revalidado, para um deploy novo aparecer sem limpar o cache.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@nao_assets not path /assets/*
+	header @nao_assets Cache-Control "no-cache"
+}
+
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+# API. O Caddy grava em X-Forwarded-For o IP de quem conectou nele (não repassa o que veio de fora);
+# a API só confia nesse cabeçalho vindo da rede do proxy (ReverseProxy:KnownNetworks).
+api.{$SITE_DOMAIN} {
+	import seguranca_comum
+
+	header {
+		X-Frame-Options "DENY"
+	}
+
+	# Documentos têm até 20 MB (DOCUMENTOS.md); folga para o overhead do multipart.
+	request_body {
+		max_size 25MB
+	}
+
+	reverse_proxy api:8080
+}

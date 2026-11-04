@@ -44,7 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IRelatorioRepository, RelatorioRepository>();
         services.AddScoped<IDocumentoRepository, DocumentoRepository>();
 
-        // Credenciais pela cadeia padrão da AWS (variáveis de ambiente, perfil local ou role do App Runner) —
+        // Credenciais pela cadeia padrão da AWS (variáveis de ambiente, perfil local ou role da instância EC2 em produção) —
         // nunca em appsettings. O cliente é criado sem rede, então a aplicação sobe sem AWS configurada.
         services.Configure<S3Options>(configuration.GetSection(S3Options.SectionName));
         services.AddSingleton<IAmazonS3>(sp => new AmazonS3Client(
