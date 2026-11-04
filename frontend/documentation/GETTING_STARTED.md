@@ -47,7 +47,7 @@ Abre em `http://localhost:5173`. Hot Module Replacement (HMR) já vem configurad
 ```bash
 npm run lint          # ESLint
 npm run type-check    # vue-tsc --build
-npm run build         # gera frontend/dist, pronto para deploy (Amplify)
+npm run build         # gera frontend/dist (em produção, o build roda na imagem Docker)
 ```
 
 Todos os três rodam também no CI (`frontend-ci.yml`, ver [QUALITY.md](QUALITY.md)) — rodá-los localmente antes de abrir um PR evita surpresa.
@@ -68,10 +68,10 @@ Detalhes de como os testes são organizados e o que cada camada cobre estão em 
 
 | | Desenvolvimento | Produção |
 |---|---|---|
-| Onde roda | `npm run dev` (Vite dev server), local | AWS Amplify Hosting, build estático |
-| `VITE_API_BASE_URL` | `.env.local` (não versionado), apontando para `https://localhost:7091` | Variável de ambiente configurada no Amplify Console, apontando para a URL do AWS App Runner |
-| HTTPS | Não (dev server em HTTP; ver [SECURITY.md](SECURITY.md), seção 6) | Sim, forçado automaticamente pelo Amplify |
-| CORS no backend | `http://localhost:5173` já liberado (`appsettings.Development.json`) | Falta liberar o domínio do Amplify (pendência, ver [SECURITY.md](SECURITY.md)) |
+| Onde roda | `npm run dev` (Vite dev server), local | Build estático servido pelo Caddy numa EC2 (ver [deploy/README.md](../../deploy/README.md)) |
+| `VITE_API_BASE_URL` | `.env.local` (não versionado), apontando para `https://localhost:7091` | Build arg `VITE_API_BASE_URL` da imagem Docker: `https://api.eusindicogestao.com.br` |
+| HTTPS | Não (dev server em HTTP; ver [SECURITY.md](SECURITY.md), seção 6) | Sim, pelo Caddy (Let's Encrypt), com redirecionamento de HTTP para HTTPS |
+| CORS no backend | `http://localhost:5173` já liberado (`appsettings.Development.json`) | `https://eusindicogestao.com.br`, via variável `Cors__AllowedOrigins__0` |
 
 ## Ver também
 

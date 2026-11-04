@@ -1,17 +1,20 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
+using euSindico.Api;
 using euSindico.Api.Controllers;
 using euSindico.Api.Middleware;
+using euSindico.Api.Observability;
 using euSindico.Api.OpenApi;
 using euSindico.Application;
 using euSindico.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
-using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -50,6 +53,31 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+
+// IP real do cliente atrás do proxy reverso (Caddy em produção), usado pelo rate limiting por IP — ver
+// SECURITY.md, seção 9. Só confia em X-Forwarded-For/X-Forwarded-Proto vindos das redes listadas em
+// "ReverseProxy:KnownNetworks" (CIDR, ex: a rede Docker do proxy). Sem nenhuma rede configurada, o
+// middleware nem é registrado (fail-closed): um cliente que chegue direto na API não consegue forjar o IP.
+var proxyKnownNetworks = builder.Configuration.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ?? [];
+
+if (proxyKnownNetworks.Length > 0)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Um único proxy (o Caddy) na frente: só o último valor do X-Forwarded-For é considerado.
+        options.ForwardLimit = 1;
+        // Os padrões confiam em loopback, que não é o proxy aqui — a confiança fica só nas redes configuradas.
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        foreach (var rede in proxyKnownNetworks)
+        {
+            options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(rede));
+        }
+    });
+}
+
+builder.Services.AddHealthChecks();
 
 // Falha já na inicialização se a chave não estiver configurada, em vez de deixar o erro
 // estourar (de forma bem menos óbvia) só na primeira requisição que passar pelo
@@ -112,7 +140,7 @@ builder.Services.AddRateLimiter(options =>
         }));
 
     // Envio de atas/normas (ver DOCUMENTOS.md): rajada de uploads é cara (até 20 MB cada, em memória e S3).
-    // Partição por usuário (claim sub), não por IP — independe do ForwardedHeaders do App Runner e não
+    // Partição por usuário (claim sub), não por IP — independe do ForwardedHeaders do proxy reverso e não
     // pune quem divide o mesmo IP. O UseRateLimiter roda depois da autenticação, então o sub já existe;
     // o IP é só reserva. 10 por minuto, sem fila.
     options.AddPolicy(DocumentoControllerBase.PoliticaRateLimitEnvio, httpContext => RateLimitPartition.GetFixedWindowLimiter(
@@ -140,38 +168,46 @@ builder.Services.AddRateLimiter(options =>
         }));
 });
 
-// Observabilidade via OpenTelemetry, exportando para o backend OTLP configurado (ex: Grafana Cloud).
-// Fica desativada quando "Observability:OtlpEndpoint" não é definido (padrão em desenvolvimento local).
+// Observabilidade via OpenTelemetry (traces, métricas e logs do ILogger), exportando por OTLP/HTTP para
+// o backend configurado (ex: Grafana Cloud). Fica desativada quando "Observability:OtlpEndpoint" não é
+// definido (padrão em desenvolvimento local).
 var otlpEndpoint = builder.Configuration["Observability:OtlpEndpoint"];
 var otlpHeaders = builder.Configuration["Observability:OtlpHeaders"];
 
 if (!string.IsNullOrWhiteSpace(otlpEndpoint))
 {
-    void ConfigureOtlpExporter(OtlpExporterOptions options)
-    {
-        options.Endpoint = new Uri(otlpEndpoint);
-        if (!string.IsNullOrWhiteSpace(otlpHeaders))
-        {
-            options.Headers = otlpHeaders;
-        }
-    }
-
     builder.Services.AddOpenTelemetry()
         .ConfigureResource(resource => resource.AddService("euSindico.Api"))
         .WithTracing(tracing => tracing
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
             .AddEntityFrameworkCoreInstrumentation()
-            .AddOtlpExporter(ConfigureOtlpExporter))
+            .AddOtlpExporter(options => OtlpExporterConfiguration.Apply(options, otlpEndpoint, otlpHeaders, "traces")))
         .WithMetrics(metrics => metrics
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
-            .AddOtlpExporter(ConfigureOtlpExporter));
+            .AddOtlpExporter(options => OtlpExporterConfiguration.Apply(options, otlpEndpoint, otlpHeaders, "metrics")))
+        .WithLogging(logging => logging
+            .AddOtlpExporter(options => OtlpExporterConfiguration.Apply(options, otlpEndpoint, otlpHeaders, "logs")));
 }
 
 var app = builder.Build();
 
+if (MigrationCommand.IsRequested(args))
+{
+    await MigrationCommand.RunAsync(app.Services);
+    return;
+}
+
 // Configure the HTTP request pipeline.
+
+// Primeiro do pipeline: tudo depois dele (rate limiting, logs, redirecionamento HTTPS) já vê o IP e o
+// esquema reais do cliente.
+if (proxyKnownNetworks.Length > 0)
+{
+    app.UseForwardedHeaders();
+}
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -187,6 +223,10 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
+
+// Liveness: só indica que o processo está de pé e respondendo, sem consultar o banco — usado no
+// healthcheck do container e na checagem rápida antes da apresentação.
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 

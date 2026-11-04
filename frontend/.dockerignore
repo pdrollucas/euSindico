@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-ssr/
+coverage/
+cypress-coverage/
+.nyc_output/
+.scannerwork/
+cypress/videos/
+cypress/screenshots/
+# Variáveis locais nunca entram na imagem; a URL da API chega só pelo build arg VITE_API_BASE_URL.
+.env
+.env.*
+!.env.example
+*.local

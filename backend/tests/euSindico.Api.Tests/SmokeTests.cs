@@ -13,4 +13,15 @@ public class SmokeTests(WebApplicationFactory<Program> factory) : IClassFixture<
 
         Assert.True(response.IsSuccessStatusCode);
     }
+
+    [Fact]
+    public async Task Health_responde_healthy_sem_autenticacao()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/health");
+
+        Assert.True(response.IsSuccessStatusCode);
+        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+    }
 }

@@ -135,7 +135,7 @@ Os relatórios em PDF ([RELATORIOS.md](RELATORIOS.md)) são gravados num bucket 
 
 Os filtros "hoje" e "atrasados" dos compromissos ([COMPROMISSOS.md](COMPROMISSOS.md)) comparam a data/horário do compromisso — que não têm fuso, são o horário de parede do síndico — com o "agora" da aplicação. Esse "agora" usa o fuso configurado em `TimeZoneId` (padrão `America/Sao_Paulo`, definido em `appsettings.json`), **não** o do servidor, que em container costuma ser UTC. O valor é um id IANA/Windows aceito por `TimeZoneInfo.FindSystemTimeZoneById`.
 
-⚠️ Ao criar o `Dockerfile` para o App Runner, a imagem precisa ter a base de fusos instalada (`tzdata`) — as imagens `aspnet` baseadas em Debian costumam trazer, as baseadas em Alpine **não** (instalar o pacote `tzdata`). Sem isso `FindSystemTimeZoneById` lança exceção na primeira requisição que precisar do relógio.
+⚠️ A imagem Docker de produção precisa ter a base de fusos instalada (`tzdata`) — as imagens `aspnet` baseadas em Debian costumam trazer, as baseadas em Alpine **não** (instalar o pacote `tzdata`). Sem isso `FindSystemTimeZoneById` lança exceção na primeira requisição que precisar do relógio.
 
 ## Qualidade de código e observabilidade
 
@@ -145,7 +145,7 @@ Os filtros "hoje" e "atrasados" dos compromissos ([COMPROMISSOS.md](COMPROMISSOS
 
 ### Configurando o OpenTelemetry (opcional em desenvolvimento)
 
-A `euSindico.Api` já vem instrumentada com OpenTelemetry (tracing de HTTP, EF Core e chamadas HTTP de saída, mais métricas básicas). A exportação para um backend **só é ativada se `Observability:OtlpEndpoint` estiver configurado** — sem isso, a aplicação roda normalmente e a telemetria simplesmente não é coletada. Não é necessário configurar nada para desenvolver localmente.
+A `euSindico.Api` já vem instrumentada com OpenTelemetry (tracing de HTTP, EF Core e chamadas HTTP de saída, métricas básicas e os logs do `ILogger`). A exportação para um backend **só é ativada se `Observability:OtlpEndpoint` estiver configurado** — sem isso, a aplicação roda normalmente e a telemetria simplesmente não é coletada. Não é necessário configurar nada para desenvolver localmente.
 
 Quando você tiver uma conta no [Grafana Cloud](https://grafana.com/products/cloud/) (tier gratuito, com retenção de 14 dias), configure via User Secrets:
 
@@ -155,7 +155,23 @@ dotnet user-secrets set "Observability:OtlpEndpoint" "https://otlp-gateway-<sua-
 dotnet user-secrets set "Observability:OtlpHeaders" "Authorization=Basic <token-base64-da-instancia>"
 ```
 
+O endpoint é o **endereço base** do gateway OTLP, sem `/v1/...`: a API acrescenta `/v1/traces`, `/v1/metrics` e `/v1/logs` sozinha e exporta por OTLP/HTTP (protobuf), o protocolo do Grafana Cloud.
+
 Em produção, os mesmos valores devem vir de variáveis de ambiente (`Observability__OtlpEndpoint`, `Observability__OtlpHeaders`), nunca de arquivo versionado.
+
+## Rodando atrás de proxy reverso
+
+Em produção a API fica atrás do Caddy ([ARCHITECTURE.md](ARCHITECTURE.md), seção "Hospedagem"). Para o rate limiting enxergar o IP real de cada cliente, defina a rede do proxy em notação CIDR:
+
+```bash
+ReverseProxy__KnownNetworks__0=172.30.0.0/24   # exemplo: a rede Docker do Caddy
+```
+
+Sem essa configuração (padrão em desenvolvimento), `X-Forwarded-For` é ignorado — ver [SECURITY.md](SECURITY.md), seção 9.
+
+## Health check
+
+`GET /health` responde `200 Healthy` sem autenticação e sem consultar o banco. Serve para o healthcheck do container e para conferir rapidamente se a API está no ar.
 
 > Nota: o pacote `OpenTelemetry.Instrumentation.EntityFrameworkCore` ainda está em versão *beta* — é amplamente usado em produção por outros times, mas vale acompanhar releases estáveis futuras.
 

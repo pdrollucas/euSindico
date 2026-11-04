@@ -39,7 +39,7 @@ O refresh token é emitido via `Set-Cookie` (`AuthController`, em `POST /auth/lo
 |---|---|---|
 | `HttpOnly` | `true` | Torna o cookie inacessível a `document.cookie`/JavaScript — um XSS bem-sucedido no frontend não consegue mais ler o refresh token, diferente de quando ele vivia em `localStorage`. Essa é a motivação principal da migração. |
 | `Secure` | `true` | O cookie só é enviado pelo navegador em conexões HTTPS — consistente com `UseHttpsRedirection()` (seção 8), que já força HTTPS em toda a API. |
-| `SameSite` | `None` | Frontend (AWS Amplify) e backend (AWS App Runner) ficam em domínios diferentes por padrão — sem domínio próprio compartilhado, `SameSite=Strict`/`Lax` bloquearia o cookie em toda chamada cross-site do frontend, quebrando a autenticação. `SameSite=None` exige `Secure=true` (já garantido acima). |
+| `SameSite` | `None` | Escolhido quando frontend e backend podiam ficar em domínios diferentes, onde `SameSite=Strict`/`Lax` bloquearia o cookie em toda chamada do frontend. Em produção eles ficaram em subdomínios do mesmo domínio (`eusindicogestao.com.br` e `api.eusindicogestao.com.br`, mesmo site), o que permitiria endurecer para `Lax` — melhoria possível, não pendência. `SameSite=None` exige `Secure=true` (já garantido acima). |
 | `Path` | `/auth` | O cookie só é enviado pelo navegador em requisições para `/auth/*` — não vai em toda chamada à API (`/predios`, `/compromissos` etc.), já que só `/auth/refresh` e `/auth/logout` precisam dele. Reduz a superfície de exposição do cookie a endpoints que realmente o usam. |
 | `Expires` | Igual ao `expira_em` persistido (8h fixas desde o login original) | O navegador descarta o cookie sozinho quando a sessão total expira, sem depender só da checagem contra o banco — mesma janela de 8h em ambos os lados. |
 
@@ -170,8 +170,8 @@ Não há uma regra genérica de "todo campo de texto é validado assim" no proje
 
 ## 8. Comunicação
 
-- `UseHttpsRedirection()` — força HTTPS entre cliente e servidor (RFC 6.1).
-- **CORS** (`Program.cs`, policy `"Frontend"`): origens liberadas vêm de `Cors:AllowedOrigins` (lista, nunca `AllowAnyOrigin`) — sem nenhuma origem configurada, a policy não libera nada (fail-closed). Em desenvolvimento, `appsettings.Development.json` já libera `http://localhost:5173` (dev server do Vite, ver [ARCHITECTURE.md do frontend](../../frontend/documentation/ARCHITECTURE.md)); em produção, a origem real do Amplify Hosting precisa ser adicionada a `Cors:AllowedOrigins` (via `appsettings.Production.json` ou variável de ambiente `Cors__AllowedOrigins__0`) antes do primeiro deploy. **Com `AllowCredentials()`** — necessário porque o refresh token agora trafega em cookie (seção 1); `AllowCredentials()` exige origens explícitas (incompatível com `AllowAnyOrigin`, que já não era usado por outro motivo). Coberto por testes de integração em `CorsTests.cs`.
+- `UseHttpsRedirection()` — força HTTPS entre cliente e servidor (RFC 6.1). Em produção o HTTPS termina no Caddy, que também redireciona HTTP para HTTPS; a API só recebe HTTP dentro da rede Docker, e o esquema original chega por `X-Forwarded-Proto` (seção 9).
+- **CORS** (`Program.cs`, policy `"Frontend"`): origens liberadas vêm de `Cors:AllowedOrigins` (lista, nunca `AllowAnyOrigin`) — sem nenhuma origem configurada, a policy não libera nada (fail-closed). Em desenvolvimento, `appsettings.Development.json` já libera `http://localhost:5173` (dev server do Vite, ver [ARCHITECTURE.md do frontend](../../frontend/documentation/ARCHITECTURE.md)); em produção, a origem `https://eusindicogestao.com.br` vem da variável de ambiente `Cors__AllowedOrigins__0` (ver seção 12). **Com `AllowCredentials()`** — necessário porque o refresh token agora trafega em cookie (seção 1); `AllowCredentials()` exige origens explícitas (incompatível com `AllowAnyOrigin`, que já não era usado por outro motivo). Coberto por testes de integração em `CorsTests.cs`.
 
 ## 9. Rate limiting (proteção contra força bruta)
 
@@ -187,17 +187,17 @@ Não há uma regra genérica de "todo campo de texto é validado assim" no proje
 Uma alternativa considerada foi um bloqueio com duração crescente a cada violação repetida (ex: 2 min, depois 5 min, depois 10 min), em vez de uma janela fixa que sempre reseta igual. Decisão: não implementar por ora, por dois motivos:
 
 - **Ganho de segurança marginal:** com `RNF04` já exigindo senha de 8+ caracteres com maiúscula, minúscula, número e caractere especial, o espaço de senhas possíveis já é grande o suficiente para que 5 tentativas/minuto (~7.200/dia) tornem força bruta impraticável de qualquer forma — escalar o tempo de bloqueio não muda essa conclusão de forma relevante.
-- **Complexidade desproporcional:** os algoritmos nativos do `Microsoft.AspNetCore.RateLimiting` (janela fixa/deslizante/token bucket) não têm um modo "aumenta a cada violação" pronto — isso exigiria manter um contador extra de violações por partição, e esse contador teria o mesmo problema de estado distribuído do rate limiter em si (ver pendência bloqueante abaixo): se o App Runner escalar para múltiplas instâncias, cada uma contaria violações separadamente, a menos que esse estado morasse num cache compartilhado (ex: Redis) — infraestrutura nova, não só código.
+- **Complexidade desproporcional:** os algoritmos nativos do `Microsoft.AspNetCore.RateLimiting` (janela fixa/deslizante/token bucket) não têm um modo "aumenta a cada violação" pronto — isso exigiria manter um contador extra de violações por partição, e esse contador teria o mesmo problema de estado distribuído do rate limiter em si (ver pendência bloqueante abaixo): se a API escalar para múltiplas instâncias, cada uma contaria violações separadamente, a menos que esse estado morasse num cache compartilhado (ex: Redis) — infraestrutura nova, não só código.
 
 Fica registrado como melhoria futura, não como pendência bloqueante.
 
 **Por que por IP, e não por conta/e-mail:** limitar por conta (ex: "bloquear a conta após 5 tentativas erradas") criaria um vetor de negação de serviço — qualquer pessoa poderia trancar a conta de outro usuário só errando a senha dele de propósito, sem precisar acertar nada. Limitar por IP protege contra o mesmo cenário de força bruta sem esse efeito colateral.
 
-**⚠️ Bloqueante antes de produção:** `RemoteIpAddress` é o IP de quem conecta diretamente ao servidor. O backend será hospedado em **AWS App Runner** (ver [ARCHITECTURE.md](ARCHITECTURE.md), seção "Hospedagem"), que fica atrás de um proxy gerenciado — todo tráfego externo passa por ele antes de chegar no container. Sem correção, `RemoteIpAddress` passa a ser o IP interno do proxy do App Runner, **igual para todos os clientes**, não o IP de cada usuário. Isso não abre brecha de segurança (força bruta continua sendo bloqueada), mas degrada a experiência de uso normal: usuários legítimos e não-relacionados passam a compartilhar o mesmo limite de 5 requisições/minuto em `/auth/login` e `/auth/registrar` só por estarem atrás do mesmo proxy — o suficiente para vários síndicos tentando logar por perto do mesmo minuto começarem a receber `429` sem terem feito nada de errado.
+**Atrás de proxy reverso:** `RemoteIpAddress` é o IP de quem conecta diretamente ao servidor. Em produção a API fica atrás do Caddy (ver [ARCHITECTURE.md](ARCHITECTURE.md), seção "Hospedagem"); sem correção, todo cliente apareceria com o IP do proxy e usuários sem relação nenhuma dividiriam o mesmo limite de 5 requisições/minuto em `/auth/login` e `/auth/registrar`.
 
-A correção é configurar `ForwardedHeadersMiddleware` para confiar no cabeçalho `X-Forwarded-For` que o App Runner injeta, restringindo a confiança à rede/proxy do próprio App Runner (`ForwardedHeadersOptions.KnownProxies`/`KnownNetworks`) — nunca aceitar esse cabeçalho de qualquer origem, senão um cliente externo poderia forjá-lo pra burlar o rate limiting inteiro fingindo IPs diferentes a cada requisição. Isso ainda não foi feito porque depende de conhecer a faixa de rede exata usada pelo App Runner, que só dá pra confirmar na documentação da AWS no momento de configurar o deploy — ver item bloqueante na seção 12.
+Resolvido com `ForwardedHeadersMiddleware` (`Program.cs`): a API usa `X-Forwarded-For` e `X-Forwarded-Proto` **somente** quando a conexão vem de uma rede listada em `ReverseProxy:KnownNetworks` (CIDR; em produção, a rede Docker do Caddy), com `ForwardLimit = 1` (um único proxy na frente). Os padrões do ASP.NET Core que confiam em loopback são removidos. Sem rede configurada, o middleware nem é registrado (fail-closed): um cliente que chegasse direto na API não conseguiria forjar um IP diferente a cada requisição para burlar o limite. O Caddy, por sua vez, não repassa um `X-Forwarded-For` recebido de fora — grava o IP de quem conectou nele. Coberto por `ForwardedHeadersTests.cs`.
 
-**Envio de documentos:** `POST /predios/{id}/atas` e `/normas` usam a política `upload` (10 por minuto, janela fixa), particionada por **usuário** (claim `sub`) em vez de IP — o usuário já está autenticado, então a partição é precisa e não depende do `ForwardedHeaders` abaixo. Complementada pelos limites de quantidade (10 normas por prédio, 5 atas por mês). Ver [DOCUMENTOS.md](DOCUMENTOS.md#segurança).
+**Envio de documentos:** `POST /predios/{id}/atas` e `/normas` usam a política `upload` (10 por minuto, janela fixa), particionada por **usuário** (claim `sub`) em vez de IP — o usuário já está autenticado, então a partição é precisa e não depende do `ForwardedHeaders` acima. Complementada pelos limites de quantidade (10 normas por prédio, 5 atas por mês). Ver [DOCUMENTOS.md](DOCUMENTOS.md#segurança).
 
 **Troca de e-mail e suporte:** `POST /perfil/email/solicitar` e `/confirmar` reaproveitam a política `auth` (5 por minuto, por IP + rota), porque cada pedido manda um e-mail a um endereço informado pelo cliente e o código de 6 caracteres tem de ser protegido contra tentativa e erro, como no Fluxo 8. `POST /suporte` usa a política `suporte` (3 por hora, janela fixa), particionada por **usuário** como a de documentos, já que cada mensagem vira um e-mail para a equipe. Ver [AUTHENTICATION.md](AUTHENTICATION.md), Fluxo 9.
 
@@ -234,14 +234,14 @@ Fluxo em 3 endpoints (RF06-A), sem exigir autenticação — detalhamento comple
 | Validação de entrada de dados | FluentValidation, incluindo `NomeValidator`/`EmailValidator` (seção 3) |
 | Proteção contra SQL Injection | EF Core parameterizado (seção 7) |
 | Proteção contra XSS | Renderização segura do Vue (front) + validação de entrada (backend, defesa em profundidade) (seção 3) |
-| HTTPS | `UseHttpsRedirection()` (seção 8) |
+| HTTPS | `UseHttpsRedirection()` + Caddy em produção (seção 8) |
 | Tratamento de erros sem exposição de dados sensíveis | `ApplicationExceptionHandler` (seção 4) |
 | Proteção contra força bruta | Rate limiting em `/auth/login` e `/auth/registrar` (seção 9) |
 | Recuperação de conta sem exposição de dados | Código de verificação por e-mail, anti-enumeração, uso único (seção 10) |
 
 ## 12. Pendências conhecidas
 
-**Bloqueantes antes de produção** (afetam usuários legítimos desde o primeiro dia, não são "nice to have"):
+**Configuração obrigatória em produção** (ambiente, não código — sem ela, usuários legítimos são afetados desde o primeiro dia):
 
-- `ForwardedHeadersMiddleware` configurado para o App Runner, para o rate limiting (seção 9) identificar o IP real do cliente em vez do IP do proxy.
-- Adicionar a origem real de produção do frontend (AWS Amplify Hosting) a `Cors:AllowedOrigins` (seção 8) — hoje só `http://localhost:5173` está liberado (desenvolvimento). Sem isso, o frontend em produção não consegue chamar a API.
+- `Cors__AllowedOrigins__0=https://eusindicogestao.com.br` (seção 8). Sem isso, o frontend em produção não consegue chamar a API.
+- `ReverseProxy__KnownNetworks__0` com a rede Docker do Caddy (seção 9). Sem isso, o rate limiting de login trata todos os usuários como um só.

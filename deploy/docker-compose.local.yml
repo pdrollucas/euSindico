@@ -1,0 +1,17 @@
+# Validação local do compose de produção, construindo as imagens a partir do código (ver deploy/README.md):
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file <seu .env local> up --build
+# Use SITE_DOMAIN=localhost: o Caddy emite certificados da própria CA interna para localhost,
+# api.localhost e www.localhost (o navegador vai alertar que a CA não é confiável — esperado).
+
+services:
+  migrate:
+    build:
+      context: ../backend
+  api:
+    build:
+      context: ../backend
+  caddy:
+    build:
+      context: ../frontend
+      args:
+        VITE_API_BASE_URL: https://api.${SITE_DOMAIN}

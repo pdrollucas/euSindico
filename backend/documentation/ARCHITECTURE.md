@@ -130,13 +130,14 @@ sequenceDiagram
 
 ---
 
-## Hospedagem (planejada)
+## Hospedagem
 
-A configuração de infraestrutura de produção fica deliberadamente para o final do projeto (depois do backend e do front-end estarem prontos) — mas a escolha de provedor já está decidida, então fica registrada aqui:
+Produção do TCC, dimensionada para os testes e para a apresentação (orçamento baixo, sem continuidade depois da aprovação):
 
-- **Backend:** AWS App Runner (build a partir de imagem Docker/`Dockerfile`, ainda não criado).
-- **Banco de dados:** Amazon RDS (MySQL gerenciado), substituindo o MySQL local.
-- **Front-end:** AWS Amplify Hosting (build + deploy + CDN + HTTPS a partir do repositório Git).
-- **Segredos em produção:** AWS Secrets Manager/Parameter Store (ver [GETTING_STARTED.md](GETTING_STARTED.md), seção "Diferença entre ambientes").
+- **Servidor:** uma instância **EC2** (`t4g.small`, ARM) em `us-east-2`, rodando em Docker Compose a API, o MySQL e o **Caddy** (proxy reverso com HTTPS automático via Let's Encrypt).
+- **Banco de dados:** MySQL 8.4 em container na mesma instância, sem porta exposta fora da rede Docker. Backup por dump no S3.
+- **Front-end:** build estático do Vite servido pelo próprio Caddy em `eusindicogestao.com.br`; a API fica no subdomínio `api.eusindicogestao.com.br`.
+- **Arquivos:** bucket S3 privado, acessado pela role da instância (sem chaves estáticas).
+- **Segredos em produção:** variáveis de ambiente num `.env` fora do Git, só na instância (ver [GETTING_STARTED.md](GETTING_STARTED.md), seção "Diferença entre ambientes").
 
-Antes do primeiro deploy real, ver a lista de pendências **bloqueantes** em [SECURITY.md](SECURITY.md), seção 12 — em especial a configuração de `ForwardedHeadersMiddleware` para o App Runner, sem a qual o rate limiting (SECURITY.md, seção 9) trata todos os usuários atrás do proxy como uma única origem.
+Como a API fica atrás do Caddy, `ReverseProxy:KnownNetworks` precisa conter a rede Docker do proxy, senão o rate limiting ([SECURITY.md](SECURITY.md), seção 9) trata todos os usuários como uma única origem.

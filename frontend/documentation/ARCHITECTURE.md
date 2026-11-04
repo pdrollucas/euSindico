@@ -202,7 +202,7 @@ Por isso `AppLayout` é só a casca comum (`v-app` + `v-main` + `router-view`), 
 
 ## 6. Comunicação com o backend
 
-- Uma única instância do Axios (`plugins/axios.ts`), com `baseURL` vindo de `import.meta.env.VITE_API_BASE_URL` (nunca hardcoded — necessário para apontar para o backend local em desenvolvimento e para o AWS App Runner em produção).
+- Uma única instância do Axios (`plugins/axios.ts`), com `baseURL` vindo de `import.meta.env.VITE_API_BASE_URL` (nunca hardcoded — necessário para apontar para o backend local em desenvolvimento e para `https://api.eusindicogestao.com.br` em produção).
 - **Autenticação e renovação de sessão:** como o token é anexado a cada requisição e renovado automaticamente em caso de `401` está descrito por inteiro em **[AUTHENTICATION.md](AUTHENTICATION.md)** — não duplicado aqui.
 - **Tratamento de erro:** o backend responde erros num formato mínimo, só `title` + `status` (sem `type`/`code` — ver decisão registrada em memória do projeto). Por isso o frontend **nunca** decide *comportamento* com base no texto de `title` (redirecionar, qual branch seguir) — isso vem exclusivamente do `status` HTTP. Na maioria das telas, a mensagem exibida também é definida no próprio frontend, sem depender do texto exato do `title` (ex: um `409` no cadastro sempre vira "este e-mail já está cadastrado") — mas isso é sobre **não confiar no texto pra decidir nada**, não uma proibição de exibi-lo. Quando um único `status` cobre mais de uma exceção com significados diferentes (ex: `409` em `POST/PUT /predios` cobre tanto duplicidade quanto limite de 20 prédios atingido, ver [PREDIOS.md](../../backend/documentation/PREDIOS.md)) e o `title` de cada uma já é uma mensagem pronta pra o usuário, o frontend mostra o `title` recebido direto (`error.response.data?.title`, tipado por `types/erroApi.types.ts`) em vez de inventar um "X ou Y" genérico que jogaria fora uma distinção que o backend já sabe fazer.
 
@@ -226,12 +226,13 @@ sequenceDiagram
     V-->>U: Re-renderiza a tela
 ```
 
-## 8. Hospedagem (planejada)
+## 8. Hospedagem
 
-Consistente com o que já está registrado no [ARCHITECTURE.md do backend](../../backend/documentation/ARCHITECTURE.md), seção "Hospedagem":
+Consistente com o [ARCHITECTURE.md do backend](../../backend/documentation/ARCHITECTURE.md), seção "Hospedagem", e com os arquivos em [deploy/](../../deploy/README.md):
 
-- **Frontend:** AWS Amplify Hosting (build + deploy + CDN + HTTPS a partir do repositório Git).
-- **Backend:** AWS App Runner — URL configurada via `VITE_API_BASE_URL` no build de produção do Amplify.
-- **Segredos/configuração de build:** variáveis de ambiente do próprio Amplify Console (nunca versionadas) — ver [SECURITY.md](SECURITY.md), seção "Variáveis de ambiente".
+- **Frontend:** build estático do Vite servido pelo **Caddy** numa instância EC2, em `https://eusindicogestao.com.br` (`www` redireciona para o domínio sem `www`). O build roda dentro da imagem Docker do frontend ([frontend/Dockerfile](../Dockerfile)).
+- **Backend:** na mesma instância, atrás do mesmo Caddy, em `https://api.eusindicogestao.com.br` — URL embutida no bundle via `VITE_API_BASE_URL` (build arg da imagem).
+- **Rotas do Vue Router:** como o histórico é `createWebHistory`, o Caddy devolve o `index.html` para qualquer caminho que não seja arquivo (fallback de SPA).
+- **Cache:** arquivos em `/assets/` (com hash no nome) ficam em cache permanente; o `index.html` é sempre revalidado, então um deploy novo aparece sem limpar o cache do navegador.
 
-O backend já libera `http://localhost:5173` via CORS para desenvolvimento (ver [SECURITY.md](SECURITY.md), seção 7). Antes do primeiro deploy real, falta só adicionar a origem de produção (domínio do Amplify) — ver pendência em [SECURITY.md](SECURITY.md), seção "Pendências conhecidas".
+O backend libera `http://localhost:5173` via CORS em desenvolvimento e `https://eusindicogestao.com.br` em produção (variável `Cors__AllowedOrigins__0`, ver [SECURITY.md](SECURITY.md), seção 7).

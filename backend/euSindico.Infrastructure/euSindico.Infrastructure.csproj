@@ -16,6 +16,14 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />
   </ItemGroup>
 
+  <!-- Dependências transitivas fixadas acima da versão que os pacotes diretos puxam, por vulnerabilidade
+       conhecida: Pkcs vem do MailKit/MimeKit (GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7) e MySqlConnector
+       do Pomelo (GHSA-473q-m89c-ghf8). Remover quando os pacotes diretos já trouxerem versões corrigidas. -->
+  <ItemGroup>
+    <PackageReference Include="MySqlConnector" Version="2.6.1" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
