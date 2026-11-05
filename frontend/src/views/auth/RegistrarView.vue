@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import RegistrarForm from '@/components/auth/RegistrarForm.vue'
+import QrCodeCelular from '@/components/auth/QrCodeCelular.vue'
 import { useAuthStore } from '@/stores/authStore'
 import type { RegistrarRequest } from '@/types/auth.types'
 
@@ -64,4 +65,6 @@ async function onSubmit(payload: RegistrarRequest) {
       </div>
     </v-card-text>
   </v-card>
+
+  <QrCodeCelular caminho="/registrar" />
 </template>
