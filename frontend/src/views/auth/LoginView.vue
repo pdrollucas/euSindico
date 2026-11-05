@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import LoginForm from '@/components/auth/LoginForm.vue'
+import QrCodeCelular from '@/components/auth/QrCodeCelular.vue'
 import { useAuthStore } from '@/stores/authStore'
 import type { LoginRequest } from '@/types/auth.types'
 
@@ -73,4 +74,6 @@ async function onSubmit(payload: LoginRequest) {
       </div>
     </v-card-text>
   </v-card>
+
+  <QrCodeCelular caminho="/login" />
 </template>
