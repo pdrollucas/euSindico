@@ -4,6 +4,7 @@ import {
   categoriaDe,
   contentTypeDe,
   extensaoDe,
+  iconeDoArquivo,
   MENSAGEM_FORMATO,
   MENSAGEM_NOME,
   MENSAGEM_TAMANHO,
@@ -124,5 +125,16 @@ describe('contentTypeDe', () => {
 
   it('usa octet-stream para o desconhecido (nunca um tipo que o navegador renderize)', () => {
     expect(contentTypeDe('estranho.html')).toBe('application/octet-stream')
+  })
+})
+
+describe('iconeDoArquivo', () => {
+  it.each([
+    ['ata.pdf', 'mdi-file-pdf-box'],
+    ['foto.JPG', 'mdi-file-image-outline'],
+    ['norma.docx', 'mdi-file-word-outline'],
+    ['planilha.xlsx', 'mdi-file-outline'],
+  ])('%s -> %s', (nome, icone) => {
+    expect(iconeDoArquivo(nome)).toBe(icone)
   })
 })
