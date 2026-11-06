@@ -114,82 +114,84 @@ async function onEditar(payload: PredioFormValues) {
         {{ predio.endereco }}
       </p>
 
-      <v-card
-        v-if="podeGerenciar"
-        :to="`/predios/${predioId}/equipe`"
-        data-cy="card-equipe"
-        variant="flat"
-        border
-        rounded="lg"
-        class="mb-3"
-      >
-        <v-card-text class="d-flex align-center ga-3">
-          <v-icon icon="mdi-account-group-outline" color="primary" />
-          <span class="text-subtitle-2 font-weight-medium">Equipe</span>
-        </v-card-text>
-      </v-card>
+      <div class="app-grade">
+        <v-card
+          v-if="podeGerenciar"
+          :to="`/predios/${predioId}/equipe`"
+          data-cy="card-equipe"
+          variant="flat"
+          border
+          rounded="lg"
+          class="mb-3"
+        >
+          <v-card-text class="d-flex align-center ga-3">
+            <v-icon icon="mdi-account-group-outline" color="primary" />
+            <span class="text-subtitle-2 font-weight-medium">Equipe</span>
+          </v-card-text>
+        </v-card>
 
-      <v-card
-        :to="{ path: '/compromissos', query: { predioId: String(predioId) } }"
-        data-cy="card-compromissos-predio"
-        variant="flat"
-        border
-        rounded="lg"
-        class="mb-3"
-      >
-        <v-card-text class="d-flex align-center ga-3">
-          <v-icon icon="mdi-calendar-check-outline" color="primary" />
-          <span class="text-subtitle-2 font-weight-medium">Compromissos</span>
-        </v-card-text>
-      </v-card>
+        <v-card
+          :to="{ path: '/compromissos', query: { predioId: String(predioId) } }"
+          data-cy="card-compromissos-predio"
+          variant="flat"
+          border
+          rounded="lg"
+          class="mb-3"
+        >
+          <v-card-text class="d-flex align-center ga-3">
+            <v-icon icon="mdi-calendar-check-outline" color="primary" />
+            <span class="text-subtitle-2 font-weight-medium">Compromissos</span>
+          </v-card-text>
+        </v-card>
 
-      <!-- Todos os papéis entram: o Colaborador só lê (RN29), e a tela de planejamentos já esconde
-           o que ele não pode fazer. -->
-      <v-card
-        :to="`/predios/${predioId}/planejamentos`"
-        data-cy="card-planejamentos-predio"
-        variant="flat"
-        border
-        rounded="lg"
-        class="mb-3"
-      >
-        <v-card-text class="d-flex align-center ga-3">
-          <v-icon icon="mdi-calendar-clock-outline" color="primary" />
-          <span class="text-subtitle-2 font-weight-medium">Planejamentos futuros</span>
-        </v-card-text>
-      </v-card>
+        <!-- Todos os papéis entram: o Colaborador só lê (RN29), e a tela de planejamentos já esconde
+             o que ele não pode fazer. -->
+        <v-card
+          :to="`/predios/${predioId}/planejamentos`"
+          data-cy="card-planejamentos-predio"
+          variant="flat"
+          border
+          rounded="lg"
+          class="mb-3"
+        >
+          <v-card-text class="d-flex align-center ga-3">
+            <v-icon icon="mdi-calendar-clock-outline" color="primary" />
+            <span class="text-subtitle-2 font-weight-medium">Planejamentos futuros</span>
+          </v-card-text>
+        </v-card>
 
-      <!-- Todos os papéis entram: o Colaborador lê, abre e baixa; a tela esconde gerar e excluir. -->
-      <v-card
-        :to="`/predios/${predioId}/relatorios`"
-        data-cy="card-relatorios-predio"
-        variant="flat"
-        border
-        rounded="lg"
-        class="mb-3"
-      >
-        <v-card-text class="d-flex align-center ga-3">
-          <v-icon icon="mdi-file-chart-outline" color="primary" />
-          <span class="text-subtitle-2 font-weight-medium">Relatórios de atividade</span>
-        </v-card-text>
-      </v-card>
+        <!-- Todos os papéis entram: o Colaborador lê, abre e baixa; a tela esconde gerar e excluir. -->
+        <v-card
+          :to="`/predios/${predioId}/relatorios`"
+          data-cy="card-relatorios-predio"
+          variant="flat"
+          border
+          rounded="lg"
+          class="mb-3"
+        >
+          <v-card-text class="d-flex align-center ga-3">
+            <v-icon icon="mdi-file-chart-outline" color="primary" />
+            <span class="text-subtitle-2 font-weight-medium">Relatórios de atividade</span>
+          </v-card-text>
+        </v-card>
 
-      <!-- Todos os papéis entram: o Colaborador lê, abre e baixa; a tela esconde enviar e excluir. -->
-      <v-card
-        v-for="documento in modulosDocumentos"
-        :key="documento.rota"
-        :to="`/predios/${predioId}/${documento.rota}`"
-        :data-cy="`card-${documento.rota}-predio`"
-        variant="flat"
-        border
-        rounded="lg"
-        class="mb-3"
-      >
-        <v-card-text class="d-flex align-center ga-3">
-          <v-icon :icon="documento.icone" color="primary" />
-          <span class="text-subtitle-2 font-weight-medium">{{ documento.titulo }}</span>
-        </v-card-text>
-      </v-card>
+        <!-- Todos os papéis entram: o Colaborador lê, abre e baixa; a tela esconde enviar e excluir. -->
+        <v-card
+          v-for="documento in modulosDocumentos"
+          :key="documento.rota"
+          :to="`/predios/${predioId}/${documento.rota}`"
+          :data-cy="`card-${documento.rota}-predio`"
+          variant="flat"
+          border
+          rounded="lg"
+          class="mb-3"
+        >
+          <v-card-text class="d-flex align-center ga-3">
+            <v-icon :icon="documento.icone" color="primary" />
+            <span class="text-subtitle-2 font-weight-medium">{{ documento.titulo }}</span>
+          </v-card-text>
+        </v-card>
+      </div>
     </template>
 
     <v-menu v-if="podeGerenciar">
@@ -261,13 +263,13 @@ async function onEditar(payload: PredioFormValues) {
 
 <style scoped>
 .predio-detalhe {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 
 .predio-detalhe-fab {
   position: fixed;
-  right: 24px;
+  right: var(--app-fab-right);
   bottom: 24px;
 }
 </style>

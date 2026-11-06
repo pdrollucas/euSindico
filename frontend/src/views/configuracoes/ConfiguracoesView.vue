@@ -39,7 +39,7 @@ const secoes = [
   <v-container class="configuracoes d-flex flex-column fill-height">
     <AppHeader />
 
-    <nav class="d-flex flex-column ga-3 mt-2">
+    <nav class="app-grade mt-2">
       <v-card
         v-for="secao in secoes"
         :key="secao.destino"
@@ -48,6 +48,7 @@ const secoes = [
         variant="flat"
         border
         rounded="lg"
+        class="mb-3"
       >
         <div class="d-flex align-center pa-4 ga-4">
           <v-icon :icon="secao.icone" size="28" color="primary" />
@@ -64,7 +65,7 @@ const secoes = [
 
 <style scoped>
 .configuracoes {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 </style>

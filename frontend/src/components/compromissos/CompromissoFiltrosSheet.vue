@@ -7,7 +7,13 @@ import {
   type EscopoCompromissos,
   type SituacaoCompromissos,
 } from '@/types/compromisso.types'
-import { anosComFuturo, nomeMes, periodoAtual, periodoObrigatorio } from '@/utils/periodo'
+import { periodoObrigatorio } from '@/utils/periodo'
+import {
+  ITENS_ANO_COMPROMISSO,
+  ITENS_MES,
+  parcialAoEscolherAno,
+  parcialAoEscolherMes,
+} from '@/utils/filtrosCompromisso'
 
 // Folha de filtros (RFC 3.1: prédio, atrasados, hoje, concluídos, meus/todos). Componente "burro":
 // recebe os filtros atuais e emite o que mudou — quem aplica (store/rota) é a view.
@@ -27,28 +33,15 @@ const emit = defineEmits<{
 
 const itensPredio = computed(() => props.predios.map((p) => ({ title: p.nome, value: p.id })))
 
-const itensAno = anosComFuturo(2)
-const itensMes = Array.from({ length: 12 }, (_, indice) => ({
-  title: nomeMes(indice + 1),
-  value: indice + 1,
-}))
-
-// Ano e mês andam juntos: escolher um sem o outro completa com o atual, e limpar (só possível onde o
-// período é opcional) limpa os dois.
+// Limpar o período só é possível onde ele é opcional.
 const obrigatorio = computed(() => periodoObrigatorio(props.filtros.situacao))
 
 function onAno(valor: number | null) {
-  emit(
-    'alterar',
-    valor ? { ano: valor, mes: props.filtros.mes ?? periodoAtual().mes } : { ano: null, mes: null },
-  )
+  emit('alterar', parcialAoEscolherAno(valor, props.filtros))
 }
 
 function onMes(valor: number | null) {
-  emit(
-    'alterar',
-    valor ? { mes: valor, ano: props.filtros.ano ?? periodoAtual().ano } : { ano: null, mes: null },
-  )
+  emit('alterar', parcialAoEscolherMes(valor, props.filtros))
 }
 
 function onSituacao(valor: SituacaoCompromissos | undefined) {
@@ -108,7 +101,7 @@ function onEscopo(valor: EscopoCompromissos | undefined) {
           <div class="d-flex ga-2 mb-2">
             <v-select
               :model-value="filtros.ano"
-              :items="itensAno"
+              :items="ITENS_ANO_COMPROMISSO"
               label="Ano"
               placeholder="Qualquer"
               :clearable="!obrigatorio"
@@ -117,7 +110,7 @@ function onEscopo(valor: EscopoCompromissos | undefined) {
             />
             <v-select
               :model-value="filtros.mes"
-              :items="itensMes"
+              :items="ITENS_MES"
               label="Mês"
               placeholder="Qualquer"
               :clearable="!obrigatorio"

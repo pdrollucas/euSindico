@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/authStore'
 import { usePerfilStore } from '@/stores/perfilStore'
+import { useSair } from '@/composables/useSair'
 import logoIconUrl from '@/assets/logo-eusindico-icon.svg'
 
-const router = useRouter()
-const authStore = useAuthStore()
 const perfilStore = usePerfilStore()
+const { sair } = useSair()
 
-// Hub central da área logada (ver ARCHITECTURE.md, seção 5): cards para os módulos.
+// Hub central da área logada (ver ARCHITECTURE.md, seção 5): cards para os módulos. Só no celular.
 const menu = [
   { titulo: 'Compromissos', icone: 'mdi-calendar-check-outline', destino: '/compromissos', dataCy: 'card-compromissos' },
   { titulo: 'Prédios', icone: 'mdi-office-building-outline', destino: '/predios', dataCy: 'card-predios' },
@@ -25,12 +23,6 @@ onMounted(async () => {
     // Silencioso de propósito: a Home é utilizável sem o nome.
   }
 })
-
-async function sair() {
-  await authStore.logout()
-  perfilStore.limpar()
-  router.push('/login')
-}
 </script>
 
 <template>

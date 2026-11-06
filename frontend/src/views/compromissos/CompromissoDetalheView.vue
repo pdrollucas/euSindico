@@ -180,75 +180,76 @@ async function confirmarRemocao() {
 <template>
   <v-container class="compromisso-detalhe d-flex flex-column">
     <AppHeader :titulo="modoNovo ? 'Novo compromisso' : 'Compromisso'" />
-
-    <v-alert
-      v-if="erro"
-      type="error"
-      variant="tonal"
-      density="compact"
-      class="mb-4"
-      data-cy="erro-compromisso-detalhe"
-    >
-      {{ erro }}
-    </v-alert>
-
-    <v-progress-circular
-      v-if="carregando"
-      indeterminate
-      color="primary"
-      class="align-self-center mt-8"
-    />
-
-    <template v-else-if="!erro">
+    <div class="app-bloco-form d-flex flex-column">
       <v-alert
-        v-if="erroForm"
+        v-if="erro"
         type="error"
         variant="tonal"
         density="compact"
         class="mb-4"
-        data-cy="erro-compromisso-form"
+        data-cy="erro-compromisso-detalhe"
       >
-        {{ erroForm }}
+        {{ erro }}
       </v-alert>
 
-      <v-switch
-        v-if="!modoNovo && compromisso"
-        :model-value="compromisso.concluido"
-        label="Concluído"
+      <v-progress-circular
+        v-if="carregando"
+        indeterminate
         color="primary"
-        density="comfortable"
-        hide-details
-        class="mb-2"
-        :loading="alterandoConclusao"
-        :disabled="alterandoConclusao"
-        data-cy="switch-concluido"
-        @update:model-value="alternarConclusao"
+        class="align-self-center mt-8"
       />
 
-      <CompromissoForm
-        :valores-iniciais="valoresIniciais"
-        :predios="predioStore.predios"
-        :membros="equipeStore.membros"
-        :perfil-id="perfilStore.perfil?.id ?? null"
-        :responsavel-inicial="responsavelInicial"
-        :salvando="salvando"
-        :modo-edicao="!modoNovo"
-        @predio-alterado="carregarEquipe"
-        @submit="onSubmit"
-      />
+      <template v-else-if="!erro">
+        <v-alert
+          v-if="erroForm"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+          data-cy="erro-compromisso-form"
+        >
+          {{ erroForm }}
+        </v-alert>
 
-      <v-btn
-        v-if="!modoNovo"
-        variant="text"
-        color="error"
-        prepend-icon="mdi-trash-can-outline"
-        class="align-self-center mb-4"
-        data-cy="btn-remover-compromisso"
-        @click="confirmandoRemocao = true"
-      >
-        Remover compromisso
-      </v-btn>
-    </template>
+        <v-switch
+          v-if="!modoNovo && compromisso"
+          :model-value="compromisso.concluido"
+          label="Concluído"
+          color="primary"
+          density="comfortable"
+          hide-details
+          class="mb-2"
+          :loading="alterandoConclusao"
+          :disabled="alterandoConclusao"
+          data-cy="switch-concluido"
+          @update:model-value="alternarConclusao"
+        />
+
+        <CompromissoForm
+          :valores-iniciais="valoresIniciais"
+          :predios="predioStore.predios"
+          :membros="equipeStore.membros"
+          :perfil-id="perfilStore.perfil?.id ?? null"
+          :responsavel-inicial="responsavelInicial"
+          :salvando="salvando"
+          :modo-edicao="!modoNovo"
+          @predio-alterado="carregarEquipe"
+          @submit="onSubmit"
+        />
+
+        <v-btn
+          v-if="!modoNovo"
+          variant="text"
+          color="error"
+          prepend-icon="mdi-trash-can-outline"
+          class="align-self-center mb-4"
+          data-cy="btn-remover-compromisso"
+          @click="confirmandoRemocao = true"
+        >
+          Remover compromisso
+        </v-btn>
+      </template>
+    </div>
 
     <ConfirmDialog
       v-model="confirmandoRemocao"
@@ -264,7 +265,7 @@ async function confirmarRemocao() {
 
 <style scoped>
 .compromisso-detalhe {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 </style>

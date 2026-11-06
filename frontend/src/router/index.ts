@@ -7,6 +7,7 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import type { TipoDocumento } from '@/types/documento.types'
 import { rotaListaCompromissos } from '@/utils/rotasCompromisso'
+import { ehDesktop } from '@/utils/layout'
 
 // `voltarPara`: destino do botão "voltar" do AppHeader — nunca o histórico do navegador (ver
 // ARCHITECTURE.md, seção 5).
@@ -216,6 +217,11 @@ router.beforeEach(async (to) => {
     // Nunca redireciona para "/" — quem tenta acessar uma rota protegida já demonstrou intenção
     // de entrar no sistema, não de conhecer o produto (ver AUTHENTICATION.md/ARCHITECTURE.md, seção 5).
     return { name: 'login' }
+  }
+
+  // No desktop não há Home: o rail faz o papel do hub (ver ARCHITECTURE.md, seção 5).
+  if (to.name === 'home' && ehDesktop()) {
+    return { path: '/compromissos' }
   }
 })
 

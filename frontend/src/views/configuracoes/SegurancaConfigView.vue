@@ -37,34 +37,35 @@ async function onSubmit(payload: AlterarSenhaFormValues) {
 <template>
   <v-container class="config-seguranca d-flex flex-column fill-height">
     <AppHeader />
-
-    <v-card rounded="lg" elevation="2">
-      <v-card-item>
-        <v-card-title class="text-h6 font-weight-bold">Alterar senha</v-card-title>
-        <v-card-subtitle class="text-wrap">
-          Ao alterar a senha, você sai de todos os dispositivos e entra de novo com a nova senha.
-        </v-card-subtitle>
-      </v-card-item>
-      <v-card-text>
-        <v-alert
-          v-if="erro"
-          type="error"
-          variant="tonal"
-          density="compact"
-          class="mb-4"
-          data-cy="erro-alterar-senha"
-        >
-          {{ erro }}
-        </v-alert>
-        <AlterarSenhaForm :carregando="carregando" @submit="onSubmit" />
-      </v-card-text>
-    </v-card>
+    <div class="app-bloco-form d-flex flex-column">
+      <v-card rounded="lg" elevation="2">
+        <v-card-item>
+          <v-card-title class="text-h6 font-weight-bold">Alterar senha</v-card-title>
+          <v-card-subtitle class="text-wrap">
+            Ao alterar a senha, você sai de todos os dispositivos e entra de novo com a nova senha.
+          </v-card-subtitle>
+        </v-card-item>
+        <v-card-text>
+          <v-alert
+            v-if="erro"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+            data-cy="erro-alterar-senha"
+          >
+            {{ erro }}
+          </v-alert>
+          <AlterarSenhaForm :carregando="carregando" @submit="onSubmit" />
+        </v-card-text>
+      </v-card>
+    </div>
   </v-container>
 </template>
 
 <style scoped>
 .config-seguranca {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 </style>

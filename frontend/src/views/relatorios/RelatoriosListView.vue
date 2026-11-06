@@ -189,7 +189,7 @@ async function confirmarRemocao() {
         {{ mensagemVazio }}
       </p>
 
-      <div v-else class="flex-grow-1">
+      <div v-else class="flex-grow-1 app-grade">
         <RelatorioListItem
           v-for="relatorio in relatorioStore.relatorios"
           :key="relatorio.id"
@@ -207,6 +207,7 @@ async function confirmarRemocao() {
           variant="text"
           color="primary"
           block
+          class="app-grade-linha"
           data-cy="btn-carregar-mais"
           @click="carregarMais"
         >
@@ -269,13 +270,13 @@ async function confirmarRemocao() {
 
 <style scoped>
 .relatorios-list {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 
 .relatorios-fab {
   position: fixed;
-  right: 24px;
+  right: var(--app-fab-right);
   bottom: 24px;
 }
 </style>

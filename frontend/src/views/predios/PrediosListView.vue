@@ -107,7 +107,7 @@ async function onCriar(payload: PredioFormValues) {
         {{ busca ? 'Nenhum prédio encontrado.' : 'Você ainda não tem nenhum prédio. Crie o primeiro!' }}
       </p>
 
-      <div v-else class="flex-grow-1">
+      <div v-else class="flex-grow-1 app-grade">
         <PredioCard v-for="predio in prediosFiltrados" :key="predio.id" :predio="predio" />
 
         <v-btn
@@ -115,6 +115,7 @@ async function onCriar(payload: PredioFormValues) {
           variant="text"
           color="primary"
           block
+          class="app-grade-linha"
           data-cy="btn-carregar-mais"
           @click="carregarMais"
         >
@@ -161,7 +162,7 @@ async function onCriar(payload: PredioFormValues) {
 
 <style scoped>
 .predios-list {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 
@@ -184,7 +185,7 @@ async function onCriar(payload: PredioFormValues) {
 /* FAB fixo no canto inferior direito — mesmo padrão da Home (ver DESIGN.md, "FAB"). */
 .predios-fab {
   position: fixed;
-  right: 24px;
+  right: var(--app-fab-right);
   bottom: 24px;
 }
 </style>

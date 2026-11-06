@@ -224,7 +224,7 @@ function criar() {
         {{ mensagemVazio }}
       </p>
 
-      <div v-else class="flex-grow-1">
+      <div v-else class="flex-grow-1 app-grade">
         <PlanejamentoListItem
           v-for="planejamento in planejamentoStore.planejamentos"
           :key="planejamento.id"
@@ -239,6 +239,7 @@ function criar() {
           variant="text"
           color="primary"
           block
+          class="app-grade-linha"
           data-cy="btn-carregar-mais"
           @click="carregarMais"
         >
@@ -284,7 +285,7 @@ function criar() {
 
 <style scoped>
 .planejamentos-list {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 
@@ -303,7 +304,7 @@ function criar() {
 
 .planejamentos-fab {
   position: fixed;
-  right: 24px;
+  right: var(--app-fab-right);
   bottom: 24px;
 }
 </style>

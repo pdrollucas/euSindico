@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import AppHeader from '@/components/common/AppHeader.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import CompromissoListItem from '@/components/compromissos/CompromissoListItem.vue'
 import type { EstadoItem } from '@/components/compromissos/CompromissoListItem.vue'
 import CompromissoFiltrosSheet from '@/components/compromissos/CompromissoFiltrosSheet.vue'
+import CompromissoFiltrosBarra from '@/components/compromissos/CompromissoFiltrosBarra.vue'
+import CompromissosTabela from '@/components/compromissos/CompromissosTabela.vue'
 import { useCompromissoStore } from '@/stores/compromissoStore'
 import { usePredioStore } from '@/stores/predioStore'
 import { PAPEL_PREDIO } from '@/types/predio.types'
@@ -22,6 +25,8 @@ import { lerPredioIdDaQuery } from '@/utils/rotasCompromisso'
 
 const route = useRoute()
 const router = useRouter()
+// Desktop troca cards, folha de filtros e FAB por tabela, barra e ação no cabeçalho.
+const { mdAndUp } = useDisplay()
 const compromissoStore = useCompromissoStore()
 const predioStore = usePredioStore()
 
@@ -271,39 +276,76 @@ function criar() {
 
 <template>
   <v-container class="compromissos-list d-flex flex-column fill-height">
-    <AppHeader />
-
-    <div class="compromissos-busca d-flex align-center ga-2">
-      <v-text-field
-        v-model="busca"
-        data-cy="busca-compromisso"
-        @keydown.enter="aplicarBusca"
-        placeholder="Buscar compromisso..."
-        prepend-inner-icon="mdi-magnify"
-        density="compact"
-        hide-details
-        single-line
-        clearable
-      />
-      <v-badge :model-value="filtrosAtivos > 0" dot color="primary">
+    <AppHeader>
+      <template #acoes>
         <v-btn
-          icon="mdi-filter-variant"
-          variant="text"
-          aria-label="Filtros"
-          data-cy="btn-filtros"
-          @click="mostrarFiltros = true"
+          color="primary"
+          prepend-icon="mdi-plus"
+          data-cy="btn-criar-compromisso"
+          @click="criar"
+        >
+          Novo compromisso
+        </v-btn>
+      </template>
+    </AppHeader>
+
+    <div class="compromissos-busca" :class="{ 'd-flex align-center ga-2': !mdAndUp }">
+      <CompromissoFiltrosBarra
+        v-if="mdAndUp"
+        :filtros="filtros"
+        :predios="predioStore.predios"
+        :mostrar-escopo="mostrarEscopo"
+        :filtros-ativos="filtrosAtivos > 0"
+        @alterar="aplicarFiltros"
+        @limpar="limparFiltros"
+      >
+        <template #busca>
+          <v-text-field
+            v-model="busca"
+            data-cy="busca-compromisso"
+            @keydown.enter="aplicarBusca"
+            placeholder="Buscar compromisso..."
+            prepend-inner-icon="mdi-magnify"
+            density="compact"
+            hide-details
+            single-line
+            clearable
+          />
+        </template>
+      </CompromissoFiltrosBarra>
+      <template v-else>
+        <v-text-field
+          v-model="busca"
+          data-cy="busca-compromisso"
+          @keydown.enter="aplicarBusca"
+          placeholder="Buscar compromisso..."
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          hide-details
+          single-line
+          clearable
         />
-      </v-badge>
+        <v-badge :model-value="filtrosAtivos > 0" dot color="primary">
+          <v-btn
+            icon="mdi-filter-variant"
+            variant="text"
+            aria-label="Filtros"
+            data-cy="btn-filtros"
+            @click="mostrarFiltros = true"
+          />
+        </v-badge>
+      </template>
     </div>
 
     <!-- Um chip por filtro fora do padrão; fechar volta o filtro ao padrão (situação "próximos",
-         escopo "meus", todos os prédios). -->
+         escopo "meus", todos os prédios). Só no celular. -->
     <div
       v-if="
-        predioFiltrado ||
-        filtros.situacao !== 'proximos' ||
-        filtros.escopo !== 'meus' ||
-        filtros.ano !== null
+        !mdAndUp &&
+        (predioFiltrado ||
+          filtros.situacao !== 'proximos' ||
+          filtros.escopo !== 'meus' ||
+          filtros.ano !== null)
       "
       class="d-flex flex-wrap ga-2 mb-3"
     >
@@ -377,7 +419,17 @@ function criar() {
       </p>
 
       <div v-else class="flex-grow-1">
-        <TransitionGroup name="lista" tag="div" class="compromissos-itens">
+        <CompromissosTabela
+          v-if="mdAndUp"
+          :compromissos="compromissoStore.compromissos"
+          :estados="estados"
+          :mostrar-responsavel="mostrarResponsavel"
+          :predio-id-filtro="predioIdRota"
+          class="mb-3"
+          @alternar="alternarConclusao"
+          @remover="paraRemover = $event"
+        />
+        <TransitionGroup v-else name="lista" tag="div" class="compromissos-itens">
           <CompromissoListItem
             v-for="compromisso in compromissoStore.compromissos"
             :key="compromisso.id"
@@ -405,6 +457,7 @@ function criar() {
     </template>
 
     <v-btn
+      v-if="!mdAndUp"
       icon="mdi-plus"
       color="primary"
       size="large"
@@ -415,6 +468,7 @@ function criar() {
     />
 
     <CompromissoFiltrosSheet
+      v-if="!mdAndUp"
       v-model="mostrarFiltros"
       :filtros="filtros"
       :predios="predioStore.predios"
@@ -445,7 +499,7 @@ function criar() {
 
 <style scoped>
 .compromissos-list {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 
@@ -485,7 +539,7 @@ function criar() {
 
 .compromissos-fab {
   position: fixed;
-  right: 24px;
+  right: var(--app-fab-right);
   bottom: 24px;
 }
 </style>
