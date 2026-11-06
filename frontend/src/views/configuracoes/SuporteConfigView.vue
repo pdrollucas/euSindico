@@ -34,28 +34,29 @@ async function onSubmit(payload: EnviarSuporteRequest) {
 <template>
   <v-container class="config-suporte d-flex flex-column fill-height">
     <AppHeader />
-
-    <v-card rounded="lg" elevation="2">
-      <v-card-item>
-        <v-card-title class="text-h6 font-weight-bold">Fale com o suporte</v-card-title>
-        <v-card-subtitle class="text-wrap">
-          Descreva sua dúvida ou problema. Responderemos no e-mail da sua conta.
-        </v-card-subtitle>
-      </v-card-item>
-      <v-card-text>
-        <v-alert
-          v-if="erro"
-          type="error"
-          variant="tonal"
-          density="compact"
-          class="mb-4"
-          data-cy="erro-suporte"
-        >
-          {{ erro }}
-        </v-alert>
-        <EnviarSuporteForm :key="chaveFormulario" :carregando="carregando" @submit="onSubmit" />
-      </v-card-text>
-    </v-card>
+    <div class="app-bloco-form d-flex flex-column">
+      <v-card rounded="lg" elevation="2">
+        <v-card-item>
+          <v-card-title class="text-h6 font-weight-bold">Fale com o suporte</v-card-title>
+          <v-card-subtitle class="text-wrap">
+            Descreva sua dúvida ou problema. Responderemos no e-mail da sua conta.
+          </v-card-subtitle>
+        </v-card-item>
+        <v-card-text>
+          <v-alert
+            v-if="erro"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+            data-cy="erro-suporte"
+          >
+            {{ erro }}
+          </v-alert>
+          <EnviarSuporteForm :key="chaveFormulario" :carregando="carregando" @submit="onSubmit" />
+        </v-card-text>
+      </v-card>
+    </div>
 
     <v-snackbar v-model="snackbar.aberto" :timeout="5000" data-cy="snackbar">
       {{ snackbar.mensagem }}
@@ -65,7 +66,7 @@ async function onSubmit(payload: EnviarSuporteRequest) {
 
 <style scoped>
 .config-suporte {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 </style>

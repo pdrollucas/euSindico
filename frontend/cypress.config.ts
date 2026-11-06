@@ -19,6 +19,9 @@ export default defineConfig({
   },
   e2e: {
     specPattern: 'cypress/e2e/**/*.{cy,spec}.{js,jsx,ts,tsx}',
+    // Celular por padrão (mobile-first); o desktop tem specs próprios em cypress/e2e/desktop/.
+    viewportWidth: 390,
+    viewportHeight: 844,
     baseUrl: 'http://localhost:5173',
     setupNodeEvents(on, config) {
       return codeCoverageTask(on, config)

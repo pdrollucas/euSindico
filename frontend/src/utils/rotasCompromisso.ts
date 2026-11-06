@@ -13,3 +13,11 @@ export function rotaListaCompromissos(predioId?: unknown): RouteLocationRaw {
   const id = lerPredioIdDaQuery(predioId)
   return id ? { path: '/compromissos', query: { predioId: String(id) } } : '/compromissos'
 }
+
+// Detalhe de um compromisso, levando o filtro de prédio da lista para o "voltar" retornar a ela.
+export function rotaDetalheCompromisso(id: number, predioIdFiltro?: number | null) {
+  return {
+    path: `/compromissos/${id}`,
+    query: predioIdFiltro ? { predioId: String(predioIdFiltro) } : undefined,
+  }
+}

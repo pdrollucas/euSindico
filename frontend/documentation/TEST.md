@@ -57,7 +57,8 @@ cypress/
 │   ├── auth/esqueci-senha.cy.ts
 │   ├── predios/gerenciar-predios.cy.ts
 │   ├── compromissos/gerenciar-compromissos.cy.ts
-│   └── relatorios/gerar-relatorio.cy.ts
+│   ├── relatorios/gerar-relatorio.cy.ts
+│   └── desktop/layout-desktop.cy.ts   # viewport de desktop: rail e QR code
 ├── fixtures/
 │   ├── usuario.json
 │   ├── predios.json
@@ -67,6 +68,7 @@ cypress/
     └── component.ts / e2e.ts
 ```
 
+**Viewport dos E2E:** a suíte roda com viewport de celular (390×844, em `cypress.config.ts`), porque o produto é mobile-first e os fluxos usam elementos que só existem no celular (FAB de logout, atalho de Home no cabeçalho). O layout de desktop (navigation rail, QR code do login/cadastro) fica em `cypress/e2e/desktop/`, com `cy.viewport(1280, 800)` no `beforeEach`.
 Testes Vitest ficam **colocados** junto do código-fonte (convenção `*.spec.ts` ao lado do arquivo) — mais fácil de achar o teste de algo e de notar quando algo mudou sem o teste acompanhar. Testes Cypress ficam centralizados em `cypress/`, já que não pertencem a um único arquivo de código, e sim a um fluxo de telas.
 
 ## 3. Testes unitários (Vitest)

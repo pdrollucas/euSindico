@@ -126,33 +126,35 @@ async function confirmarRemocao() {
         Só você faz parte deste prédio por enquanto.
       </p>
 
-      <v-card
-        v-for="membro in equipeStore.membros"
-        :key="membro.usuarioId"
-        variant="flat"
-        border
-        rounded="lg"
-        class="mb-3"
-        :data-cy="`membro-${membro.usuarioId}`"
-      >
-        <v-card-text class="d-flex align-center justify-space-between">
-          <div class="d-flex flex-column">
-            <span class="text-subtitle-2 font-weight-medium">{{ membro.nome }}</span>
-            <span class="text-caption text-medium-emphasis">{{ membro.email }}</span>
-            <span class="text-caption text-primary">{{ nomePapel(membro.papel) }}</span>
-          </div>
-          <v-btn
-            v-if="membro.usuarioId !== perfilStore.perfil?.id"
-            icon="mdi-close"
-            variant="text"
-            color="error"
-            size="small"
-            aria-label="Remover membro"
-            :data-cy="`btn-remover-membro-${membro.usuarioId}`"
-            @click="membroParaRemover = membro"
-          />
-        </v-card-text>
-      </v-card>
+      <div class="app-grade">
+        <v-card
+          v-for="membro in equipeStore.membros"
+          :key="membro.usuarioId"
+          variant="flat"
+          border
+          rounded="lg"
+          class="mb-3"
+          :data-cy="`membro-${membro.usuarioId}`"
+        >
+          <v-card-text class="d-flex align-center justify-space-between">
+            <div class="d-flex flex-column">
+              <span class="text-subtitle-2 font-weight-medium">{{ membro.nome }}</span>
+              <span class="text-caption text-medium-emphasis">{{ membro.email }}</span>
+              <span class="text-caption text-primary">{{ nomePapel(membro.papel) }}</span>
+            </div>
+            <v-btn
+              v-if="membro.usuarioId !== perfilStore.perfil?.id"
+              icon="mdi-close"
+              variant="text"
+              color="error"
+              size="small"
+              aria-label="Remover membro"
+              :data-cy="`btn-remover-membro-${membro.usuarioId}`"
+              @click="membroParaRemover = membro"
+            />
+          </v-card-text>
+        </v-card>
+      </div>
     </template>
 
     <v-btn
@@ -203,13 +205,13 @@ async function confirmarRemocao() {
 
 <style scoped>
 .equipe {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 
 .equipe-fab {
   position: fixed;
-  right: 24px;
+  right: var(--app-fab-right);
   bottom: 24px;
 }
 </style>

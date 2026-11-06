@@ -105,105 +105,106 @@ function pedirNovoCodigo() {
 <template>
   <v-container class="config-perfil d-flex flex-column fill-height">
     <AppHeader />
+    <div class="app-bloco-form d-flex flex-column">
+      <v-progress-circular
+        v-if="carregando"
+        indeterminate
+        color="primary"
+        class="align-self-center mt-8"
+      />
 
-    <v-progress-circular
-      v-if="carregando"
-      indeterminate
-      color="primary"
-      class="align-self-center mt-8"
-    />
+      <v-alert
+        v-else-if="erroCarregar"
+        type="error"
+        variant="tonal"
+        density="compact"
+        data-cy="erro-carregar-perfil"
+      >
+        {{ erroCarregar }}
+      </v-alert>
 
-    <v-alert
-      v-else-if="erroCarregar"
-      type="error"
-      variant="tonal"
-      density="compact"
-      data-cy="erro-carregar-perfil"
-    >
-      {{ erroCarregar }}
-    </v-alert>
-
-    <template v-else-if="perfilStore.perfil">
-      <v-card rounded="lg" elevation="2" class="mb-4">
-        <v-card-item>
-          <v-card-title class="text-h6 font-weight-bold">Nome</v-card-title>
-        </v-card-item>
-        <v-card-text>
-          <v-alert
-            v-if="erroNome"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-            data-cy="erro-nome"
-          >
-            {{ erroNome }}
-          </v-alert>
-          <PerfilNomeForm
-            :nome-inicial="perfilStore.perfil.nome"
-            :carregando="salvandoNome"
-            @submit="onSalvarNome"
-          />
-        </v-card-text>
-      </v-card>
-
-      <v-card rounded="lg" elevation="2">
-        <v-card-item>
-          <v-card-title class="text-h6 font-weight-bold">E-mail</v-card-title>
-          <v-card-subtitle class="text-wrap" data-cy="email-atual">
-            {{ perfilStore.perfil.email }}
-          </v-card-subtitle>
-        </v-card-item>
-        <v-card-text>
-          <v-alert
-            v-if="erroEmail"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-            data-cy="erro-email"
-          >
-            {{ erroEmail }}
-          </v-alert>
-
-          <template v-if="aguardandoCodigo">
-            <p class="text-body-2 mb-4" data-cy="email-aguardando-codigo">
-              Enviamos um código de 6 caracteres para
-              <strong>{{ perfilStore.novoEmailPendente }}</strong
-              >. Informe-o abaixo para confirmar a troca.
-            </p>
-            <VerificarCodigoForm
-              texto-botao="Confirmar e-mail"
-              :carregando="confirmando"
-              @submit="onConfirmarCodigo"
+      <template v-else-if="perfilStore.perfil">
+        <v-card rounded="lg" elevation="2" class="mb-4">
+          <v-card-item>
+            <v-card-title class="text-h6 font-weight-bold">Nome</v-card-title>
+          </v-card-item>
+          <v-card-text>
+            <v-alert
+              v-if="erroNome"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+              data-cy="erro-nome"
+            >
+              {{ erroNome }}
+            </v-alert>
+            <PerfilNomeForm
+              :nome-inicial="perfilStore.perfil.nome"
+              :carregando="salvandoNome"
+              @submit="onSalvarNome"
             />
-            <div class="text-center mt-4">
-              <v-btn
-                variant="text"
-                color="primary"
-                size="small"
-                :disabled="!podePedirNovoCodigo"
-                data-cy="btn-novo-codigo-email"
-                @click="pedirNovoCodigo"
-              >
-                <template v-if="podePedirNovoCodigo">Corrigir e-mail ou pedir novo código</template>
-                <template v-else>
-                  Pedir novo código em {{ formatarContagem(cooldownSegundos) }}
-                </template>
-              </v-btn>
-            </div>
-          </template>
+          </v-card-text>
+        </v-card>
 
-          <template v-else>
-            <p class="text-body-2 text-medium-emphasis mb-4">
-              Para trocar, informe o novo e-mail e a sua senha. Enviaremos um código para o novo
-              endereço.
-            </p>
-            <TrocarEmailForm :carregando="enviandoCodigo" @submit="onSolicitarCodigo" />
-          </template>
-        </v-card-text>
-      </v-card>
-    </template>
+        <v-card rounded="lg" elevation="2">
+          <v-card-item>
+            <v-card-title class="text-h6 font-weight-bold">E-mail</v-card-title>
+            <v-card-subtitle class="text-wrap" data-cy="email-atual">
+              {{ perfilStore.perfil.email }}
+            </v-card-subtitle>
+          </v-card-item>
+          <v-card-text>
+            <v-alert
+              v-if="erroEmail"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+              data-cy="erro-email"
+            >
+              {{ erroEmail }}
+            </v-alert>
+
+            <template v-if="aguardandoCodigo">
+              <p class="text-body-2 mb-4" data-cy="email-aguardando-codigo">
+                Enviamos um código de 6 caracteres para
+                <strong>{{ perfilStore.novoEmailPendente }}</strong
+                >. Informe-o abaixo para confirmar a troca.
+              </p>
+              <VerificarCodigoForm
+                texto-botao="Confirmar e-mail"
+                :carregando="confirmando"
+                @submit="onConfirmarCodigo"
+              />
+              <div class="text-center mt-4">
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  :disabled="!podePedirNovoCodigo"
+                  data-cy="btn-novo-codigo-email"
+                  @click="pedirNovoCodigo"
+                >
+                  <template v-if="podePedirNovoCodigo">Corrigir e-mail ou pedir novo código</template>
+                  <template v-else>
+                    Pedir novo código em {{ formatarContagem(cooldownSegundos) }}
+                  </template>
+                </v-btn>
+              </div>
+            </template>
+
+            <template v-else>
+              <p class="text-body-2 text-medium-emphasis mb-4">
+                Para trocar, informe o novo e-mail e a sua senha. Enviaremos um código para o novo
+                endereço.
+              </p>
+              <TrocarEmailForm :carregando="enviandoCodigo" @submit="onSolicitarCodigo" />
+            </template>
+          </v-card-text>
+        </v-card>
+      </template>
+    </div>
 
     <v-snackbar v-model="snackbar.aberto" :timeout="4000" data-cy="snackbar">
       {{ snackbar.mensagem }}
@@ -213,7 +214,7 @@ function pedirNovoCodigo() {
 
 <style scoped>
 .config-perfil {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 </style>

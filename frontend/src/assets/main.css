@@ -1,8 +1,45 @@
-/* Ajustes de comportamento padrão do Vuetify sem prop equivalente — ver DESIGN.md. */
+/* Variáveis globais de layout e ajustes de comportamento padrão do Vuetify sem prop equivalente
+   — ver DESIGN.md, "Layout responsivo". */
 
 :root {
   /* Altura do AppHeader — referenciada por quem precisa grudar logo abaixo dele. */
   --app-header-height: 56px;
+  --app-largura-conteudo: 480px;
+  --app-rail-largura: 0px;
+  /* FAB no canto da coluna centralizada (ao lado do rail), nunca a menos de 24px da janela. */
+  --app-fab-right: max(
+    24px,
+    calc(50% - var(--app-rail-largura) / 2 - var(--app-largura-conteudo) / 2 + 24px)
+  );
+}
+
+/* Desktop: breakpoint md do Vuetify (mesmo limite de utils/layout.ts). */
+@media (min-width: 840px) {
+  :root {
+    --app-largura-conteudo: 1200px;
+    --app-rail-largura: 88px;
+  }
+
+  /* Lista de cards em grade; o espaço vertical continua vindo do `mb-3` dos cards. */
+  .app-grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    column-gap: 12px;
+    align-content: start;
+  }
+
+  .app-grade > .app-grade-linha {
+    grid-column: 1 / -1;
+  }
+
+  .app-bloco-form {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+}
+
+.app-bloco-form {
+  width: 100%;
 }
 
 /* v-alert: o ícone vem alinhado ao topo por padrão, descentralizado quando o texto quebra

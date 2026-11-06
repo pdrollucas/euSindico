@@ -17,6 +17,8 @@ describe('Home (hub da área logada)', () => {
     cy.get('[data-cy=card-compromissos]').should('be.visible')
     cy.get('[data-cy=card-predios]').should('be.visible')
     cy.get('[data-cy=card-configuracoes]').should('be.visible')
+    // Celular: navegação só pelo hub — o navigation rail é exclusivo do desktop.
+    cy.get('[data-cy=app-rail]').should('not.exist')
   })
 
   it('navega para o hub de Configurações ao clicar no card e volta para a Home', () => {

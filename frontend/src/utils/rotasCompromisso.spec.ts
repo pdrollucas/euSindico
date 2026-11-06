@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { lerPredioIdDaQuery, rotaListaCompromissos } from './rotasCompromisso'
+import {
+  lerPredioIdDaQuery,
+  rotaDetalheCompromisso,
+  rotaListaCompromissos,
+} from './rotasCompromisso'
 
 describe('lerPredioIdDaQuery', () => {
   it('lê um id válido', () => {
@@ -22,5 +26,18 @@ describe('rotaListaCompromissos', () => {
 
   it('preserva o filtro de prédio', () => {
     expect(rotaListaCompromissos('4')).toEqual({ path: '/compromissos', query: { predioId: '4' } })
+  })
+})
+
+describe('rotaDetalheCompromisso', () => {
+  it('abre o detalhe sem filtro de prédio', () => {
+    expect(rotaDetalheCompromisso(12)).toEqual({ path: '/compromissos/12', query: undefined })
+  })
+
+  it('leva o filtro de prédio da lista', () => {
+    expect(rotaDetalheCompromisso(12, 4)).toEqual({
+      path: '/compromissos/12',
+      query: { predioId: '4' },
+    })
   })
 })

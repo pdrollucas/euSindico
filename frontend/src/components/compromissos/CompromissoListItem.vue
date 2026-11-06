@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Compromisso } from '@/types/compromisso.types'
 import { formatarData, formatarHorario } from '@/utils/dataHora'
+import { rotaDetalheCompromisso } from '@/utils/rotasCompromisso'
 
 // Estado visual transitório controlado pela view: o item está saindo da lista (concluído ->
 // riscado e some; reaberto -> só some). "normal" mostra o checkbox conforme `compromisso.concluido`.
@@ -22,10 +23,7 @@ const marcado = computed(() => {
   return props.compromisso.concluido
 })
 
-const destino = computed(() => ({
-  path: `/compromissos/${props.compromisso.id}`,
-  query: props.predioIdFiltro ? { predioId: String(props.predioIdFiltro) } : undefined,
-}))
+const destino = computed(() => rotaDetalheCompromisso(props.compromisso.id, props.predioIdFiltro))
 
 const dataHorario = computed(
   () =>

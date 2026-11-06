@@ -144,57 +144,58 @@ async function confirmarRemocao() {
 <template>
   <v-container class="planejamento-detalhe d-flex flex-column">
     <AppHeader :titulo="modoNovo ? 'Novo planejamento' : 'Planejamento'" />
-
-    <v-alert
-      v-if="erro"
-      type="error"
-      variant="tonal"
-      density="compact"
-      class="mb-4"
-      data-cy="erro-planejamento-detalhe"
-    >
-      {{ erro }}
-    </v-alert>
-
-    <v-progress-circular
-      v-if="carregando"
-      indeterminate
-      color="primary"
-      class="align-self-center mt-8"
-    />
-
-    <template v-else-if="!erro">
+    <div class="app-bloco-form d-flex flex-column">
       <v-alert
-        v-if="erroForm"
+        v-if="erro"
         type="error"
         variant="tonal"
         density="compact"
         class="mb-4"
-        data-cy="erro-planejamento-form"
+        data-cy="erro-planejamento-detalhe"
       >
-        {{ erroForm }}
+        {{ erro }}
       </v-alert>
 
-      <PlanejamentoForm
-        :valores-iniciais="valoresIniciais"
-        :salvando="salvando"
-        :modo-edicao="!modoNovo"
-        :somente-leitura="!podeGerenciar"
-        @submit="onSubmit"
+      <v-progress-circular
+        v-if="carregando"
+        indeterminate
+        color="primary"
+        class="align-self-center mt-8"
       />
 
-      <v-btn
-        v-if="!modoNovo && podeGerenciar"
-        variant="text"
-        color="error"
-        prepend-icon="mdi-trash-can-outline"
-        class="align-self-center mb-4"
-        data-cy="btn-remover-planejamento"
-        @click="confirmandoRemocao = true"
-      >
-        Remover planejamento
-      </v-btn>
-    </template>
+      <template v-else-if="!erro">
+        <v-alert
+          v-if="erroForm"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+          data-cy="erro-planejamento-form"
+        >
+          {{ erroForm }}
+        </v-alert>
+
+        <PlanejamentoForm
+          :valores-iniciais="valoresIniciais"
+          :salvando="salvando"
+          :modo-edicao="!modoNovo"
+          :somente-leitura="!podeGerenciar"
+          @submit="onSubmit"
+        />
+
+        <v-btn
+          v-if="!modoNovo && podeGerenciar"
+          variant="text"
+          color="error"
+          prepend-icon="mdi-trash-can-outline"
+          class="align-self-center mb-4"
+          data-cy="btn-remover-planejamento"
+          @click="confirmandoRemocao = true"
+        >
+          Remover planejamento
+        </v-btn>
+      </template>
+    </div>
 
     <ConfirmDialog
       v-model="confirmandoRemocao"
@@ -210,7 +211,7 @@ async function confirmarRemocao() {
 
 <style scoped>
 .planejamento-detalhe {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 </style>

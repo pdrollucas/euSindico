@@ -258,7 +258,7 @@ async function confirmarRemocao() {
         {{ mensagemVazio }}
       </p>
 
-      <div v-else class="flex-grow-1">
+      <div v-else class="flex-grow-1 app-grade">
         <DocumentoListItem
           v-for="documento in lista.documentos"
           :key="documento.id"
@@ -276,6 +276,7 @@ async function confirmarRemocao() {
           variant="text"
           color="primary"
           block
+          class="app-grade-linha"
           data-cy="btn-carregar-mais"
           @click="carregarMais"
         >
@@ -343,7 +344,7 @@ async function confirmarRemocao() {
 
 <style scoped>
 .documentos-list {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 
@@ -362,7 +363,7 @@ async function confirmarRemocao() {
 
 .documentos-fab {
   position: fixed;
-  right: 24px;
+  right: var(--app-fab-right);
   bottom: 24px;
 }
 </style>

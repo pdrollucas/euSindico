@@ -42,33 +42,34 @@ async function onExcluir(payload: ExcluirContaRequest) {
 <template>
   <v-container class="config-conta d-flex flex-column fill-height">
     <AppHeader />
-
-    <v-card rounded="lg" elevation="2">
-      <v-card-item>
-        <v-card-title class="text-h6 font-weight-bold">Excluir conta</v-card-title>
-      </v-card-item>
-      <v-card-text>
-        <p class="text-body-2 mb-3">
-          A exclusão é <strong>permanente</strong> e não pode ser desfeita. Ela apaga a sua conta e
-          tudo o que está ligado a ela: seus prédios, compromissos, planejamentos, atas, normas e
-          relatórios.
-        </p>
-        <p class="text-body-2 text-medium-emphasis mb-4">
-          Se você faz parte da equipe de prédios de outro síndico, apenas o seu acesso a eles é
-          removido.
-        </p>
-        <v-btn
-          color="error"
-          variant="outlined"
-          size="large"
-          block
-          data-cy="btn-excluir-conta"
-          @click="abrirDialogo"
-        >
-          Excluir minha conta
-        </v-btn>
-      </v-card-text>
-    </v-card>
+    <div class="app-bloco-form d-flex flex-column">
+      <v-card rounded="lg" elevation="2">
+        <v-card-item>
+          <v-card-title class="text-h6 font-weight-bold">Excluir conta</v-card-title>
+        </v-card-item>
+        <v-card-text>
+          <p class="text-body-2 mb-3">
+            A exclusão é <strong>permanente</strong> e não pode ser desfeita. Ela apaga a sua conta e
+            tudo o que está ligado a ela: seus prédios, compromissos, planejamentos, atas, normas e
+            relatórios.
+          </p>
+          <p class="text-body-2 text-medium-emphasis mb-4">
+            Se você faz parte da equipe de prédios de outro síndico, apenas o seu acesso a eles é
+            removido.
+          </p>
+          <v-btn
+            color="error"
+            variant="outlined"
+            size="large"
+            block
+            data-cy="btn-excluir-conta"
+            @click="abrirDialogo"
+          >
+            Excluir minha conta
+          </v-btn>
+        </v-card-text>
+      </v-card>
+    </div>
 
     <v-dialog v-model="mostrarDialogo" max-width="400">
       <v-card rounded="lg">
@@ -108,7 +109,7 @@ async function onExcluir(payload: ExcluirContaRequest) {
 
 <style scoped>
 .config-conta {
-  max-width: 480px;
+  max-width: var(--app-largura-conteudo);
   margin-inline: auto;
 }
 </style>
