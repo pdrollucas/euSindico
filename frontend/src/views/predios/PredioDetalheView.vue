@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import { useDisplay } from 'vuetify'
 import AppHeader from '@/components/common/AppHeader.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import PredioForm from '@/components/predios/PredioForm.vue'
@@ -13,6 +14,7 @@ import { TIPOS_DOCUMENTO } from '@/utils/documentoTipo'
 
 const route = useRoute()
 const router = useRouter()
+const { mdAndUp } = useDisplay()
 const predioStore = usePredioStore()
 
 const predioId = computed(() => Number(route.params.id))
@@ -89,7 +91,28 @@ async function onEditar(payload: PredioFormValues) {
 
 <template>
   <v-container class="predio-detalhe d-flex flex-column">
-    <AppHeader :titulo="predio?.nome ?? 'Prédio'" />
+    <AppHeader :titulo="predio?.nome ?? 'Prédio'">
+      <template v-if="podeGerenciar" #acoes>
+        <v-btn
+          variant="outlined"
+          color="primary"
+          prepend-icon="mdi-pencil-outline"
+          data-cy="btn-editar-predio"
+          @click="mostrarFormEditar = true"
+        >
+          Editar
+        </v-btn>
+        <v-btn
+          variant="text"
+          color="error"
+          prepend-icon="mdi-trash-can-outline"
+          data-cy="btn-remover-predio"
+          @click="confirmandoRemocao = true"
+        >
+          Remover
+        </v-btn>
+      </template>
+    </AppHeader>
 
     <v-alert
       v-if="erro"
@@ -194,7 +217,7 @@ async function onEditar(payload: PredioFormValues) {
       </div>
     </template>
 
-    <v-menu v-if="podeGerenciar">
+    <v-menu v-if="podeGerenciar && !mdAndUp">
       <template #activator="{ props: menuProps }">
         <v-btn
           icon="mdi-dots-vertical"

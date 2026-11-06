@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import AppHeader from '@/components/common/AppHeader.vue'
+import AppTabela from '@/components/common/AppTabela.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import DocumentoListItem from '@/components/documentos/DocumentoListItem.vue'
 import EnviarDocumentoForm from '@/components/documentos/EnviarDocumentoForm.vue'
@@ -10,13 +12,15 @@ import { usePredioStore } from '@/stores/predioStore'
 import { PAPEL_PREDIO } from '@/types/predio.types'
 import type { Documento } from '@/types/documento.types'
 import { abrirAbaEmBranco, baixarArquivo, mostrarArquivoNaAba } from '@/utils/arquivo'
-import { FORMATOS_ACEITOS_TEXTO } from '@/utils/arquivoDocumento'
+import { abreNoNavegador, FORMATOS_ACEITOS_TEXTO, iconeDoArquivo } from '@/utils/arquivoDocumento'
+import { formatarDataHoraUtc } from '@/utils/dataHora'
 import { mensagemErroEnvio } from '@/utils/documentoErro'
 import { TIPOS_DOCUMENTO } from '@/utils/documentoTipo'
 
 // Uma view para as duas telas: a rota (`meta.tipoDocumento`) diz se é a de atas ou a de normas, e os
 // textos vêm de TIPOS_DOCUMENTO. Cada tela tem a sua rota e o seu título (ARCHITECTURE.md, seção 4).
 const route = useRoute()
+const { mdAndUp } = useDisplay()
 const documentoStore = useDocumentoStore()
 const predioStore = usePredioStore()
 
@@ -178,6 +182,18 @@ async function abrir(documento: Documento) {
   }
 }
 
+// Clique no nome/linha: PDF e imagem abrem numa nova aba; DOCX, que o navegador não mostra, baixa.
+function abrirOuBaixar(documento: Documento) {
+  if (ocupadoId.value === documento.id) {
+    return
+  }
+  if (abreNoNavegador(documento.nomeArquivo)) {
+    abrir(documento)
+  } else {
+    baixar(documento)
+  }
+}
+
 async function baixar(documento: Documento) {
   ocupadoId.value = documento.id
   try {
@@ -215,7 +231,18 @@ async function confirmarRemocao() {
 
 <template>
   <v-container class="documentos-list d-flex flex-column fill-height">
-    <AppHeader />
+    <AppHeader>
+      <template v-if="podeEnviar" #acoes>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-upload-outline"
+          data-cy="btn-enviar-documento-cabecalho"
+          @click="abrirFormEnviar"
+        >
+          Enviar {{ config.singular }}
+        </v-btn>
+      </template>
+    </AppHeader>
 
     <div class="documentos-busca">
       <v-text-field
@@ -259,17 +286,73 @@ async function confirmarRemocao() {
       </p>
 
       <div v-else class="flex-grow-1 app-grade">
-        <DocumentoListItem
-          v-for="documento in lista.documentos"
-          :key="documento.id"
-          :documento="documento"
-          :pode-remover="podeExcluir"
-          :ocupado="ocupadoId === documento.id"
-          class="mb-3"
-          @abrir="abrir(documento)"
-          @baixar="baixar(documento)"
-          @remover="paraRemover = documento"
-        />
+        <AppTabela
+          v-if="mdAndUp"
+          :itens="lista.documentos"
+          :colunas="[
+            { titulo: 'Arquivo' },
+            { titulo: 'Enviado em' },
+            { titulo: 'Ações', oculto: true },
+          ]"
+          data-cy="documento-item"
+          class="app-grade-linha mb-3"
+          @abrir="abrirOuBaixar"
+        >
+          <template #linha="{ item }">
+            <td>
+              <div class="d-flex align-center ga-3">
+                <v-icon :icon="iconeDoArquivo(item.nomeArquivo)" color="primary" />
+                <button
+                  type="button"
+                  class="app-tabela-titulo"
+                  :disabled="ocupadoId === item.id"
+                  :data-cy="`documento-abrir-${item.id}`"
+                  @click.stop="abrirOuBaixar(item)"
+                >
+                  {{ item.nomeArquivo }}
+                </button>
+              </div>
+            </td>
+            <td class="text-medium-emphasis">{{ formatarDataHoraUtc(item.criadoEm) }}</td>
+            <td class="app-tabela-acoes" @click.stop>
+              <v-btn
+                icon="mdi-download-outline"
+                variant="text"
+                color="primary"
+                density="comfortable"
+                :loading="ocupadoId === item.id"
+                :disabled="ocupadoId === item.id"
+                aria-label="Baixar arquivo"
+                :data-cy="`documento-baixar-${item.id}`"
+                @click="baixar(item)"
+              />
+              <v-btn
+                v-if="podeExcluir"
+                icon="mdi-trash-can-outline"
+                variant="text"
+                color="error"
+                density="comfortable"
+                :disabled="ocupadoId === item.id"
+                aria-label="Remover arquivo"
+                :data-cy="`documento-remover-${item.id}`"
+                @click="paraRemover = item"
+              />
+            </td>
+          </template>
+        </AppTabela>
+        <template v-else>
+          <DocumentoListItem
+            v-for="documento in lista.documentos"
+            :key="documento.id"
+            :documento="documento"
+            :pode-remover="podeExcluir"
+            :ocupado="ocupadoId === documento.id"
+            class="mb-3"
+            @abrir="abrir(documento)"
+            @baixar="baixar(documento)"
+            @remover="paraRemover = documento"
+          />
+        </template>
 
         <v-btn
           v-if="documentoStore.temMaisPaginas(tipo)"
@@ -286,7 +369,7 @@ async function confirmarRemocao() {
     </template>
 
     <v-btn
-      v-if="podeEnviar"
+      v-if="podeEnviar && !mdAndUp"
       icon="mdi-plus"
       color="primary"
       size="large"

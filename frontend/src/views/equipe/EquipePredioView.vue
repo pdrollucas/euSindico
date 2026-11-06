@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { useDisplay } from 'vuetify'
 import AppHeader from '@/components/common/AppHeader.vue'
+import AppTabela from '@/components/common/AppTabela.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ConvidarFuncionarioForm from '@/components/equipe/ConvidarFuncionarioForm.vue'
 import PerfisAjudaDialog from '@/components/equipe/PerfisAjudaDialog.vue'
@@ -12,6 +14,7 @@ import { PAPEL_PREDIO } from '@/types/predio.types'
 import type { ConvidarFuncionarioRequest, EquipeMembro } from '@/types/equipe.types'
 
 const route = useRoute()
+const { mdAndUp } = useDisplay()
 const equipeStore = useEquipeStore()
 const perfilStore = usePerfilStore()
 
@@ -84,9 +87,29 @@ async function confirmarRemocao() {
 
 <template>
   <v-container class="equipe d-flex flex-column">
-    <AppHeader titulo="Equipe" />
+    <AppHeader titulo="Equipe">
+      <template #acoes>
+        <v-btn
+          prepend-icon="mdi-help-circle-outline"
+          variant="text"
+          color="primary"
+          data-cy="btn-ajuda-perfis"
+          @click="mostrarAjudaPerfis = true"
+        >
+          Entenda os perfis
+        </v-btn>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-account-plus-outline"
+          data-cy="btn-convidar"
+          @click="mostrarFormConvite = true"
+        >
+          Convidar funcionário
+        </v-btn>
+      </template>
+    </AppHeader>
 
-    <div class="d-flex justify-end mb-2">
+    <div v-if="!mdAndUp" class="d-flex justify-end mb-2">
       <v-btn
         prepend-icon="mdi-help-circle-outline"
         variant="text"
@@ -126,7 +149,39 @@ async function confirmarRemocao() {
         Só você faz parte deste prédio por enquanto.
       </p>
 
-      <div class="app-grade">
+      <AppTabela
+        v-else-if="mdAndUp"
+        :itens="equipeStore.membros"
+        :colunas="[
+          { titulo: 'Nome' },
+          { titulo: 'E-mail' },
+          { titulo: 'Perfil' },
+          { titulo: 'Ações', oculto: true },
+        ]"
+        chave="usuarioId"
+        data-cy="membro"
+        :clicavel="false"
+      >
+        <template #linha="{ item }">
+          <td class="font-weight-medium">{{ item.nome }}</td>
+          <td class="text-medium-emphasis">{{ item.email }}</td>
+          <td class="text-primary">{{ nomePapel(item.papel) }}</td>
+          <td class="app-tabela-acoes">
+            <v-btn
+              v-if="item.usuarioId !== perfilStore.perfil?.id"
+              icon="mdi-close"
+              variant="text"
+              color="error"
+              density="comfortable"
+              aria-label="Remover membro"
+              :data-cy="`btn-remover-membro-${item.usuarioId}`"
+              @click="membroParaRemover = item"
+            />
+          </td>
+        </template>
+      </AppTabela>
+
+      <div v-else class="app-grade">
         <v-card
           v-for="membro in equipeStore.membros"
           :key="membro.usuarioId"
@@ -158,6 +213,7 @@ async function confirmarRemocao() {
     </template>
 
     <v-btn
+      v-if="!mdAndUp"
       icon="mdi-account-plus-outline"
       color="primary"
       size="large"
