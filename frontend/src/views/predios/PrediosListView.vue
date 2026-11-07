@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useDisplay } from 'vuetify'
 import AppHeader from '@/components/common/AppHeader.vue'
+import AppTabela from '@/components/common/AppTabela.vue'
 import PredioCard from '@/components/predios/PredioCard.vue'
 import PredioForm from '@/components/predios/PredioForm.vue'
 import { usePredioStore } from '@/stores/predioStore'
@@ -10,6 +12,7 @@ import type { PredioFormValues } from '@/types/predio.types'
 import type { ErroApiDto } from '@/types/erroApi.types'
 
 const router = useRouter()
+const { mdAndUp } = useDisplay()
 const predioStore = usePredioStore()
 
 const busca = ref('')
@@ -74,7 +77,18 @@ async function onCriar(payload: PredioFormValues) {
 
 <template>
   <v-container class="predios-list d-flex flex-column fill-height">
-    <AppHeader />
+    <AppHeader>
+      <template #acoes>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          data-cy="btn-criar-predio"
+          @click="mostrarFormCriar = true"
+        >
+          Novo prédio
+        </v-btn>
+      </template>
+    </AppHeader>
 
     <v-text-field
       v-model="busca"
@@ -108,7 +122,31 @@ async function onCriar(payload: PredioFormValues) {
       </p>
 
       <div v-else class="flex-grow-1 app-grade">
-        <PredioCard v-for="predio in prediosFiltrados" :key="predio.id" :predio="predio" />
+        <AppTabela
+          v-if="mdAndUp"
+          :itens="prediosFiltrados"
+          :colunas="[{ titulo: 'Nome' }, { titulo: 'Endereço' }]"
+          data-cy="predio-item"
+          class="app-grade-linha mb-3"
+          @abrir="router.push(`/predios/${$event.id}`)"
+        >
+          <template #linha="{ item }">
+            <td>
+              <router-link
+                :to="`/predios/${item.id}`"
+                class="app-tabela-titulo"
+                :data-cy="`predio-link-${item.id}`"
+                @click.stop
+              >
+                {{ item.nome }}
+              </router-link>
+            </td>
+            <td class="text-medium-emphasis">{{ item.endereco }}</td>
+          </template>
+        </AppTabela>
+        <template v-else>
+          <PredioCard v-for="predio in prediosFiltrados" :key="predio.id" :predio="predio" />
+        </template>
 
         <v-btn
           v-if="!busca && predioStore.temMaisPaginas"
@@ -125,6 +163,7 @@ async function onCriar(payload: PredioFormValues) {
     </template>
 
     <v-btn
+      v-if="!mdAndUp"
       icon="mdi-plus"
       color="primary"
       size="large"

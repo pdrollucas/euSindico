@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
 import type { PlanejamentoFiltros } from '@/types/planejamento.types'
-import {
-  mascararMoedaDigitada,
-  moedaParaNumero,
-  numeroParaMoedaMascarada,
-} from '@/utils/moeda'
+import { useFaixaOrcamento } from '@/composables/useFaixaOrcamento'
 
-// Folha de filtros do planejamento: faixa de orçamento (a busca por título fica no campo de busca
-// da tela). Componente "burro": recebe os filtros atuais e emite o que mudou — quem aplica
-// (store) é a view. Diferente de compromissos, os campos são digitados: aplicam ao sair do campo,
-// no Enter ou em "Ver resultados", não a cada tecla.
+// Folha de filtros do planejamento (celular): faixa de orçamento (a busca por título fica no campo
+// de busca da tela). No desktop os mesmos campos ficam na barra (PlanejamentoFiltrosBarra).
 const props = defineProps<{
   modelValue: boolean
   filtros: PlanejamentoFiltros
@@ -22,70 +15,14 @@ const emit = defineEmits<{
   limpar: []
 }>()
 
-const paraCampo = (valor: number | null) =>
-  valor === null ? '' : numeroParaMoedaMascarada(valor)
-
-const minimo = ref(paraCampo(props.filtros.orcamentoMinimo))
-const maximo = ref(paraCampo(props.filtros.orcamentoMaximo))
-const erroMinimo = ref<string | null>(null)
-const erroMaximo = ref<string | null>(null)
-
-// "Limpar filtros" e os chips da tela mudam os filtros por fora — os campos acompanham.
-watch(
-  () => props.filtros,
-  (filtros) => {
-    minimo.value = paraCampo(filtros.orcamentoMinimo)
-    maximo.value = paraCampo(filtros.orcamentoMaximo)
-    erroMinimo.value = null
-    erroMaximo.value = null
-  },
-  { deep: true },
-)
-
-// Mesma máscara de moeda do formulário (ver PlanejamentoForm.vue): o valor mascarado volta ao
-// próprio <input>, senão uma letra digitada ficaria visível quando o texto mascarado não muda.
-const minimoCampo = ref<{ $el: HTMLElement } | null>(null)
-const maximoCampo = ref<{ $el: HTMLElement } | null>(null)
-
-function digitado(valor: string | null, limite: 'minimo' | 'maximo') {
-  const alvo = limite === 'minimo' ? minimo : maximo
-  const campo = limite === 'minimo' ? minimoCampo : maximoCampo
-  const mascarado = mascararMoedaDigitada(valor, alvo.value)
-  alvo.value = mascarado
-  nextTick(() => {
-    const input = campo.value?.$el.querySelector('input')
-    if (input && input.value !== mascarado) {
-      input.value = mascarado
-    }
-  })
-}
-
-function aplicar() {
-  const novoMinimo = moedaParaNumero(minimo.value)
-  const novoMaximo = moedaParaNumero(maximo.value)
-
-  erroMinimo.value = null
-  erroMaximo.value = null
-  if (novoMinimo !== null && novoMaximo !== null && novoMinimo > novoMaximo) {
-    erroMinimo.value = 'O mínimo não pode ser maior que o máximo'
-    return
-  }
-
-  const parcial: Partial<PlanejamentoFiltros> = {}
-  if (novoMinimo !== props.filtros.orcamentoMinimo) {
-    parcial.orcamentoMinimo = novoMinimo
-  }
-  if (novoMaximo !== props.filtros.orcamentoMaximo) {
-    parcial.orcamentoMaximo = novoMaximo
-  }
-  if (Object.keys(parcial).length > 0) {
-    emit('alterar', parcial)
-  }
-}
+const { minimo, maximo, erroMinimo, minimoCampo, maximoCampo, digitado, aplicar } =
+  useFaixaOrcamento(
+    () => props.filtros,
+    (parcial) => emit('alterar', parcial),
+  )
 
 function fechar() {
-  aplicar()
-  if (!erroMinimo.value && !erroMaximo.value) {
+  if (aplicar()) {
     emit('update:modelValue', false)
   }
 }
@@ -128,7 +65,6 @@ function fechar() {
             persistent-placeholder
             autocomplete="off"
             prefix="R$"
-            :error-messages="erroMaximo ?? undefined"
             @update:model-value="digitado($event, 'maximo')"
             @blur="aplicar"
             @keydown.enter="aplicar"
@@ -140,7 +76,9 @@ function fechar() {
       </v-card-text>
 
       <v-card-actions class="pa-4 pt-0">
-        <v-btn variant="text" data-cy="filtros-limpar" @click="emit('limpar')">Limpar filtros</v-btn>
+        <v-btn variant="text" data-cy="filtros-limpar" @click="emit('limpar')"
+          >Limpar filtros</v-btn
+        >
         <v-spacer />
         <v-btn color="primary" variant="flat" data-cy="filtros-fechar" @click="fechar">
           Ver resultados

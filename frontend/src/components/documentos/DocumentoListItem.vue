@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Documento } from '@/types/documento.types'
-import { abreNoNavegador, categoriaDe } from '@/utils/arquivoDocumento'
+import { abreNoNavegador, iconeDoArquivo } from '@/utils/arquivoDocumento'
 import { formatarDataHoraUtc } from '@/utils/dataHora'
 
 // Clicar no card abre PDF/imagem numa nova aba (DOCX não abre no navegador, então o clique baixa); o
@@ -15,14 +15,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ abrir: []; baixar: []; remover: [] }>()
 
-const ICONES = {
-  pdf: 'mdi-file-pdf-box',
-  imagem: 'mdi-file-image-outline',
-  docx: 'mdi-file-word-outline',
-  outro: 'mdi-file-outline',
-} as const
-
-const icone = computed(() => ICONES[categoriaDe(props.documento.nomeArquivo)])
+const icone = computed(() => iconeDoArquivo(props.documento.nomeArquivo))
 const enviadoEm = computed(() => formatarDataHoraUtc(props.documento.criadoEm))
 const abreEmNovaAba = computed(() => abreNoNavegador(props.documento.nomeArquivo))
 const acaoDoClique = computed(() => (abreEmNovaAba.value ? 'Abrir' : 'Baixar'))

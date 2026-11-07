@@ -41,4 +41,4 @@ Referência: layouts adaptativos do Material Design 3 (faixas compacta, média e
 8. Compromissos no desktop: ação no cabeçalho, tabela (`CompromissosTabela`) e barra de filtros (`CompromissoFiltrosBarra`), com as regras dos filtros compartilhadas com a folha do celular.
 9. Testes: e2e atuais com viewport de celular (390×844); specs e2e de desktop para o rail e para Compromissos; testes unitários das regras compartilhadas.
 10. Documentação: DESIGN.md e ARCHITECTURE.md (seção 5) do frontend.
-11. **Próximo:** levar o mesmo padrão (ação no cabeçalho e tabela) às demais listas.
+11. Demais listas no desktop: ação no cabeçalho e tabela genérica (`AppTabela`) em Prédios, Planejamentos (com a faixa de orçamento na barra), Relatórios, Atas/Normas e Equipe; no detalhe do prédio, "Editar" e "Remover" no cabeçalho.

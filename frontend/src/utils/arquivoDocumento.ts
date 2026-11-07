@@ -97,3 +97,14 @@ export function abreNoNavegador(nomeArquivo: string): boolean {
   const categoria = categoriaDe(nomeArquivo)
   return categoria === 'pdf' || categoria === 'imagem'
 }
+
+const ICONES_POR_CATEGORIA: Record<CategoriaArquivo, string> = {
+  pdf: 'mdi-file-pdf-box',
+  imagem: 'mdi-file-image-outline',
+  docx: 'mdi-file-word-outline',
+  outro: 'mdi-file-outline',
+}
+
+export function iconeDoArquivo(nomeArquivo: string): string {
+  return ICONES_POR_CATEGORIA[categoriaDe(nomeArquivo)]
+}

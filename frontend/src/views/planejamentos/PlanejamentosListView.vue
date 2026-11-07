@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import AppHeader from '@/components/common/AppHeader.vue'
+import AppTabela from '@/components/common/AppTabela.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import PlanejamentoListItem from '@/components/planejamentos/PlanejamentoListItem.vue'
 import PlanejamentoFiltrosSheet from '@/components/planejamentos/PlanejamentoFiltrosSheet.vue'
+import PlanejamentoFiltrosBarra from '@/components/planejamentos/PlanejamentoFiltrosBarra.vue'
 import { usePlanejamentoStore } from '@/stores/planejamentoStore'
 import { usePredioStore } from '@/stores/predioStore'
 import { PAPEL_PREDIO } from '@/types/predio.types'
 import type { Planejamento, PlanejamentoFiltros } from '@/types/planejamento.types'
+import { formatarData } from '@/utils/dataHora'
 import { formatarMoeda } from '@/utils/moeda'
 
 const route = useRoute()
 const router = useRouter()
+const { mdAndUp } = useDisplay()
 const planejamentoStore = usePlanejamentoStore()
 const predioStore = usePredioStore()
 
@@ -152,6 +157,10 @@ async function confirmarRemocao() {
   }
 }
 
+function rotaPlanejamento(planejamento: Planejamento) {
+  return `/predios/${planejamento.predioId}/planejamentos/${planejamento.id}`
+}
+
 function criar() {
   router.push(`/predios/${predioId.value}/planejamentos/novo`)
 }
@@ -159,33 +168,67 @@ function criar() {
 
 <template>
   <v-container class="planejamentos-list d-flex flex-column fill-height">
-    <AppHeader />
-
-    <div class="planejamentos-busca d-flex align-center ga-2">
-      <v-text-field
-        v-model="busca"
-        data-cy="busca-planejamento"
-        @keydown.enter="aplicarBusca"
-        placeholder="Buscar planejamento..."
-        prepend-inner-icon="mdi-magnify"
-        density="compact"
-        hide-details
-        single-line
-        clearable
-      />
-      <v-badge :model-value="filtrosAtivos > 0" dot color="primary">
+    <AppHeader>
+      <template v-if="podeGerenciar" #acoes>
         <v-btn
-          icon="mdi-filter-variant"
-          variant="text"
-          aria-label="Filtros"
-          data-cy="btn-filtros"
-          @click="mostrarFiltros = true"
+          color="primary"
+          prepend-icon="mdi-plus"
+          data-cy="btn-criar-planejamento"
+          @click="criar"
+        >
+          Novo planejamento
+        </v-btn>
+      </template>
+    </AppHeader>
+
+    <div class="planejamentos-busca" :class="{ 'd-flex align-center ga-2': !mdAndUp }">
+      <PlanejamentoFiltrosBarra
+        v-if="mdAndUp"
+        :filtros="filtros"
+        :filtros-ativos="filtrosAtivos > 0"
+        @alterar="aplicarFiltros"
+        @limpar="limparFiltros"
+      >
+        <template #busca>
+          <v-text-field
+            v-model="busca"
+            data-cy="busca-planejamento"
+            @keydown.enter="aplicarBusca"
+            placeholder="Buscar planejamento..."
+            prepend-inner-icon="mdi-magnify"
+            density="compact"
+            hide-details
+            single-line
+            clearable
+          />
+        </template>
+      </PlanejamentoFiltrosBarra>
+      <template v-else>
+        <v-text-field
+          v-model="busca"
+          data-cy="busca-planejamento"
+          @keydown.enter="aplicarBusca"
+          placeholder="Buscar planejamento..."
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          hide-details
+          single-line
+          clearable
         />
-      </v-badge>
+        <v-badge :model-value="filtrosAtivos > 0" dot color="primary">
+          <v-btn
+            icon="mdi-filter-variant"
+            variant="text"
+            aria-label="Filtros"
+            data-cy="btn-filtros"
+            @click="mostrarFiltros = true"
+          />
+        </v-badge>
+      </template>
     </div>
 
-    <!-- Um chip para a faixa de orçamento quando ativa; fechar remove os dois limites. -->
-    <div v-if="filtrosAtivos > 0" class="d-flex flex-wrap ga-2 mb-3">
+    <!-- Um chip para a faixa de orçamento quando ativa; fechar remove os dois limites. Só no celular. -->
+    <div v-if="!mdAndUp && filtrosAtivos > 0" class="d-flex flex-wrap ga-2 mb-3">
       <v-chip
         closable
         color="primary"
@@ -225,14 +268,60 @@ function criar() {
       </p>
 
       <div v-else class="flex-grow-1 app-grade">
-        <PlanejamentoListItem
-          v-for="planejamento in planejamentoStore.planejamentos"
-          :key="planejamento.id"
-          :planejamento="planejamento"
-          :pode-remover="podeGerenciar"
-          class="mb-3"
-          @remover="paraRemover = planejamento"
-        />
+        <AppTabela
+          v-if="mdAndUp"
+          :itens="planejamentoStore.planejamentos"
+          :colunas="[
+            { titulo: 'Título' },
+            { titulo: 'Data' },
+            { titulo: 'Orçamento previsto' },
+            { titulo: 'Ações', oculto: true },
+          ]"
+          data-cy="planejamento-item"
+          class="app-grade-linha mb-3"
+          @abrir="router.push(rotaPlanejamento($event))"
+        >
+          <template #linha="{ item }">
+            <td>
+              <router-link
+                :to="rotaPlanejamento(item)"
+                class="app-tabela-titulo"
+                :data-cy="`planejamento-link-${item.id}`"
+                @click.stop
+              >
+                {{ item.titulo }}
+              </router-link>
+            </td>
+            <td class="text-medium-emphasis" :data-cy="`planejamento-data-${item.id}`">
+              {{ item.dataPlanejamento ? formatarData(item.dataPlanejamento) : 'Sem data' }}
+            </td>
+            <td class="text-medium-emphasis" :data-cy="`planejamento-orcamento-${item.id}`">
+              {{ item.orcamentoPrevisto === null ? '—' : formatarMoeda(item.orcamentoPrevisto) }}
+            </td>
+            <td class="app-tabela-acoes" @click.stop>
+              <v-btn
+                v-if="podeGerenciar"
+                icon="mdi-trash-can-outline"
+                variant="text"
+                color="error"
+                density="comfortable"
+                aria-label="Remover planejamento"
+                :data-cy="`planejamento-remover-${item.id}`"
+                @click="paraRemover = item"
+              />
+            </td>
+          </template>
+        </AppTabela>
+        <template v-else>
+          <PlanejamentoListItem
+            v-for="planejamento in planejamentoStore.planejamentos"
+            :key="planejamento.id"
+            :planejamento="planejamento"
+            :pode-remover="podeGerenciar"
+            class="mb-3"
+            @remover="paraRemover = planejamento"
+          />
+        </template>
 
         <v-btn
           v-if="planejamentoStore.temMaisPaginas"
@@ -249,7 +338,7 @@ function criar() {
     </template>
 
     <v-btn
-      v-if="podeGerenciar"
+      v-if="podeGerenciar && !mdAndUp"
       icon="mdi-plus"
       color="primary"
       size="large"
@@ -260,6 +349,7 @@ function criar() {
     />
 
     <PlanejamentoFiltrosSheet
+      v-if="!mdAndUp"
       v-model="mostrarFiltros"
       :filtros="filtros"
       @alterar="aplicarFiltros"

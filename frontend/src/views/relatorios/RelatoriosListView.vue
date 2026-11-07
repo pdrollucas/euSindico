@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { useDisplay } from 'vuetify'
 import AppHeader from '@/components/common/AppHeader.vue'
+import AppTabela from '@/components/common/AppTabela.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import RelatorioListItem from '@/components/relatorios/RelatorioListItem.vue'
 import GerarRelatorioForm from '@/components/relatorios/GerarRelatorioForm.vue'
@@ -12,9 +14,11 @@ import { PAPEL_PREDIO } from '@/types/predio.types'
 import type { ErroApiDto } from '@/types/erroApi.types'
 import type { GerarRelatorioFormValues, Relatorio } from '@/types/relatorio.types'
 import { abrirAbaEmBranco, baixarArquivo, mostrarArquivoNaAba } from '@/utils/arquivo'
+import { formatarDataHoraUtc } from '@/utils/dataHora'
 import { formatarPeriodo } from '@/utils/periodo'
 
 const route = useRoute()
+const { mdAndUp } = useDisplay()
 const relatorioStore = useRelatorioStore()
 const predioStore = usePredioStore()
 
@@ -160,7 +164,18 @@ async function confirmarRemocao() {
 
 <template>
   <v-container class="relatorios-list d-flex flex-column fill-height">
-    <AppHeader />
+    <AppHeader>
+      <template v-if="podeGerar" #acoes>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          data-cy="btn-gerar-relatorio-cabecalho"
+          @click="abrirFormGerar"
+        >
+          Gerar relatório
+        </v-btn>
+      </template>
+    </AppHeader>
 
     <v-alert
       v-if="erro"
@@ -190,17 +205,70 @@ async function confirmarRemocao() {
       </p>
 
       <div v-else class="flex-grow-1 app-grade">
-        <RelatorioListItem
-          v-for="relatorio in relatorioStore.relatorios"
-          :key="relatorio.id"
-          :relatorio="relatorio"
-          :pode-remover="podeExcluir"
-          :ocupado="ocupadoId === relatorio.id"
-          class="mb-3"
-          @abrir="abrir(relatorio)"
-          @baixar="baixar(relatorio)"
-          @remover="paraRemover = relatorio"
-        />
+        <AppTabela
+          v-if="mdAndUp"
+          :itens="relatorioStore.relatorios"
+          :colunas="[
+            { titulo: 'Período' },
+            { titulo: 'Gerado em' },
+            { titulo: 'Ações', oculto: true },
+          ]"
+          data-cy="relatorio-item"
+          class="app-grade-linha mb-3"
+          @abrir="(relatorio) => ocupadoId !== relatorio.id && abrir(relatorio)"
+        >
+          <template #linha="{ item }">
+            <td>
+              <button
+                type="button"
+                class="app-tabela-titulo"
+                :disabled="ocupadoId === item.id"
+                :data-cy="`relatorio-abrir-${item.id}`"
+                @click.stop="abrir(item)"
+              >
+                {{ formatarPeriodo(item.mesReferencia, item.anoReferencia) }}
+              </button>
+            </td>
+            <td class="text-medium-emphasis">{{ formatarDataHoraUtc(item.geradoEm) }}</td>
+            <td class="app-tabela-acoes" @click.stop>
+              <v-btn
+                icon="mdi-download-outline"
+                variant="text"
+                color="primary"
+                density="comfortable"
+                :loading="ocupadoId === item.id"
+                :disabled="ocupadoId === item.id"
+                aria-label="Baixar relatório"
+                :data-cy="`relatorio-baixar-${item.id}`"
+                @click="baixar(item)"
+              />
+              <v-btn
+                v-if="podeExcluir"
+                icon="mdi-trash-can-outline"
+                variant="text"
+                color="error"
+                density="comfortable"
+                :disabled="ocupadoId === item.id"
+                aria-label="Remover relatório"
+                :data-cy="`relatorio-remover-${item.id}`"
+                @click="paraRemover = item"
+              />
+            </td>
+          </template>
+        </AppTabela>
+        <template v-else>
+          <RelatorioListItem
+            v-for="relatorio in relatorioStore.relatorios"
+            :key="relatorio.id"
+            :relatorio="relatorio"
+            :pode-remover="podeExcluir"
+            :ocupado="ocupadoId === relatorio.id"
+            class="mb-3"
+            @abrir="abrir(relatorio)"
+            @baixar="baixar(relatorio)"
+            @remover="paraRemover = relatorio"
+          />
+        </template>
 
         <v-btn
           v-if="relatorioStore.temMaisPaginas"
@@ -217,7 +285,7 @@ async function confirmarRemocao() {
     </template>
 
     <v-btn
-      v-if="podeGerar"
+      v-if="podeGerar && !mdAndUp"
       icon="mdi-plus"
       color="primary"
       size="large"
