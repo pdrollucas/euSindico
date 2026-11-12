@@ -77,7 +77,7 @@ watch([tipo, predioId], () => {
   clearTimeout(timerBusca)
   busca.value = ''
   predioStore.obter(predioId.value).catch(() => undefined)
-  carregar()
+  void carregar()
 })
 
 // Debounce da busca: a requisição só sai depois de o usuário parar de digitar. Limpar o campo (X) e
@@ -90,7 +90,7 @@ function aplicarBusca() {
   // `clearable` do Vuetify põe `null` no v-model ao clicar no X.
   const texto = (busca.value ?? '').trim()
   if (texto !== lista.value.nome) {
-    carregar()
+    void carregar()
   }
 }
 
@@ -188,9 +188,9 @@ function abrirOuBaixar(documento: Documento) {
     return
   }
   if (abreNoNavegador(documento.nomeArquivo)) {
-    abrir(documento)
+    void abrir(documento)
   } else {
-    baixar(documento)
+    void baixar(documento)
   }
 }
 

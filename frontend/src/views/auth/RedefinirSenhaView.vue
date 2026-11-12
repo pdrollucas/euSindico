@@ -15,8 +15,8 @@ const carregando = ref(false)
 // O código não sobrevive a um F5 (não é persistido — é segredo). Sem e-mail, volta ao início;
 // com e-mail mas sem código verificado (ex: reload nesta tela), volta para a tela de código.
 onMounted(() => {
-  if (!store.email) router.replace('/esqueci-senha')
-  else if (!store.codigo) router.replace('/verificar-codigo')
+  if (!store.email) void router.replace('/esqueci-senha')
+  else if (!store.codigo) void router.replace('/verificar-codigo')
 })
 
 async function onSubmit(payload: RedefinirSenhaFormValues) {
