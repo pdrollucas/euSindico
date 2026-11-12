@@ -60,7 +60,7 @@ api.interceptors.response.use(
     const isPublicAuthCall = PUBLIC_AUTH_PATHS.some((path) => originalRequest?.url?.includes(path))
 
     if (status !== 401 || !originalRequest || isPublicAuthCall || originalRequest._retry) {
-      return Promise.reject(error)
+      throw error
     }
 
     originalRequest._retry = true
@@ -70,7 +70,7 @@ api.interceptors.response.use(
 
     const newAccessToken = await refreshPromise
     if (!newAccessToken) {
-      return Promise.reject(error)
+      throw error
     }
 
     originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
