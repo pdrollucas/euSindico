@@ -162,7 +162,7 @@ function rotaPlanejamento(planejamento: Planejamento) {
 }
 
 function criar() {
-  router.push(`/predios/${predioId.value}/planejamentos/novo`)
+  void router.push(`/predios/${predioId.value}/planejamentos/novo`)
 }
 </script>
 

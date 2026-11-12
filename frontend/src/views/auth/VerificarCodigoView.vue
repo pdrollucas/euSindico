@@ -29,7 +29,7 @@ async function onSubmit(payload: VerificarCodigoFormValues) {
   carregando.value = true
   try {
     await store.verificar(payload.codigo)
-    router.push('/redefinir-senha')
+    void router.push('/redefinir-senha')
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 400) {
       erro.value = 'Código inválido ou expirado. Verifique e tente novamente.'

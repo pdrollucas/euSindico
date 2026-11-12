@@ -47,7 +47,7 @@ const orcamentoCampo = ref<{ $el: HTMLElement } | null>(null)
 function onOrcamentoDigitado(valor: string | null) {
   const mascarado = mascararMoedaDigitada(valor, orcamentoPrevisto.value ?? '')
   orcamentoPrevisto.value = mascarado
-  nextTick(() => {
+  void nextTick(() => {
     const input = orcamentoCampo.value?.$el.querySelector('input')
     if (input && input.value !== mascarado) {
       input.value = mascarado

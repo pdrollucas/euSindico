@@ -67,7 +67,7 @@ async function aceitar(payload: { nome?: string; senha?: string }) {
 }
 
 function irParaLogin() {
-  router.push('/login')
+  void router.push('/login')
 }
 </script>
 

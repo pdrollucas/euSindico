@@ -191,7 +191,7 @@ function aplicarFiltros(parcial: Partial<CompromissoFiltros>) {
   }
   if ('predioId' in parcial) {
     // A URL manda: o watcher de `predioIdRota` aplica na store e recarrega.
-    router.replace({ query: predioId ? { predioId: String(predioId) } : {} })
+    void router.replace({ query: predioId ? { predioId: String(predioId) } : {} })
   } else {
     carregar()
   }
@@ -201,7 +201,7 @@ function limparFiltros() {
   busca.value = ''
   compromissoStore.resetarFiltros()
   if (predioIdRota.value) {
-    router.replace({ query: {} })
+    void router.replace({ query: {} })
   } else {
     carregar()
   }
@@ -267,7 +267,7 @@ async function confirmarRemocao() {
 }
 
 function criar() {
-  router.push({
+  void router.push({
     path: '/compromissos/novo',
     query: predioIdRota.value ? { predioId: String(predioIdRota.value) } : {},
   })

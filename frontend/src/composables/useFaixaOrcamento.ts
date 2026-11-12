@@ -37,7 +37,7 @@ export function useFaixaOrcamento(
     const campo = limite === 'minimo' ? minimoCampo : maximoCampo
     const mascarado = mascararMoedaDigitada(valor, alvo.value)
     alvo.value = mascarado
-    nextTick(() => {
+    void nextTick(() => {
       const input = campo.value?.$el.querySelector('input')
       if (input && input.value !== mascarado) {
         input.value = mascarado

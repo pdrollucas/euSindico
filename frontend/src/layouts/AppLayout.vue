@@ -12,7 +12,7 @@ const router = useRouter()
 // Home aberta (redimensionada, tablet girado).
 watch([mdAndUp, () => route.name], ([desktop, nome]) => {
   if (desktop && nome === 'home') {
-    router.replace('/compromissos')
+    void router.replace('/compromissos')
   }
 })
 </script>
