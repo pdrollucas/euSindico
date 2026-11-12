@@ -136,7 +136,7 @@ const horarioCampo = ref<{ $el: HTMLElement } | null>(null)
 function onHorarioDigitado(valor: string | null) {
   const mascarado = mascararHorario(valor)
   horarioCompromisso.value = mascarado
-  nextTick(() => {
+  void nextTick(() => {
     const input = horarioCampo.value?.$el.querySelector('input')
     if (input && input.value !== mascarado) {
       input.value = mascarado
@@ -150,7 +150,7 @@ const orcamentoCampo = ref<{ $el: HTMLElement } | null>(null)
 function onOrcamentoDigitado(valor: string | null) {
   const mascarado = mascararMoedaDigitada(valor, orcamento.value ?? '')
   orcamento.value = mascarado
-  nextTick(() => {
+  void nextTick(() => {
     const input = orcamentoCampo.value?.$el.querySelector('input')
     if (input && input.value !== mascarado) {
       input.value = mascarado

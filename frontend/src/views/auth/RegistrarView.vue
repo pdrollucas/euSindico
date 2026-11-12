@@ -19,7 +19,7 @@ async function onSubmit(payload: RegistrarRequest) {
   try {
     await authStore.registrar(payload)
     // Cadastro não autentica automaticamente — o fluxo do RFC (seção 4.1) segue para o login.
-    router.push({ path: '/login', query: { registrado: '1' } })
+    void router.push({ path: '/login', query: { registrado: '1' } })
   } catch (error) {
     // Nunca decide a mensagem com base no `title` do backend — só no status HTTP
     // (ver frontend/documentation/ARCHITECTURE.md, seção 6).

@@ -52,12 +52,12 @@ function onAlternar(compromisso: Compromisso) {
     <v-table hover density="comfortable">
       <thead>
         <tr>
-          <th class="coluna-check"><span class="d-sr-only">Concluído</span></th>
-          <th>Título</th>
-          <th>Prédio</th>
-          <th class="coluna-data">Data</th>
-          <th v-if="mostrarResponsavel">Responsável</th>
-          <th class="coluna-acoes"><span class="d-sr-only">Ações</span></th>
+          <th scope="col" class="coluna-check"><span class="d-sr-only">Concluído</span></th>
+          <th scope="col">Título</th>
+          <th scope="col">Prédio</th>
+          <th scope="col" class="coluna-data">Data</th>
+          <th v-if="mostrarResponsavel" scope="col">Responsável</th>
+          <th scope="col" class="coluna-acoes"><span class="d-sr-only">Ações</span></th>
         </tr>
       </thead>
       <tbody>

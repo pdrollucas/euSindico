@@ -11,7 +11,7 @@ export function useSair() {
   async function sair() {
     await authStore.logout()
     perfilStore.limpar()
-    router.push('/login')
+    await router.push('/login')
   }
 
   return { sair }

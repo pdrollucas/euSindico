@@ -24,7 +24,7 @@ async function onSubmit(payload: AlterarSenhaFormValues) {
     // o usuário a entrar de novo com a senha nova, como na redefinição por e-mail.
     authStore.clearSession()
     perfilStore.limpar()
-    router.push({ path: '/login', query: { senhaRedefinida: '1' } })
+    void router.push({ path: '/login', query: { senhaRedefinida: '1' } })
   } catch (error) {
     // 400 = senha atual incorreta; o title já é a mensagem para o usuário.
     erro.value = mensagemDoErro(error, 'Não foi possível alterar a senha. Tente novamente.', [400])

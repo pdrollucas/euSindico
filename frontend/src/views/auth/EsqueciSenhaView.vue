@@ -25,7 +25,7 @@ async function onSubmit(payload: EsqueciSenhaRequest) {
     await store.solicitarCodigo(payload.email)
     // Anti-enumeração: a API responde igual exista ou não o e-mail; seguimos sempre para a
     // tela de código (ver backend AUTHENTICATION.md, Fluxo 8).
-    router.push('/verificar-codigo')
+    void router.push('/verificar-codigo')
   } catch (error) {
     // Só o status HTTP decide a mensagem (ver ARCHITECTURE.md, seção 6).
     if (axios.isAxiosError(error) && error.response?.status === 429) {

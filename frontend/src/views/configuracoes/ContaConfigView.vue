@@ -29,7 +29,7 @@ async function onExcluir(payload: ExcluirContaRequest) {
     // A conta e os tokens já não existem no backend: só limpa a sessão local e volta à landing.
     authStore.clearSession()
     perfilStore.limpar()
-    router.push('/')
+    void router.push('/')
   } catch (error) {
     // 400 = senha incorreta; o title já é a mensagem para o usuário. O diálogo continua aberto.
     erro.value = mensagemDoErro(error, 'Não foi possível excluir a conta. Tente novamente.', [400])

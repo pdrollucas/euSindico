@@ -119,7 +119,7 @@ async function onSubmit(payload: PlanejamentoFormValues) {
     } else {
       await planejamentoStore.atualizar(predioId.value, planejamentoId.value, payload)
     }
-    router.push(destinoLista.value)
+    void router.push(destinoLista.value)
   } catch (error) {
     erroForm.value = mensagemSalvar(error)
   } finally {
@@ -131,7 +131,7 @@ async function confirmarRemocao() {
   removendo.value = true
   try {
     await planejamentoStore.remover(predioId.value, planejamentoId.value)
-    router.push(destinoLista.value)
+    void router.push(destinoLista.value)
   } catch {
     confirmandoRemocao.value = false
     erroForm.value = 'Não foi possível remover o planejamento. Tente novamente.'

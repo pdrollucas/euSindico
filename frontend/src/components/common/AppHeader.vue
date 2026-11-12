@@ -18,7 +18,7 @@ const destinoVoltar = computed(() => route.meta.voltarPara?.(route) ?? '/home')
 const mostrarVoltar = computed(() => !(mdAndUp.value && destinoVoltar.value === '/home'))
 
 function voltar() {
-  router.push(destinoVoltar.value)
+  void router.push(destinoVoltar.value)
 }
 </script>
 

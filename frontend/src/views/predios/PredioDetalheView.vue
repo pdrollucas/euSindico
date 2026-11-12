@@ -60,7 +60,7 @@ async function confirmarRemocao() {
   removendo.value = true
   try {
     await predioStore.remover(predioId.value)
-    router.push('/predios')
+    void router.push('/predios')
   } catch {
     erro.value = 'Não foi possível remover o prédio. Tente novamente.'
     confirmandoRemocao.value = false

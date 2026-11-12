@@ -25,7 +25,7 @@ function idDe(item: T) {
     <v-table hover density="comfortable">
       <thead>
         <tr>
-          <th v-for="coluna in colunas" :key="coluna.titulo">
+          <th v-for="coluna in colunas" :key="coluna.titulo" scope="col">
             <span :class="{ 'd-sr-only': coluna.oculto }">{{ coluna.titulo }}</span>
           </th>
         </tr>

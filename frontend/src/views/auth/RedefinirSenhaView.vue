@@ -25,7 +25,7 @@ async function onSubmit(payload: RedefinirSenhaFormValues) {
   try {
     await store.redefinir(payload.novaSenha, payload.confirmarSenha)
     // Redefinição derruba todas as sessões (backend) — o usuário entra de novo com a senha nova.
-    router.push({ path: '/login', query: { senhaRedefinida: '1' } })
+    void router.push({ path: '/login', query: { senhaRedefinida: '1' } })
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 400) {
       erro.value =

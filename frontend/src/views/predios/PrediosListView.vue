@@ -60,7 +60,7 @@ async function onCriar(payload: PredioFormValues) {
   try {
     const predio = await predioStore.criar(payload)
     mostrarFormCriar.value = false
-    router.push(`/predios/${predio.id}`)
+    void router.push(`/predios/${predio.id}`)
   } catch (error) {
     // Um 409 cobre duas exceções diferentes (duplicidade vs. limite de 20 prédios, PREDIOS.md)
     // — mostra o title do backend em vez de reinventar a mensagem.

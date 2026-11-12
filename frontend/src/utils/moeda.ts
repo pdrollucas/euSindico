@@ -1,4 +1,6 @@
 const formatadorBrl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+// Só o separador de milhar (1500 -> "1.500"), sem regex com backtracking.
+const formatadorMilhar = new Intl.NumberFormat('pt-BR', { useGrouping: true })
 
 // 10 dígitos = 99.999.999,99, o teto do orçamento (decimal(10,2) no backend).
 const MAX_DIGITOS = 10
@@ -17,7 +19,7 @@ export function mascararMoeda(texto: string | null | undefined): string {
     return ''
   }
   const centavos = String(Number(digitos)).padStart(3, '0')
-  const inteiro = centavos.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const inteiro = formatadorMilhar.format(Number(centavos.slice(0, -2)))
   return `${inteiro},${centavos.slice(-2)}`
 }
 

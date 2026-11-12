@@ -18,7 +18,7 @@ async function onSubmit(payload: LoginRequest) {
   carregando.value = true
   try {
     await authStore.login(payload.email, payload.senha)
-    router.push('/home')
+    void router.push('/home')
   } catch (error) {
     // Nunca decide a mensagem com base no `title` do backend — só no status HTTP
     // (ver frontend/documentation/ARCHITECTURE.md, seção 6).
