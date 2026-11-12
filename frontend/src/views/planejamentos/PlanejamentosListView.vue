@@ -91,7 +91,7 @@ function aplicarBusca() {
   const texto = (busca.value ?? '').trim()
   if (texto !== planejamentoStore.filtros.titulo) {
     planejamentoStore.filtros.titulo = texto
-    carregar()
+    void carregar()
   }
 }
 
@@ -127,13 +127,13 @@ async function carregarMais() {
 
 function aplicarFiltros(parcial: Partial<PlanejamentoFiltros>) {
   Object.assign(planejamentoStore.filtros, parcial)
-  carregar()
+  void carregar()
 }
 
 function limparFiltros() {
   busca.value = ''
   planejamentoStore.resetarFiltros()
-  carregar()
+  void carregar()
 }
 
 function avisar(mensagem: string, cor?: string) {

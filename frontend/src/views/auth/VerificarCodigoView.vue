@@ -17,7 +17,7 @@ const reenviando = ref(false)
 
 // Sem e-mail no fluxo (F5 ou deep link direto), não há o que verificar — volta ao início.
 onMounted(() => {
-  if (!store.email) router.replace('/esqueci-senha')
+  if (!store.email) void router.replace('/esqueci-senha')
 })
 
 const cooldownExpiraEm = computed(() => store.cooldownExpiraEm)

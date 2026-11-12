@@ -126,7 +126,7 @@ watch(
     const mudou = compromissoStore.filtros.predioId !== predioId
     compromissoStore.filtros.predioId = predioId
     if (mudou && montado) {
-      carregar()
+      void carregar()
     }
   },
   { immediate: true },
@@ -144,7 +144,7 @@ function aplicarBusca() {
   const texto = (busca.value ?? '').trim()
   if (texto !== compromissoStore.filtros.titulo) {
     compromissoStore.filtros.titulo = texto
-    carregar()
+    void carregar()
   }
 }
 
@@ -193,7 +193,7 @@ function aplicarFiltros(parcial: Partial<CompromissoFiltros>) {
     // A URL manda: o watcher de `predioIdRota` aplica na store e recarrega.
     void router.replace({ query: predioId ? { predioId: String(predioId) } : {} })
   } else {
-    carregar()
+    void carregar()
   }
 }
 
@@ -203,7 +203,7 @@ function limparFiltros() {
   if (predioIdRota.value) {
     void router.replace({ query: {} })
   } else {
-    carregar()
+    void carregar()
   }
 }
 
@@ -220,7 +220,8 @@ function esperar(ms: number) {
 // combina com "concluídos" — por isso o item sempre sai.
 async function alternarConclusao(compromisso: Compromisso, concluido: boolean) {
   estados.value = { ...estados.value, [compromisso.id]: concluido ? 'concluindo' : 'reabrindo' }
-  const duracao = reduzirMovimento() ? 0 : concluido ? SAIDA_CONCLUIR_MS : SAIDA_REABRIR_MS
+  const duracaoSaida = concluido ? SAIDA_CONCLUIR_MS : SAIDA_REABRIR_MS
+  const duracao = reduzirMovimento() ? 0 : duracaoSaida
   try {
     await Promise.all([
       compromissoStore.alterarConclusao(compromisso.id, concluido),
