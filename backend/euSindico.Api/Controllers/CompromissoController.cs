@@ -56,17 +56,35 @@ public class CompromissoController(
         CancellationToken ct = default)
     {
         var erros = new Dictionary<string, string[]>();
+        ValidarPaginacao(page, pageSize, erros);
+        ValidarFiltros(titulo, predioId, erros);
+        ValidarPeriodo(ano, mes, situacao, erros);
+        ValidarEnums(escopo, situacao, erros);
 
+        if (erros.Count > 0)
+        {
+            return ValidationProblem(new ValidationProblemDetails(erros));
+        }
+
+        var resultado = await compromissoService.ListarAsync(UsuarioId, titulo, predioId, escopo, situacao, page, pageSize, ano, mes, ct);
+        return Ok(resultado);
+    }
+
+    private static void ValidarPaginacao(int page, int pageSize, Dictionary<string, string[]> erros)
+    {
         if (page < 1)
         {
             erros[nameof(page)] = ["A página deve ser no mínimo 1."];
         }
 
-        if (pageSize < 1 || pageSize > PageSizeMaximo)
+        if (pageSize is < 1 or > PageSizeMaximo)
         {
             erros[nameof(pageSize)] = [$"O tamanho da página deve estar entre 1 e {PageSizeMaximo}."];
         }
+    }
 
+    private static void ValidarFiltros(string? titulo, int? predioId, Dictionary<string, string[]> erros)
+    {
         if (titulo is { Length: > TituloFiltroMaximo })
         {
             erros[nameof(titulo)] = [$"A busca deve ter no máximo {TituloFiltroMaximo} caracteres."];
@@ -76,27 +94,46 @@ public class CompromissoController(
         {
             erros[nameof(predioId)] = ["O prédio informado é inválido."];
         }
+    }
 
-        if (ano is { } a && (a < AnoFiltroMinimo || a > AnoFiltroMaximo))
+    private static void ValidarPeriodo(int? ano, int? mes, SituacaoCompromissos situacao, Dictionary<string, string[]> erros)
+    {
+        if (ano is < AnoFiltroMinimo or > AnoFiltroMaximo)
         {
             erros[nameof(ano)] = [$"O ano deve estar entre {AnoFiltroMinimo} e {AnoFiltroMaximo}."];
         }
 
-        if (mes is { } m && (m < 1 || m > 12))
+        var erroMes = ObterErroMes(ano, mes, situacao);
+        if (erroMes is not null)
         {
-            erros[nameof(mes)] = ["O mês deve estar entre 1 e 12."];
+            erros[nameof(mes)] = [erroMes];
         }
-        else if ((ano is null) != (mes is null))
+    }
+
+    private static string? ObterErroMes(int? ano, int? mes, SituacaoCompromissos situacao)
+    {
+        if (mes is < 1 or > 12)
         {
-            // Ano e mês andam juntos: não existe "o mês de setembro" sem dizer de qual ano, nem "o ano todo".
-            erros[nameof(mes)] = ["Informe ano e mês juntos."];
-        }
-        else if (ano is null && PeriodoObrigatorio(situacao))
-        {
-            erros[nameof(mes)] = ["Informe ano e mês para esta situação."];
+            return "O mês deve estar entre 1 e 12.";
         }
 
-        // O binder aceita números fora do enum (ex: situacao=9) — sem isso cairia no `_ => query` do repositório.
+        // Ano e mês andam juntos: não existe "o mês de setembro" sem dizer de qual ano, nem "o ano todo".
+        if ((ano is null) != (mes is null))
+        {
+            return "Informe ano e mês juntos.";
+        }
+
+        if (ano is null && PeriodoObrigatorio(situacao))
+        {
+            return "Informe ano e mês para esta situação.";
+        }
+
+        return null;
+    }
+
+    // O binder aceita números fora do enum (ex: situacao=9) — sem isso cairia no `_ => query` do repositório.
+    private static void ValidarEnums(EscopoCompromissos escopo, SituacaoCompromissos situacao, Dictionary<string, string[]> erros)
+    {
         if (!Enum.IsDefined(escopo))
         {
             erros[nameof(escopo)] = ["Escopo inválido. Use 'meus' ou 'todos'."];
@@ -106,14 +143,6 @@ public class CompromissoController(
         {
             erros[nameof(situacao)] = ["Situação inválida. Use 'proximos', 'hoje', 'atrasados', 'concluidos' ou 'todos'."];
         }
-
-        if (erros.Count > 0)
-        {
-            return ValidationProblem(new ValidationProblemDetails(erros));
-        }
-
-        var resultado = await compromissoService.ListarAsync(UsuarioId, titulo, predioId, escopo, situacao, page, pageSize, ano, mes, ct);
-        return Ok(resultado);
     }
 
     [HttpGet("{id:int}")]

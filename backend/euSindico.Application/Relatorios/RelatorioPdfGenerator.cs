@@ -46,87 +46,94 @@ public class RelatorioPdfGenerator : IRelatorioPdfGenerator
                     .Text("Arquivo gerado pelo sistema euSíndico")
                     .FontSize(9).FontColor(Colors.Grey.Darken1);
 
-                pagina.Content().PaddingTop(10).Column(coluna =>
-                {
-                    coluna.Item().Text("Relatório de atividades")
-                        .FontSize(20).Bold().FontColor(AzulMarca);
+                pagina.Content().PaddingTop(10).Column(coluna => ComporConteudo(coluna, dados, periodo));
 
-                    coluna.Item().PaddingTop(18).Column(c =>
-                    {
-                        c.Item().Element(e => Campo(e, "Nome do prédio", dados.PredioNome));
-                        c.Item().Element(e => Campo(e, "Endereço", dados.PredioEndereco));
-                    });
-
-                    coluna.Item().PaddingTop(14).Column(c =>
-                    {
-                        c.Item().Element(e => Campo(e, "Compromissos concluídos no período de", periodo));
-                        c.Item().Element(e => Campo(e, "Gerado em", $"{dados.GeradoEm:dd/MM/yyyy HH:mm}"));
-                    });
-
-                    var comOrcamento = dados.Compromissos.Where(i => i.Orcamento is not null).ToList();
-                    var semOrcamento = dados.Compromissos.Count - comOrcamento.Count;
-
-                    coluna.Item().PaddingTop(14).Column(c =>
-                    {
-                        c.Item().Element(e =>
-                            Campo(e, "Total de compromissos concluídos", dados.Compromissos.Count.ToString(Cultura)));
-
-                        // O total soma só quem tem orçamento informado; a contagem dos demais evita que
-                        // o valor seja lido como o gasto completo do mês.
-                        if (comOrcamento.Count > 0)
-                        {
-                            c.Item().Element(e =>
-                                Campo(e, "Orçamento total do mês", Moeda(comOrcamento.Sum(i => i.Orcamento!.Value))));
-                        }
-
-                        if (semOrcamento > 0)
-                        {
-                            c.Item().Element(e =>
-                                Campo(e, "Compromissos sem orçamento informado", semOrcamento.ToString(Cultura)));
-                        }
-                    });
-
-                    coluna.Item().PaddingTop(16).Element(Divisor);
-
-                    foreach (var item in dados.Compromissos)
-                    {
-                        // Cada compromisso fica inteiro na mesma página; o divisor de baixo também.
-                        coluna.Item().ShowEntire().PaddingVertical(10).Column(c =>
-                        {
-                            c.Item().Element(e => Campo(e, "Título", item.Titulo));
-                            c.Item().Element(e => Campo(e, "Data", $"{item.Data:dd/MM/yyyy} às {item.Horario:HH:mm}"));
-                            c.Item().Element(e => Campo(e, "Responsável", item.ResponsavelNome));
-
-                            if (item.NomePrestadorServico is not null)
-                            {
-                                c.Item().Element(e => Campo(e, "Prestador de serviço", item.NomePrestadorServico));
-                            }
-
-                            if (item.Orcamento is not null)
-                            {
-                                c.Item().Element(e => Campo(e, "Orçamento", Moeda(item.Orcamento.Value)));
-                            }
-
-                            if (item.Detalhes is not null)
-                            {
-                                c.Item().Element(e => Campo(e, "Detalhes", item.Detalhes));
-                            }
-                        });
-
-                        coluna.Item().Element(Divisor);
-                    }
-                });
-
-                pagina.Footer().AlignCenter().Text(texto =>
-                {
-                    texto.DefaultTextStyle(t => t.FontSize(9).FontColor(Colors.Grey.Darken1));
-                    texto.Span("Página ");
-                    texto.CurrentPageNumber();
-                    texto.Span(" de ");
-                    texto.TotalPages();
-                });
+                pagina.Footer().AlignCenter().Text(ComporRodape);
             });
         }).GeneratePdf();
+    }
+
+    private static void ComporConteudo(ColumnDescriptor coluna, DadosRelatorio dados, string periodo)
+    {
+        coluna.Item().Text("Relatório de atividades")
+            .FontSize(20).Bold().FontColor(AzulMarca);
+
+        coluna.Item().PaddingTop(18).Column(c =>
+        {
+            c.Item().Element(e => Campo(e, "Nome do prédio", dados.PredioNome));
+            c.Item().Element(e => Campo(e, "Endereço", dados.PredioEndereco));
+        });
+
+        coluna.Item().PaddingTop(14).Column(c =>
+        {
+            c.Item().Element(e => Campo(e, "Compromissos concluídos no período de", periodo));
+            c.Item().Element(e => Campo(e, "Gerado em", $"{dados.GeradoEm:dd/MM/yyyy HH:mm}"));
+        });
+
+        coluna.Item().PaddingTop(14).Column(c => ComporResumo(c, dados));
+
+        coluna.Item().PaddingTop(16).Element(Divisor);
+
+        foreach (var item in dados.Compromissos)
+        {
+            // Cada compromisso fica inteiro na mesma página; o divisor de baixo também.
+            coluna.Item().ShowEntire().PaddingVertical(10).Column(c => ComporCompromisso(c, item));
+            coluna.Item().Element(Divisor);
+        }
+    }
+
+    private static void ComporResumo(ColumnDescriptor c, DadosRelatorio dados)
+    {
+        var comOrcamento = dados.Compromissos.Where(i => i.Orcamento is not null).ToList();
+        var semOrcamento = dados.Compromissos.Count - comOrcamento.Count;
+
+        c.Item().Element(e =>
+            Campo(e, "Total de compromissos concluídos", dados.Compromissos.Count.ToString(Cultura)));
+
+        // O total soma só quem tem orçamento informado; a contagem dos demais evita que
+        // o valor seja lido como o gasto completo do mês.
+        if (comOrcamento.Count > 0)
+        {
+            c.Item().Element(e =>
+                Campo(e, "Orçamento total do mês", Moeda(comOrcamento.Sum(i => i.Orcamento!.Value))));
+        }
+
+        if (semOrcamento > 0)
+        {
+            c.Item().Element(e =>
+                Campo(e, "Compromissos sem orçamento informado", semOrcamento.ToString(Cultura)));
+        }
+    }
+
+    private static void ComporCompromisso(ColumnDescriptor c, ItemRelatorio item)
+    {
+        c.Item().Element(e => Campo(e, "Título", item.Titulo));
+        c.Item().Element(e => Campo(e, "Data", $"{item.Data:dd/MM/yyyy} às {item.Horario:HH:mm}"));
+        c.Item().Element(e => Campo(e, "Responsável", item.ResponsavelNome));
+
+        if (item.NomePrestadorServico is not null)
+        {
+            c.Item().Element(e => Campo(e, "Prestador de serviço", item.NomePrestadorServico));
+        }
+
+        if (item.Orcamento is not null)
+        {
+            c.Item().Element(e => Campo(e, "Orçamento", Moeda(item.Orcamento.Value)));
+        }
+
+        if (item.Detalhes is not null)
+        {
+            c.Item().Element(e => Campo(e, "Detalhes", item.Detalhes));
+        }
+    }
+
+    private static void ComporRodape(TextDescriptor texto)
+    {
+        texto.DefaultTextStyle(t => t.FontSize(9).FontColor(Colors.Grey.Darken1));
+        texto.Span("Página ");
+        texto.CurrentPageNumber();
+        texto.Span(" de ");
+        texto.TotalPages();
     }
 
     // "Rótulo: valor" — rótulo em negrito, valor em texto normal, ambos pretos.
